@@ -30,7 +30,10 @@ export type Strap = {
 			id: number
 			strap_name: string
 			strap_title: string
+			strap_description?: string
 			price: number
+			preview_image?: string
+			ultra_preview_image?: string
 			buckle_butterfly_choosen?: boolean
 			strap_params: StrapParams
 		}
@@ -108,32 +111,180 @@ const mockWatchModels: WatchModel[] = [
 
 const mockStraps: Strap[] = [
 	{
-		choosen: true,
+		choosen: false,
 		attributes: {
 			watch_strap: {
 				id: 1,
-				strap_name: 'classic-leather',
-				strap_title: 'Классическая кожа',
-				price: 3900,
+				strap_name: 'butterfly',
+				strap_title: 'Butterfly',
+				strap_description: 'Пряжка бабочка для исключительного комфорта',
+				price: 8990,
+				preview_image: 'https://api.slavalarionov.store/uploads/butterfly_6c5fe88b84.png',
+				ultra_preview_image: 'https://api.slavalarionov.store/uploads/butterfly_6c5fe88b84.png',
+				buckle_butterfly_choosen: true,
 				strap_params: {
 					leather_colors: [
-						{ color_title: 'Черный', color_code: '#1b1b1b', choosen: true },
+						{ color_title: 'Черный', color_code: '#1b1b1b', choosen: false },
 						{ color_title: 'Коричневый', color_code: '#7b4b2a', choosen: false }
 					],
 					stitching_colors: [
-						{ color_title: 'Черная', color_code: '#1b1b1b', choosen: true },
+						{ color_title: 'Черная', color_code: '#1b1b1b', choosen: false },
 						{ color_title: 'Белая', color_code: '#ffffff', choosen: false }
 					],
 					edge_colors: [
-						{ color_title: 'Черный', color_code: '#1b1b1b', choosen: true },
+						{ color_title: 'Черный', color_code: '#1b1b1b', choosen: false },
 						{ color_title: 'Коричневый', color_code: '#7b4b2a', choosen: false }
 					],
 					buckle_colors: [
-						{ color_title: 'Silver', color_code: '#C0C0C0', choosen: true },
+						{ color_title: 'Silver', color_code: '#C0C0C0', choosen: false },
 						{ color_title: 'Black', color_code: '#000000', choosen: false }
 					],
 					adapter_colors: [
-						{ color_title: 'Silver', color_code: '#C0C0C0', choosen: true },
+						{ color_title: 'Silver', color_code: '#C0C0C0', choosen: false },
+						{ color_title: 'Black', color_code: '#000000', choosen: false }
+					]
+				}
+			}
+		}
+	},
+	{
+		choosen: false,
+		attributes: {
+			watch_strap: {
+				id: 2,
+				strap_name: 'classic',
+				strap_title: 'Classic',
+				strap_description: 'Превосходный классический дизайн и ничего лишнего',
+				price: 8490,
+				preview_image: 'https://api.slavalarionov.store/uploads/classic_8280babad8.png',
+				ultra_preview_image: 'https://api.slavalarionov.store/uploads/classic_8280babad8.png',
+				buckle_butterfly_choosen: false,
+				strap_params: {
+					leather_colors: [
+						{ color_title: 'Черный', color_code: '#1b1b1b', choosen: false },
+						{ color_title: 'Коричневый', color_code: '#7b4b2a', choosen: false }
+					],
+					stitching_colors: [
+						{ color_title: 'Черная', color_code: '#1b1b1b', choosen: false },
+						{ color_title: 'Белая', color_code: '#ffffff', choosen: false }
+					],
+					edge_colors: [
+						{ color_title: 'Черный', color_code: '#1b1b1b', choosen: false }
+					],
+					buckle_colors: [
+						{ color_title: 'Silver', color_code: '#C0C0C0', choosen: false },
+						{ color_title: 'Black', color_code: '#000000', choosen: false }
+					],
+					adapter_colors: [
+						{ color_title: 'Silver', color_code: '#C0C0C0', choosen: false },
+						{ color_title: 'Black', color_code: '#000000', choosen: false }
+					]
+				}
+			}
+		}
+	},
+	{
+		choosen: false,
+		attributes: {
+			watch_strap: {
+				id: 3,
+				strap_name: 'double-wrap',
+				strap_title: 'Double Wrap',
+				strap_description: 'С двойным оборотом вокруг запястья',
+				price: 9490,
+				preview_image: 'https://api.slavalarionov.store/uploads/aw_dabl_6163afb63b.png',
+				ultra_preview_image: 'https://api.slavalarionov.store/uploads/aw_dabl_6163afb63b.png',
+				buckle_butterfly_choosen: false,
+				strap_params: {
+					leather_colors: [
+						{ color_title: 'Черный', color_code: '#1b1b1b', choosen: false },
+						{ color_title: 'Коричневый', color_code: '#7b4b2a', choosen: false }
+					],
+					stitching_colors: [
+						{ color_title: 'Черная', color_code: '#1b1b1b', choosen: false },
+						{ color_title: 'Белая', color_code: '#ffffff', choosen: false }
+					],
+					edge_colors: [
+						{ color_title: 'Черный', color_code: '#1b1b1b', choosen: false }
+					],
+					buckle_colors: [
+						{ color_title: 'Silver', color_code: '#C0C0C0', choosen: false },
+						{ color_title: 'Black', color_code: '#000000', choosen: false }
+					],
+					adapter_colors: [
+						{ color_title: 'Silver', color_code: '#C0C0C0', choosen: false },
+						{ color_title: 'Black', color_code: '#000000', choosen: false }
+					]
+				}
+			}
+		}
+	},
+	{
+		choosen: false,
+		attributes: {
+			watch_strap: {
+				id: 4,
+				strap_name: 'brogue',
+				strap_title: 'Brogue',
+				strap_description: 'Декоративная перфорация в классическом стиле',
+				price: 8990,
+				preview_image: 'https://api.slavalarionov.store/uploads/Brogue_4539ae7e9d.png',
+				ultra_preview_image: 'https://api.slavalarionov.store/uploads/Brogue_4539ae7e9d.png',
+				buckle_butterfly_choosen: false,
+				strap_params: {
+					leather_colors: [
+						{ color_title: 'Черный', color_code: '#1b1b1b', choosen: false },
+						{ color_title: 'Коричневый', color_code: '#7b4b2a', choosen: false }
+					],
+					stitching_colors: [
+						{ color_title: 'Черная', color_code: '#1b1b1b', choosen: false },
+						{ color_title: 'Белая', color_code: '#ffffff', choosen: false }
+					],
+					edge_colors: [
+						{ color_title: 'Черный', color_code: '#1b1b1b', choosen: false }
+					],
+					buckle_colors: [
+						{ color_title: 'Silver', color_code: '#C0C0C0', choosen: false },
+						{ color_title: 'Black', color_code: '#000000', choosen: false }
+					],
+					adapter_colors: [
+						{ color_title: 'Silver', color_code: '#C0C0C0', choosen: false },
+						{ color_title: 'Black', color_code: '#000000', choosen: false }
+					]
+				}
+			}
+		}
+	},
+	{
+		choosen: false,
+		attributes: {
+			watch_strap: {
+				id: 5,
+				strap_name: 'minimal',
+				strap_title: 'Minimal',
+				strap_description: 'Элегантно, стильно и безумно аккуратно',
+				price: 6990,
+				preview_image: 'https://api.slavalarionov.store/uploads/Minimal_6d74c24e75.png',
+				ultra_preview_image: 'https://api.slavalarionov.store/uploads/Minimal_6d74c24e75.png',
+				buckle_butterfly_choosen: false,
+				strap_params: {
+					leather_colors: [
+						{ color_title: 'Черный', color_code: '#1b1b1b', choosen: false },
+						{ color_title: 'Коричневый', color_code: '#7b4b2a', choosen: false }
+					],
+					stitching_colors: [
+						{ color_title: 'Черная', color_code: '#1b1b1b', choosen: false },
+						{ color_title: 'Белая', color_code: '#ffffff', choosen: false }
+					],
+					edge_colors: [
+						{ color_title: 'Черный', color_code: '#1b1b1b', choosen: false }
+					],
+					buckle_colors: [
+						{ color_title: 'Silver', color_code: '#C0C0C0', choosen: false },
+						{ color_title: 'Black', color_code: '#000000', choosen: false }
+					],
+					adapter_colors: [
+						{ color_title: 'Silver', color_code: '#C0C0C0', choosen: false },
 						{ color_title: 'Black', color_code: '#000000', choosen: false }
 					]
 				}
@@ -174,9 +325,9 @@ export class ConfiguratorStore {
 			id: 2,
 			title: 'Выберите модель ремешка',
 			queryParam: 'strap-model',
-			isChoosen: true,
-			strapName: 'Классическая кожа',
-			strapPrice: 3900
+			isChoosen: false,
+			strapName: null,
+			strapPrice: null
 		},
 		strapDesign: {
 			id: 3,

@@ -4,6 +4,7 @@ import styles from './ConfiguratorSteps.module.css'
 import { observer } from 'mobx-react-lite'
 import { configuratorStore } from '@/shared/store/configurator.store'
 import { StepsFrameColors } from './StepsFrameColors'
+import { StrapModelStep } from './StrapModelStep'
 import { useEffect, useRef, useState } from 'react'
 
 export const ConfiguratorSteps = observer(function ConfiguratorSteps() {
@@ -66,17 +67,7 @@ export const ConfiguratorSteps = observer(function ConfiguratorSteps() {
 
 			{step === 2 && (
 				<section className={[styles.section, animClass].join(' ')}>
-					<h3>{configuratorStore.steps.strap.title}</h3>
-					<ul className={styles.list}>
-						{configuratorStore.watchStraps.map((s) => (
-							<li key={s.attributes.watch_strap.id}>
-								<label className={styles.item}>
-									<input type="radio" name="strap" checked={s.choosen} onChange={() => configuratorStore.chooseStrapModel(s.attributes.watch_strap.id)} />
-									<span>{s.attributes.watch_strap.strap_title} — {s.attributes.watch_strap.price} ₽</span>
-								</label>
-							</li>
-						))}
-					</ul>
+					<StrapModelStep />
 				</section>
 			)}
 
