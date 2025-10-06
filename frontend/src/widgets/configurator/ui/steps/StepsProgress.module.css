@@ -1,0 +1,18 @@
+.progress { width: 100%; margin-top: 56px; }
+.progressList { position: relative; width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 40px; flex-wrap: nowrap; }
+.progressItem { position: relative; display: block; max-width: 320px; width: 30%; font-size: 16px; font-weight: 400; padding-bottom: 20px; white-space: nowrap; text-align: center; cursor: pointer; background: transparent; border: none; flex: 1 1 auto; }
+.progressItem::before { position: absolute; content: ''; bottom: 0; left: 0; right: 0; height: 2px; background: #e9e9e9; }
+.progressItem::after { position: absolute; content: ''; bottom: 0; left: 0; width: 0; height: 2px; background: #5078DF; transition: .4s ease; }
+.completed.progressItem::after { width: 100%; }
+.current { font-weight: 600; }
+.progressItemNum { display: inline-block; margin-right: 9px; }
+@media (max-width: 1360px) { .progressList { gap: 30px; } .progressItem { width: 31%; max-width: 300px; padding: 0 10px 20px; } .progressItem:first-child { padding-left: 0; } }
+@media (max-width: 1200px) { .progressItem { width: 31%; } }
+@media (max-width: 1015px) { .progressItem { width: 45%; max-width: 290px; } }
+/* Mobile: make list scrollable horizontally */
+@media (max-width: 1040px) {
+	.progressList { gap: 30px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+	.progressList::-webkit-scrollbar { display: none; }
+	.progressItem { flex: 0 0 auto; width: auto; max-width: none; padding: 0 25px 16px; font-size: 14px; }
+}
+@media (max-width: 500px) { .progressItem { width: auto; max-width: none; } }

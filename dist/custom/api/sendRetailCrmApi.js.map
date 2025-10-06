@@ -1,0 +1,1 @@
+{"version":3,"file":"sendRetailCrmApi.js","sourceRoot":"","sources":["../../../custom/api/sendRetailCrmApi.ts"],"names":[],"mappings":";;AAEA,mCAKC;AALD,SAAwB,gBAAgB,CAAC,MAAW,EAAE,OAAoB;IACtE,OAAO,MAAM,CAAC,GAAG,MAAM,CAAC,MAAM,CAAC,oBAAoB,eAAe,EAAE;QAChE,MAAM,EAAE,MAAM;QACd,IAAI,EAAE,EAAE,SAAS,EAAE,OAAO,EAAE;KAC/B,CAAC,CAAA;AACN,CAAC"}
