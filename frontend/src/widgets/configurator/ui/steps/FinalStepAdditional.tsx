@@ -11,6 +11,19 @@ interface FinalStepAdditionalProps {
 export const FinalStepAdditional = observer(function FinalStepAdditional({ className }: FinalStepAdditionalProps) {
 	const additionalOptions = configuratorStore.additionalOption?.data.attributes.additional_options || []
 
+	const getOptionChoosen = (optionName: string) => {
+		switch (optionName) {
+			case 'initials':
+				return configuratorStore.steps.final.additionalOptions.initials.choosen
+			case 'present_box':
+				return configuratorStore.steps.final.additionalOptions.presentBox.choosen
+			case 'postcard':
+				return configuratorStore.steps.final.additionalOptions.postCard.choosen
+			default:
+				return false
+		}
+	}
+
 	const handleOptionClick = (optionId: string) => {
 		switch (optionId) {
 			case 'initials':
@@ -38,10 +51,12 @@ export const FinalStepAdditional = observer(function FinalStepAdditional({ class
 
 	return (
 		<div className={`${styles.additional} ${className || ''}`}>
-			{additionalOptions.map((option: any) => (
+			{additionalOptions.map((option: any) => {
+				const isChoosen = getOptionChoosen(option.option_name)
+				return (
 				<div
 					key={option.option_name}
-					className={`${styles.additionalOption} ${option.choosen ? styles.choosen : ''} ${(option.option_name === 'initials' || option.option_name === 'postcard') ? styles.captionOption : ''}`}
+					className={`${styles.additionalOption} ${isChoosen ? styles.choosen : ''} ${(option.option_name === 'initials' || option.option_name === 'postcard') ? styles.captionOption : ''}`}
 				>
 					<div
 						className={styles.additionalOptionField}
@@ -88,7 +103,8 @@ export const FinalStepAdditional = observer(function FinalStepAdditional({ class
 						/>
 					</div>
 				</div>
-			))}
+				)
+			})}
 		</div>
 	)
 })
