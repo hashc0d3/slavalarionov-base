@@ -5,6 +5,8 @@ import { observer } from 'mobx-react-lite'
 import { configuratorStore } from '@/shared/store/configurator.store'
 import { StepsFrameColors } from './StepsFrameColors'
 import { StrapModelStep } from './StrapModelStep'
+import { StrapDesignStep } from './StrapDesignStep'
+import { FinalStep } from './FinalStep'
 import { useEffect, useRef, useState } from 'react'
 
 export const ConfiguratorSteps = observer(function ConfiguratorSteps() {
@@ -73,81 +75,13 @@ export const ConfiguratorSteps = observer(function ConfiguratorSteps() {
 
 			{step === 3 && (
 				<section className={[styles.section, animClass].join(' ')}>
-					<h3>{configuratorStore.steps.strapDesign.title}</h3>
-					<div className={styles.pillsGrid}>
-						<div>
-							<p className={styles.pillTitle}>Кожа</p>
-							<div className={styles.pillsRow}>
-								{configuratorStore.selectedStrapModelParams?.leather_colors.map((c) => (
-									<button key={c.color_title} className={[styles.pill, c.choosen ? styles.pillActive : ''].join(' ')} onClick={() => configuratorStore.chooseStrapLeatherColor(c.color_title)}>
-										<span className={styles.pillPreview} style={{ background: c.color_code || '#e9e9e9' }} />
-										<span className={styles.pillName}>{c.color_title}</span>
-									</button>
-								))}
-							</div>
-						</div>
-						<div>
-							<p className={styles.pillTitle}>Строчка</p>
-							<div className={styles.pillsRow}>
-								{configuratorStore.selectedStrapModelParams?.stitching_colors.map((c) => (
-									<button key={c.color_title} className={[styles.pill, c.choosen ? styles.pillActive : ''].join(' ')} onClick={() => configuratorStore.chooseStitchingColor(c.color_title)}>
-										<span className={styles.pillPreview} style={{ background: c.color_code || '#e9e9e9' }} />
-										<span className={styles.pillName}>{c.color_title}</span>
-									</button>
-								))}
-							</div>
-						</div>
-						<div>
-							<p className={styles.pillTitle}>Край</p>
-							<div className={styles.pillsRow}>
-								{configuratorStore.selectedStrapModelParams?.edge_colors.map((c) => (
-									<button key={c.color_title} className={[styles.pill, c.choosen ? styles.pillActive : ''].join(' ')} onClick={() => configuratorStore.chooseEdgeColor(c.color_title)}>
-										<span className={styles.pillPreview} style={{ background: c.color_code || '#e9e9e9' }} />
-										<span className={styles.pillName}>{c.color_title}</span>
-									</button>
-								))}
-							</div>
-						</div>
-						<div>
-							<p className={styles.pillTitle}>Пряжка</p>
-							<div className={styles.pillsRow}>
-								{configuratorStore.selectedStrapModelParams?.buckle_colors.map((c) => (
-									<button key={c.color_title} className={[styles.pill, c.choosen ? styles.pillActive : ''].join(' ')} onClick={() => configuratorStore.chooseBuckleColor(c.color_title)}>
-										<span className={styles.pillPreview} style={{ background: c.color_code || '#e9e9e9' }} />
-										<span className={styles.pillName}>{c.color_title}</span>
-									</button>
-								))}
-							</div>
-						</div>
-						<div>
-							<p className={styles.pillTitle}>Адаптер</p>
-							<div className={styles.pillsRow}>
-								{configuratorStore.selectedStrapModelParams?.adapter_colors.map((c) => (
-									<button key={c.color_title} className={[styles.pill, c.choosen ? styles.pillActive : ''].join(' ')} onClick={() => configuratorStore.chooseAdapterColor(c.color_title)}>
-										<span className={styles.pillPreview} style={{ background: c.color_code || '#e9e9e9' }} />
-										<span className={styles.pillName}>{c.color_title}</span>
-									</button>
-								))}
-							</div>
-						</div>
-					</div>
+					<StrapDesignStep />
 				</section>
 			)}
 
 			{step === 4 && (
 				<section className={[styles.section, animClass].join(' ')}>
-					<h3>{configuratorStore.steps.final.title}</h3>
-					<div className={styles.finalGrid}>
-						<label className={styles.finalRow}><input type="checkbox" checked={configuratorStore.steps.final.additionalOptions.initials.choosen} onChange={(e) => configuratorStore.toggleInitials(e.target.checked)} /> Инициалы (+{configuratorStore.steps.final.additionalOptions.initials.price} ₽)</label>
-						<label className={styles.finalRow}><input type="checkbox" checked={configuratorStore.steps.final.additionalOptions.presentBox.choosen} onChange={(e) => configuratorStore.togglePresentBox(e.target.checked)} /> Подарочная коробка (+{configuratorStore.steps.final.additionalOptions.presentBox.price} ₽)</label>
-						<label className={styles.finalRow}><input type="checkbox" checked={configuratorStore.steps.final.additionalOptions.postCard.choosen} onChange={(e) => configuratorStore.togglePostCard(e.target.checked)} /> Открытка (+{configuratorStore.steps.final.additionalOptions.postCard.price} ₽)</label>
-						<div className={styles.promoRow}>
-							<input placeholder="Промокод" value={configuratorStore.promoCode || ''} onChange={(e) => configuratorStore.updatePromoCodeValue(e.target.value)} />
-							<button onClick={() => configuratorStore.applyPromo(configuratorStore.promoCode || '')}>Применить</button>
-							{configuratorStore.promoAccepted && <span>Скидка применена</span>}
-						</div>
-						<div className={styles.totalBox}>Итого: {configuratorStore.totalPriceWithDiscount} ₽</div>
-					</div>
+					<FinalStep />
 				</section>
 			)}
 		</div>

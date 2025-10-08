@@ -29,12 +29,12 @@ export const StrapModelStep = observer(function StrapModelStep() {
 								className={styles.itemImage}
 							/>
 						</div>
-						<h4 className={styles.itemTitle}>
-							{strap.attributes.watch_strap.strap_title}
-						</h4>
-						<p className={styles.itemDescription}>
-							{strap.attributes.watch_strap.strap_description}
-						</p>
+					<h4 className={styles.itemTitle}>
+						{strap.attributes.watch_strap.strap_title}
+					</h4>
+					<p className={styles.itemDescription}>
+						{strap.attributes.watch_strap.strap_short_description || strap.attributes.watch_strap.strap_description}
+					</p>
 						<p className={styles.itemPrice}>
 							{strap.attributes.watch_strap.price}₽
 						</p>

@@ -1,0 +1,34 @@
+.step {
+	width: 100%;
+	padding-top: 80px;
+	background: #ffffff;
+}
+
+.stepMain {
+	/* Main section styles */
+}
+
+.stepParams {
+	margin-bottom: 40px;
+}
+
+.stepAdditional {
+	/* Additional options section styles */
+}
+
+.stepTotal {
+	/* Total section styles */
+}
+
+@media (max-width: 1200px) {
+	.step {
+		padding-top: 60px;
+	}
+}
+
+@media (max-width: 750px) {
+	.step {
+		padding-top: 30px;
+	}
+}
+
