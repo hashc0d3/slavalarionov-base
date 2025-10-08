@@ -75,9 +75,26 @@ export const FinalStepTotal = observer(function FinalStepTotal({
 				</svg>
 			</div>
 			
-			<button className={styles.totalPayBtn} onClick={onPay}>
-				Перейти к оформлению
-			</button>
+			<div className={styles.totalButtons}>
+				{configuratorStore.editingCartItemId ? (
+					<button 
+						className={styles.totalSaveBtn} 
+						onClick={() => configuratorStore.updateCartItem(configuratorStore.editingCartItemId)}
+					>
+						Сохранить изменения
+					</button>
+				) : (
+					<button 
+						className={styles.totalAddToCartBtn} 
+						onClick={() => configuratorStore.addCurrentToCart()}
+					>
+						Добавить в корзину
+					</button>
+				)}
+				<button className={styles.totalPayBtn} onClick={onPay}>
+					Перейти к оформлению
+				</button>
+			</div>
 			
 			<div className={styles.stepPayDescription}>
 				<p className={styles.stepPayDescriptionReadyDate}>

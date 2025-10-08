@@ -80,9 +80,50 @@
 	height: 15px;
 }
 
+.totalButtons {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+	margin-top: 32px;
+}
+
+.totalAddToCartBtn {
+	width: 100%;
+	padding: 16px 24px;
+	background: white;
+	color: #5078DF;
+	border: 2px solid #5078DF;
+	border-radius: 8px;
+	font-size: 16px;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.totalAddToCartBtn:hover {
+	background: #5078DF;
+	color: white;
+}
+
+.totalSaveBtn {
+	width: 100%;
+	padding: 16px 24px;
+	background: #4CAF50;
+	color: white;
+	border: none;
+	border-radius: 8px;
+	font-size: 16px;
+	font-weight: 500;
+	cursor: pointer;
+	transition: background-color 0.2s ease;
+}
+
+.totalSaveBtn:hover {
+	background: #45a049;
+}
+
 .totalPayBtn {
 	width: 100%;
-	margin-top: 32px;
 	padding: 16px 24px;
 	background: #5078DF;
 	color: white;

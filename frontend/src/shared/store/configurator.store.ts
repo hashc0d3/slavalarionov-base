@@ -374,6 +374,10 @@ export class ConfiguratorStore {
 	promoAccepted: boolean = false
 	usedPromo: Promo | null = null
 	orderPopupVisible: boolean = false
+	
+	// cart state
+	cartItems: any[] = []
+	editingCartItemId: string | null = null
 	additionalOption: any = {
 		data: {
 			attributes: {
@@ -710,6 +714,204 @@ export class ConfiguratorStore {
 	setPostCardText(text: string) {
 		this.steps.final.additionalOptions.postCard.text = text
 	}
+	
+	// Методы для управления количеством
+	increaseQuantity() {
+		if (this.productAmount < 10) this.productAmount += 1
+	}
+	
+	decreaseQuantity() {
+		if (this.productAmount > 1) this.productAmount -= 1
+	}
+	
+	setQuantity(amount: number) {
+		if (amount >= 1 && amount <= 10) this.productAmount = amount
+	}
+	
+	// Методы для работы с корзиной
+	addCurrentToCart() {
+		const cartItem = {
+			id: Date.now().toString(),
+			watchModel: this.selectedWatchModel,
+			frameColor: this.selectedFrameColor,
+			strapModel: this.selectedStrapModel,
+			leatherColor: this.selectedLeatherColor,
+			stitchingColor: this.selectedStitchingColor,
+			edgeColor: this.selectedEdgeColor,
+			buckleColor: this.selectedBuckleColor,
+			adapterColor: this.selectedAdapterColor,
+			buckleButterfly: this.steps.strapDesign.buckleButterflyChoosen,
+			additionalOptions: { ...this.steps.final.additionalOptions },
+			quantity: this.productAmount,
+			price: this.totalPriceWithDiscount,
+			addedAt: new Date().toISOString()
+		}
+		
+		this.cartItems.push(cartItem)
+		this.resetConfigurator()
+	}
+	
+	removeFromCart(itemId: string) {
+		this.cartItems = this.cartItems.filter(item => item.id !== itemId)
+	}
+	
+	clearCart() {
+		this.cartItems = []
+	}
+	
+	resetConfigurator() {
+		// Сбрасываем все выборы, но оставляем на первом шаге
+		this.currentStepNum = 1
+		this.productAmount = 1
+		
+		// Сбрасываем выборы часов
+		this.watchModels.forEach(model => {
+			model.choosen = false
+			model.watch_sizes.forEach(size => size.choosen = false)
+		})
+		
+		// Сбрасываем выборы ремешков
+		this.watchStraps.forEach(strap => strap.choosen = false)
+		
+		// Сбрасываем дополнительные опции
+		this.steps.final.additionalOptions.initials.choosen = false
+		this.steps.final.additionalOptions.initials.text = null
+		this.steps.final.additionalOptions.presentBox.choosen = false
+		this.steps.final.additionalOptions.postCard.choosen = false
+		this.steps.final.additionalOptions.postCard.text = null
+		this.steps.strapDesign.buckleButterflyChoosen = false
+	}
+	
+	get cartTotalPrice() {
+		return this.cartItems.reduce((total, item) => total + item.price, 0)
+	}
+	
+	get cartItemsCount() {
+		return this.cartItems.reduce((total, item) => total + item.quantity, 0)
+	}
+	
+	// Методы для редактирования товаров из корзины
+	editCartItem(itemId: string) {
+		const item = this.cartItems.find(cartItem => cartItem.id === itemId)
+		if (!item) return
+		
+		// Если уже редактируем этот товар, ничего не делаем
+		if (this.editingCartItemId === itemId) return
+		
+		this.editingCartItemId = itemId
+		
+		// Загружаем конфигурацию товара в конфигуратор
+		this.loadItemConfiguration(item)
+	}
+	
+	loadItemConfiguration(item: any) {
+		// Сбрасываем текущие выборы
+		this.resetConfigurator()
+		
+		// Загружаем выборы часов
+		if (item.watchModel) {
+			const watchModelIndex = this.watchModels.findIndex(model => 
+				model.watch_model_name === item.watchModel.watch_model_name
+			)
+			if (watchModelIndex !== -1) {
+				this.chooseWatchModel(watchModelIndex, 0)
+			}
+		}
+		
+		// Загружаем цвет корпуса
+		if (item.frameColor) {
+			this.chooseFrameColor(item.frameColor.color_name)
+		}
+		
+		// Переходим на следующий шаг
+		this.nextStep()
+		
+		// Загружаем модель ремешка
+		if (item.strapModel) {
+			this.chooseStrapModel(item.strapModel.attributes.watch_strap.id)
+		}
+		
+		// Переходим на следующий шаг
+		this.nextStep()
+		
+		// Загружаем цвета ремешка
+		if (item.leatherColor) {
+			this.chooseStrapLeatherColor(item.leatherColor.color_title)
+		}
+		if (item.stitchingColor) {
+			this.chooseStitchingColor(item.stitchingColor.color_title)
+		}
+		if (item.edgeColor) {
+			this.chooseEdgeColor(item.edgeColor.color_title)
+		}
+		if (item.buckleColor) {
+			this.chooseBuckleColor(item.buckleColor.color_title)
+		}
+		if (item.adapterColor) {
+			this.chooseAdapterColor(item.adapterColor.color_title)
+		}
+		
+		// Загружаем butterfly пряжку
+		if (item.buckleButterfly) {
+			this.chooseBuckleButterfly()
+		}
+		
+		// Переходим на финальный шаг
+		this.nextStep()
+		
+		// Загружаем дополнительные опции
+		if (item.additionalOptions) {
+			if (item.additionalOptions.initials.choosen) {
+				this.toggleInitials(true)
+				if (item.additionalOptions.initials.text) {
+					this.setInitialsText(item.additionalOptions.initials.text)
+				}
+			}
+			if (item.additionalOptions.presentBox.choosen) {
+				this.togglePresentBox(true)
+			}
+			if (item.additionalOptions.postCard.choosen) {
+				this.togglePostCard(true)
+				if (item.additionalOptions.postCard.text) {
+					this.setPostCardText(item.additionalOptions.postCard.text)
+				}
+			}
+		}
+		
+		// Загружаем количество
+		this.productAmount = item.quantity
+	}
+	
+	updateCartItem(itemId: string) {
+		const itemIndex = this.cartItems.findIndex(item => item.id === itemId)
+		if (itemIndex === -1) return
+		
+		// Обновляем товар в корзине с текущей конфигурацией
+		this.cartItems[itemIndex] = {
+			...this.cartItems[itemIndex],
+			watchModel: this.selectedWatchModel,
+			frameColor: this.selectedFrameColor,
+			strapModel: this.selectedStrapModel,
+			leatherColor: this.selectedLeatherColor,
+			stitchingColor: this.selectedStitchingColor,
+			edgeColor: this.selectedEdgeColor,
+			buckleColor: this.selectedBuckleColor,
+			adapterColor: this.selectedAdapterColor,
+			buckleButterfly: this.steps.strapDesign.buckleButterflyChoosen,
+			additionalOptions: { ...this.steps.final.additionalOptions },
+			quantity: this.productAmount,
+			price: this.totalPriceWithDiscount,
+			updatedAt: new Date().toISOString()
+		}
+		
+		this.editingCartItemId = null
+	}
+	
+	cancelEditCartItem() {
+		this.editingCartItemId = null
+		this.resetConfigurator()
+	}
+	
 	nextStep() {
 		if (this.currentStepNum < this.stepsAmount && this.nextStepReady) this.currentStepNum += 1
 	}
