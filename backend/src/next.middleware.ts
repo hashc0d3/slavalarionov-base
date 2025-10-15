@@ -4,7 +4,7 @@ import next from 'next';
 
 @Injectable()
 export class NextMiddleware implements NestMiddleware {
-  private nextApp = next({ dev: process.env.NODE_ENV !== 'production', dir: require('path').resolve(__dirname, '../../frontend') });
+  private nextApp = next({ dev: process.env.NODE_ENV !== 'production', dir: require('path').resolve(__dirname, '../../../frontend') });
   private handle = this.nextApp.getRequestHandler();
   private prepared = false;
 

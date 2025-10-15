@@ -2,6 +2,7 @@
 
 import styles from './SectionConfigurator.module.css'
 import { observer } from 'mobx-react-lite'
+import { useEffect } from 'react'
 import { ConfiguratorSteps } from './steps/ConfiguratorSteps'
 import { ConfiguratorControls } from './controls/ConfiguratorControls'
 import { StepsProgress } from './steps/StepsProgress'
@@ -10,6 +11,11 @@ import { ConfiguratorCart } from './cart/ConfiguratorCart'
 import { configuratorStore } from '@/shared/store/configurator.store'
 
 export const SectionConfigurator = observer(function SectionConfigurator() {
+	useEffect(() => {
+		// Initialize data from CMS on component mount
+		configuratorStore.initializeData()
+	}, [])
+
 	return (
 		<section className={styles.configuratorSection}>
 			<div className={["container", styles.container, styles.configuratorSectionContainer].join(' ')}>

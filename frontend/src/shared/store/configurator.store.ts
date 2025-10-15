@@ -1,4 +1,5 @@
 import { makeAutoObservable } from 'mobx'
+import { cmsApi } from '@/shared/api/cms.api'
 
 export type StepKey = 'model' | 'strap' | 'strapDesign' | 'final'
 
@@ -630,13 +631,18 @@ export class ConfiguratorStore {
 		}
 		this.selectedWatchModel?.frame_colors.forEach((c) => (c.choosen = c.color_name === name))
 	}
-	chooseStrapModel(id: number) {
+	async chooseStrapModel(id: number) {
 		this.watchStraps.forEach((s) => (s.choosen = s.attributes.watch_strap.id === id))
 		const strap = this.watchStraps.find((s) => s.attributes.watch_strap.id === id)
 		if (strap) {
 			this.steps.strap.isChoosen = true
 			this.steps.strap.strapName = strap.attributes.watch_strap.strap_title
 			this.steps.strap.strapPrice = strap.attributes.watch_strap.price
+			
+			// Load strap params from CMS if not already loaded
+			if (!strap.dataFetched) {
+				await this.loadStrapParams(id)
+			}
 		}
 	}
 	updateSelectedStrap(title: string = '') {
@@ -910,6 +916,110 @@ export class ConfiguratorStore {
 	cancelEditCartItem() {
 		this.editingCartItemId = null
 		this.resetConfigurator()
+	}
+	
+	// CMS data loading methods
+	async loadWatchModels() {
+		this.isLoading = true
+		try {
+			const models = await cmsApi.getWatchModels()
+			if (models && models.length > 0) {
+				// Set first model as chosen by default
+				models[0].choosen = true
+				models[0].watch_sizes[0].choosen = true
+				models[0].frame_colors[0].choosen = true
+				
+				this.watchModels = models
+				
+				// Update steps with first model data
+				this.steps.model.modelName = models[0].model_name
+				this.steps.model.modelSize = models[0].watch_sizes[0].watch_size
+				this.steps.model.color = {
+					name: models[0].frame_colors[0].color_name,
+					code: models[0].frame_colors[0].color_code
+				}
+			}
+		} catch (error) {
+			console.error('Error loading watch models:', error)
+		} finally {
+			this.isLoading = false
+		}
+	}
+
+	async loadWatchStraps() {
+		this.isLoading = true
+		try {
+			const straps = await cmsApi.getWatchStraps()
+			if (straps && straps.length > 0) {
+				this.watchStraps = straps
+			}
+		} catch (error) {
+			console.error('Error loading watch straps:', error)
+		} finally {
+			this.isLoading = false
+		}
+	}
+
+	async loadStrapParams(strapId: number | string) {
+		try {
+			const params = await cmsApi.getStrapParams(strapId)
+			if (params) {
+				const strap = this.watchStraps.find(s => s.attributes.watch_strap.id === Number(strapId))
+				if (strap) {
+					strap.attributes.watch_strap.strap_params = params
+					strap.dataFetched = true
+					
+					// Set first color of each type as chosen by default
+					if (params.leather_colors?.length > 0) params.leather_colors[0].choosen = true
+					if (params.stitching_colors?.length > 0) params.stitching_colors[0].choosen = true
+					if (params.edge_colors?.length > 0) params.edge_colors[0].choosen = true
+					if (params.buckle_colors?.length > 0) params.buckle_colors[0].choosen = true
+					if (params.adapter_colors?.length > 0) params.adapter_colors[0].choosen = true
+				}
+			}
+		} catch (error) {
+			console.error('Error loading strap params:', error)
+		}
+	}
+
+	async loadAdditionalOptions() {
+		try {
+			const options = await cmsApi.getAdditionalOptions()
+			if (options) {
+				this.additionalOption = options
+			}
+		} catch (error) {
+			console.error('Error loading additional options:', error)
+		}
+	}
+
+	async validatePromo(code: string) {
+		try {
+			const result = await cmsApi.validatePromoCode(code)
+			if (result.promoFound) {
+				this.usedPromo = {
+					promoFound: true,
+					type: result.type,
+					discountValue: result.value,
+					code: code
+				}
+				this.promoAccepted = true
+				return true
+			} else {
+				this.promoAccepted = false
+				return false
+			}
+		} catch (error) {
+			console.error('Error validating promo:', error)
+			this.promoAccepted = false
+			return false
+		}
+	}
+
+	async initializeData() {
+		await this.loadWatchModels()
+		await this.loadWatchStraps()
+		await this.loadAdditionalOptions()
 	}
 	
 	nextStep() {
