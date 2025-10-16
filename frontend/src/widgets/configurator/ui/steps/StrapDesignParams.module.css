@@ -1,0 +1,222 @@
+.params {
+	width: 100%;
+	margin-top: 75px;
+}
+
+.param {
+	margin-top: 70px;
+}
+
+.param:first-child {
+	margin-top: 0;
+}
+
+.paramHead {
+	display: flex;
+	align-items: center;
+}
+
+.paramTitle {
+	letter-spacing: 0.32px;
+	margin: 0;
+	display: flex;
+	align-items: center;
+}
+
+.paramTitleNum {
+	margin-right: 5px;
+}
+
+.paramTitleText {
+	font-weight: 500;
+}
+
+.paramContent {
+	margin-top: 36px;
+	padding: 2px 0;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 16px;
+}
+
+.paramOption {
+	flex: 1 1 auto;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 16px 26px 16px 16px;
+	min-height: 62px;
+	border-radius: 50px;
+	max-width: fit-content;
+	background: #f5f5f5;
+	font-weight: 300;
+	line-height: normal;
+	border: 1px solid transparent;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.paramOption:hover {
+	border-color: #ddd;
+}
+
+.paramOption.choosen {
+	border-color: #5078DF;
+	background: #fff;
+}
+
+.paramOptionColorPreview {
+	min-width: 30px;
+	min-height: 30px;
+	border-radius: 50%;
+	margin-right: 16px;
+}
+
+.paramOptionTitle {
+	font-size: 14px;
+	white-space: nowrap;
+}
+
+.paramOptionStrapModel {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 100%;
+}
+
+.paramBuckleButterfly {
+	width: 100%;
+	max-width: 320px;
+	display: flex;
+	align-items: flex-start;
+	padding: 30px 36px 20px;
+	border-radius: 40px;
+	border: 1px solid transparent;
+	margin-top: 35px;
+	transition: 0.2s ease;
+	cursor: pointer;
+}
+
+.paramBuckleButterfly:hover {
+	border-color: #ccc;
+}
+
+.paramBuckleButterfly.choosen {
+	border-color: #5078DF;
+}
+
+.paramBuckleButterflyInner {
+	flex: 1;
+}
+
+.paramBuckleButterflyName {
+	font-size: 16px;
+	color: #333333;
+	line-height: normal;
+	letter-spacing: 0.8px;
+	margin: 0 0 6px 0;
+}
+
+.paramBuckleButterflyPrice {
+	font-size: 16px;
+	font-weight: 300;
+	line-height: 20px;
+	color: #7a7a7a;
+	margin: 0;
+}
+
+.paramBuckleButterflyImage {
+	width: 100%;
+	max-width: 140px;
+	margin-left: 15px;
+}
+
+.adapterParamContent {
+	margin-top: 36px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 16px;
+}
+
+.adapterParamOption {
+	flex: none;
+	padding: 0;
+	flex-direction: column;
+	align-items: center;
+	background: transparent;
+	border-radius: 0;
+	border: none;
+}
+
+.adapterParamOption .paramOptionTitle {
+	display: block;
+	margin-top: 13px;
+}
+
+.paramOptionPreviewImgInner {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	border-radius: 28px;
+	background: #f4f4f4;
+	width: 100px;
+	height: 100px;
+	padding: 21px;
+	border: 1px solid transparent;
+	transition: all 0.2s ease;
+}
+
+.adapterParamOption.choosen .paramOptionPreviewImgInner {
+	border-color: #5078DF;
+}
+
+.paramOptionPreviewImg {
+	width: 100%;
+	height: 100%;
+	object-fit: contain;
+}
+
+@media (max-width: 1100px) {
+	.paramContent {
+		gap: 10px;
+	}
+	
+	.paramOption {
+		padding: 12px;
+		min-height: 48px;
+	}
+	
+	.paramOption.choosen {
+		padding: 12px 16px 12px 12px;
+	}
+	
+	.paramOptionColorPreview {
+		min-width: 22px;
+		min-height: 22px;
+		margin-right: 0;
+	}
+	
+	.paramOptionTitle {
+		max-width: 0;
+		overflow: hidden;
+		margin-left: 0;
+		white-space: nowrap;
+		opacity: 0;
+		transition: all 0.3s ease;
+	}
+	
+	.paramOption.choosen .paramOptionTitle {
+		max-width: 150px;
+		opacity: 1;
+		margin-left: 12px;
+	}
+	
+	.adapterParamContent {
+		max-width: none;
+	}
+	
+	.adapterParamOption.choosen {
+		padding: 0;
+	}
+}
+

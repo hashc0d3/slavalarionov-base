@@ -1,5 +1,6 @@
 .configuratorSection {
 	padding: 60px 0;
+	background: #ffffff;
 }
 
 .configuratorTitle {
@@ -14,6 +15,7 @@
 
 .configuratorContent {
 	margin-top: 24px;
+	background: #ffffff;
 }
 
 /* vertical rhythm */
@@ -33,5 +35,5 @@
 	.configuratorTitle { font-size: 24px; max-width: 350px; }
 }
 @media (max-width: 550px) {
-	.configuratorFixedViewLayer { position: fixed; top: 0; left: 0; right: 0; background: #fff; z-index: 10; height: calc(88vw + 40px); }
+	.configuratorFixedViewLayer { display: none; }
 }

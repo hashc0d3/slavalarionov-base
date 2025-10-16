@@ -21,6 +21,7 @@ export type StrapParams = {
 	edge_colors: StrapColor[]
 	buckle_colors: StrapColor[]
 	adapter_colors: StrapColor[]
+	has_buckle_butterfly?: boolean
 }
 export type Strap = {
 	choosen: boolean
@@ -31,6 +32,7 @@ export type Strap = {
 			strap_name: string
 			strap_title: string
 			strap_description?: string
+			strap_short_description?: string
 			price: number
 			preview_image?: string
 			ultra_preview_image?: string
@@ -142,7 +144,8 @@ const mockStraps: Strap[] = [
 					adapter_colors: [
 						{ color_title: 'Silver', color_code: '#C0C0C0', choosen: false },
 						{ color_title: 'Black', color_code: '#000000', choosen: false }
-					]
+					],
+					has_buckle_butterfly: true
 				}
 			}
 		}
@@ -178,7 +181,8 @@ const mockStraps: Strap[] = [
 					adapter_colors: [
 						{ color_title: 'Silver', color_code: '#C0C0C0', choosen: false },
 						{ color_title: 'Black', color_code: '#000000', choosen: false }
-					]
+					],
+					has_buckle_butterfly: false
 				}
 			}
 		}
@@ -214,43 +218,102 @@ const mockStraps: Strap[] = [
 					adapter_colors: [
 						{ color_title: 'Silver', color_code: '#C0C0C0', choosen: false },
 						{ color_title: 'Black', color_code: '#000000', choosen: false }
-					]
+					],
+					has_buckle_butterfly: false
 				}
 			}
 		}
 	},
 	{
-		choosen: false,
+		choosen: true,
 		attributes: {
 			watch_strap: {
 				id: 4,
 				strap_name: 'brogue',
 				strap_title: 'Brogue',
-				strap_description: 'Декоративная перфорация в классическом стиле',
+				strap_description: 'Ремешок «Brogue» с элегантной перфорацией (словно на стильных классических туфлях) позволит вашей руке дышать. Поверьте, с этой моделью ваше запястье будет чувствовать себя в полном комфорте и будет притягивать взгляды.',
+				strap_short_description: 'Декоративная перфорация в классическом стиле',
 				price: 8990,
 				preview_image: 'https://api.slavalarionov.store/uploads/Brogue_4539ae7e9d.png',
 				ultra_preview_image: 'https://api.slavalarionov.store/uploads/Brogue_4539ae7e9d.png',
 				buckle_butterfly_choosen: false,
 				strap_params: {
 					leather_colors: [
-						{ color_title: 'Черный', color_code: '#1b1b1b', choosen: false },
-						{ color_title: 'Коричневый', color_code: '#7b4b2a', choosen: false }
+						{ color_title: 'Белый', color_code: '#ffffff', choosen: true },
+						{ color_title: 'Чёрный', color_code: '#000000', choosen: false },
+						{ color_title: 'Бежевый', color_code: '#f5f5dc', choosen: false },
+						{ color_title: 'Чароит', color_code: '#7c5a9b', choosen: false },
+						{ color_title: 'Зеленовато-желтый', color_code: '#949e20', choosen: false },
+						{ color_title: 'Шоколадный', color_code: '#684625', choosen: false },
+						{ color_title: 'Зелёный', color_code: '#31584a', choosen: false },
+						{ color_title: 'Фуксия', color_code: '#a8355a', choosen: false },
+						{ color_title: 'Голубой', color_code: '#6b8390', choosen: false },
+						{ color_title: 'Марсала', color_code: '#5e4a4f', choosen: false },
+						{ color_title: 'Мятный', color_code: '#a2b2a9', choosen: false },
+						{ color_title: 'Оранжевый', color_code: '#9f4529', choosen: false },
+						{ color_title: 'Пудра', color_code: '#af9d97', choosen: false },
+						{ color_title: 'Красный', color_code: '#bb4646', choosen: false },
+						{ color_title: 'Королевский синий', color_code: '#373a4d', choosen: false },
+						{ color_title: 'Серый', color_code: '#67605e', choosen: false },
+						{ color_title: 'Ультрамарин', color_code: '#5966ad', choosen: false },
+						{ color_title: 'Фиолетовый', color_code: '#64396b', choosen: false },
+						{ color_title: 'Жёлтый', color_code: '#c79a30', choosen: false }
 					],
 					stitching_colors: [
-						{ color_title: 'Черная', color_code: '#1b1b1b', choosen: false },
-						{ color_title: 'Белая', color_code: '#ffffff', choosen: false }
+						{ color_title: 'Белый', color_code: '#ffffff', choosen: true },
+						{ color_title: 'Бежевый', color_code: '#f5f5dc', choosen: false },
+						{ color_title: 'Чёрный', color_code: '#000000', choosen: false },
+						{ color_title: 'Коричневый', color_code: '#684625', choosen: false },
+						{ color_title: 'Чароит', color_code: '#7c5a9b', choosen: false },
+						{ color_title: 'Зелёный', color_code: '#31584a', choosen: false },
+						{ color_title: 'Фуксия', color_code: '#a8355a', choosen: false },
+						{ color_title: 'Голубой', color_code: '#6b8390', choosen: false },
+						{ color_title: 'Марсала', color_code: '#5e4a4f', choosen: false },
+						{ color_title: 'Мятный', color_code: '#a2b2a9', choosen: false },
+						{ color_title: 'Оранжевый', color_code: '#9f4529', choosen: false },
+						{ color_title: 'Пудра', color_code: '#af9d97', choosen: false },
+						{ color_title: 'Красный', color_code: '#bb4646', choosen: false },
+						{ color_title: 'Королевский синий', color_code: '#373a4d', choosen: false },
+						{ color_title: 'Серый', color_code: '#67605e', choosen: false },
+						{ color_title: 'Ультрамарин', color_code: '#5966ad', choosen: false },
+						{ color_title: 'Фиолетовый', color_code: '#64396b', choosen: false },
+						{ color_title: 'Жёлтый', color_code: '#c79a30', choosen: false },
+						{ color_title: 'Зеленовато-желтый', color_code: '#949e20', choosen: false }
 					],
 					edge_colors: [
-						{ color_title: 'Черный', color_code: '#1b1b1b', choosen: false }
+						{ color_title: 'Белый', color_code: '#ffffff', choosen: true },
+						{ color_title: 'Бежевый', color_code: '#f5f5dc', choosen: false },
+						{ color_title: 'Чёрный', color_code: '#000000', choosen: false },
+						{ color_title: 'Коричневый', color_code: '#684625', choosen: false },
+						{ color_title: 'Чароит', color_code: '#7c5a9b', choosen: false },
+						{ color_title: 'Зеленовато-желтый', color_code: '#949e20', choosen: false },
+						{ color_title: 'Зелёный', color_code: '#31584a', choosen: false },
+						{ color_title: 'Фуксия', color_code: '#a8355a', choosen: false },
+						{ color_title: 'Голубой', color_code: '#6b8390', choosen: false },
+						{ color_title: 'Марсала', color_code: '#5e4a4f', choosen: false },
+						{ color_title: 'Мятный', color_code: '#a2b2a9', choosen: false },
+						{ color_title: 'Оранжевый', color_code: '#9f4529', choosen: false },
+						{ color_title: 'Пудра', color_code: '#af9d97', choosen: false },
+						{ color_title: 'Красный', color_code: '#bb4646', choosen: false },
+						{ color_title: 'Королевский синий', color_code: '#373a4d', choosen: false },
+						{ color_title: 'Серый', color_code: '#67605e', choosen: false },
+						{ color_title: 'Ультрамарин', color_code: '#5966ad', choosen: false },
+						{ color_title: 'Фиолетовый', color_code: '#64396b', choosen: false },
+						{ color_title: 'Жёлтый', color_code: '#c79a30', choosen: false }
 					],
 					buckle_colors: [
-						{ color_title: 'Silver', color_code: '#C0C0C0', choosen: false },
-						{ color_title: 'Black', color_code: '#000000', choosen: false }
+						{ color_title: 'Чёрный', color_code: '#000000', choosen: false },
+						{ color_title: 'Розовое золото', color_code: '#b8977e', choosen: false },
+						{ color_title: 'Серебряный', color_code: '#c0c0c0', choosen: true }
 					],
 					adapter_colors: [
-						{ color_title: 'Silver', color_code: '#C0C0C0', choosen: false },
-						{ color_title: 'Black', color_code: '#000000', choosen: false }
-					]
+						{ color_title: 'Серебряный', color_code: '#c0c0c0', choosen: true },
+						{ color_title: 'Чёрный', color_code: '#000000', choosen: false },
+						{ color_title: 'Роз. золото', color_code: '#b8977e', choosen: false },
+						{ color_title: 'Синий', color_code: '#4a90e2', choosen: false },
+						{ color_title: 'Зелёный', color_code: '#31584a', choosen: false }
+					],
+					has_buckle_butterfly: false
 				}
 			}
 		}
@@ -286,7 +349,8 @@ const mockStraps: Strap[] = [
 					adapter_colors: [
 						{ color_title: 'Silver', color_code: '#C0C0C0', choosen: false },
 						{ color_title: 'Black', color_code: '#000000', choosen: false }
-					]
+					],
+					has_buckle_butterfly: false
 				}
 			}
 		}
@@ -304,12 +368,65 @@ export class ConfiguratorStore {
 	// order state
 	productAmount: number = 1
 	deliveryPrice: number | null = 0
-	closestReadyDate: string = ''
+	closestReadyDate: string = '13 октября'
 	orderNumber: string | null = null
 	promoCode: string | null = null
 	promoAccepted: boolean = false
 	usedPromo: Promo | null = null
 	orderPopupVisible: boolean = false
+	
+	// cart state
+	cartItems: any[] = []
+	editingCartItemId: string | null = null
+	additionalOption: any = {
+		data: {
+			attributes: {
+				title: 'Ремешок почти готов!',
+				description: 'Вы создали уникальный ремешок и он просто прекрасен! Сейчас вы можете добавить инициалы (2-3 буквы на русском или английском языке), добавить подарочную упаковку и подписать открытку, которую мы приложим к этому ремешку.',
+				additional_options: [
+					{
+						option_name: 'initials',
+						option_title: 'Нанесение инициалов',
+						option_price: 390,
+						option_image: {
+							data: {
+								attributes: {
+									url: '/uploads/caption_88dca0bed8.jpg'
+								}
+							}
+						},
+						choosen: false
+					},
+					{
+						option_name: 'present_box',
+						option_title: 'Подарочная коробка',
+						option_price: 300,
+						option_image: {
+							data: {
+								attributes: {
+									url: '/uploads/present_box_75bbc808e1.jpg'
+								}
+							}
+						},
+						choosen: false
+					},
+					{
+						option_name: 'postcard',
+						option_title: 'Подарочная открытка',
+						option_price: 90,
+						option_image: {
+							data: {
+								attributes: {
+									url: '/uploads/postcard_4490cc700c.jpg'
+								}
+							}
+						},
+						choosen: false
+					}
+				]
+			}
+		}
+	}
 
 	steps: any = {
 		model: {
@@ -325,9 +442,9 @@ export class ConfiguratorStore {
 			id: 2,
 			title: 'Выберите модель ремешка',
 			queryParam: 'strap-model',
-			isChoosen: false,
-			strapName: null,
-			strapPrice: null
+			isChoosen: true,
+			strapName: 'Brogue',
+			strapPrice: 8990
 		},
 		strapDesign: {
 			id: 3,
@@ -530,7 +647,11 @@ export class ConfiguratorStore {
 		if (target) target.choosen = true
 	}
 	chooseStrapLeatherColor(title: string) {
-		this.selectedStrapModel?.attributes.watch_strap.strap_params.leather_colors.forEach((c) => (c.choosen = c.color_title === title))
+		console.log('Choosing leather color:', title)
+		this.selectedStrapModel?.attributes.watch_strap.strap_params.leather_colors.forEach((c) => {
+			c.choosen = c.color_title === title
+			console.log('Color:', c.color_title, 'choosen:', c.choosen)
+		})
 	}
 	chooseStitchingColor(title: string) {
 		this.selectedStrapModel?.attributes.watch_strap.strap_params.stitching_colors.forEach((c) => (c.choosen = c.color_title === title))
@@ -590,6 +711,207 @@ export class ConfiguratorStore {
 	togglePostCard(choosen: boolean) {
 		this.steps.final.additionalOptions.postCard.choosen = choosen
 	}
+	setPostCardText(text: string) {
+		this.steps.final.additionalOptions.postCard.text = text
+	}
+	
+	// Методы для управления количеством
+	increaseQuantity() {
+		if (this.productAmount < 10) this.productAmount += 1
+	}
+	
+	decreaseQuantity() {
+		if (this.productAmount > 1) this.productAmount -= 1
+	}
+	
+	setQuantity(amount: number) {
+		if (amount >= 1 && amount <= 10) this.productAmount = amount
+	}
+	
+	// Методы для работы с корзиной
+	addCurrentToCart() {
+		const cartItem = {
+			id: Date.now().toString(),
+			watchModel: this.selectedWatchModel,
+			frameColor: this.selectedFrameColor,
+			strapModel: this.selectedStrapModel,
+			leatherColor: this.selectedLeatherColor,
+			stitchingColor: this.selectedStitchingColor,
+			edgeColor: this.selectedEdgeColor,
+			buckleColor: this.selectedBuckleColor,
+			adapterColor: this.selectedAdapterColor,
+			buckleButterfly: this.steps.strapDesign.buckleButterflyChoosen,
+			additionalOptions: { ...this.steps.final.additionalOptions },
+			quantity: this.productAmount,
+			price: this.totalPriceWithDiscount,
+			addedAt: new Date().toISOString()
+		}
+		
+		this.cartItems.push(cartItem)
+		this.resetConfigurator()
+	}
+	
+	removeFromCart(itemId: string) {
+		this.cartItems = this.cartItems.filter(item => item.id !== itemId)
+	}
+	
+	clearCart() {
+		this.cartItems = []
+	}
+	
+	resetConfigurator() {
+		// Сбрасываем все выборы, но оставляем на первом шаге
+		this.currentStepNum = 1
+		this.productAmount = 1
+		
+		// Сбрасываем выборы часов
+		this.watchModels.forEach(model => {
+			model.choosen = false
+			model.watch_sizes.forEach(size => size.choosen = false)
+		})
+		
+		// Сбрасываем выборы ремешков
+		this.watchStraps.forEach(strap => strap.choosen = false)
+		
+		// Сбрасываем дополнительные опции
+		this.steps.final.additionalOptions.initials.choosen = false
+		this.steps.final.additionalOptions.initials.text = null
+		this.steps.final.additionalOptions.presentBox.choosen = false
+		this.steps.final.additionalOptions.postCard.choosen = false
+		this.steps.final.additionalOptions.postCard.text = null
+		this.steps.strapDesign.buckleButterflyChoosen = false
+	}
+	
+	get cartTotalPrice() {
+		return this.cartItems.reduce((total, item) => total + item.price, 0)
+	}
+	
+	get cartItemsCount() {
+		return this.cartItems.reduce((total, item) => total + item.quantity, 0)
+	}
+	
+	// Методы для редактирования товаров из корзины
+	editCartItem(itemId: string) {
+		const item = this.cartItems.find(cartItem => cartItem.id === itemId)
+		if (!item) return
+		
+		// Если уже редактируем этот товар, ничего не делаем
+		if (this.editingCartItemId === itemId) return
+		
+		this.editingCartItemId = itemId
+		
+		// Загружаем конфигурацию товара в конфигуратор
+		this.loadItemConfiguration(item)
+	}
+	
+	loadItemConfiguration(item: any) {
+		// Сбрасываем текущие выборы
+		this.resetConfigurator()
+		
+		// Загружаем выборы часов
+		if (item.watchModel) {
+			const watchModelIndex = this.watchModels.findIndex(model => 
+				model.watch_model_name === item.watchModel.watch_model_name
+			)
+			if (watchModelIndex !== -1) {
+				this.chooseWatchModel(watchModelIndex, 0)
+			}
+		}
+		
+		// Загружаем цвет корпуса
+		if (item.frameColor) {
+			this.chooseFrameColor(item.frameColor.color_name)
+		}
+		
+		// Переходим на следующий шаг
+		this.nextStep()
+		
+		// Загружаем модель ремешка
+		if (item.strapModel) {
+			this.chooseStrapModel(item.strapModel.attributes.watch_strap.id)
+		}
+		
+		// Переходим на следующий шаг
+		this.nextStep()
+		
+		// Загружаем цвета ремешка
+		if (item.leatherColor) {
+			this.chooseStrapLeatherColor(item.leatherColor.color_title)
+		}
+		if (item.stitchingColor) {
+			this.chooseStitchingColor(item.stitchingColor.color_title)
+		}
+		if (item.edgeColor) {
+			this.chooseEdgeColor(item.edgeColor.color_title)
+		}
+		if (item.buckleColor) {
+			this.chooseBuckleColor(item.buckleColor.color_title)
+		}
+		if (item.adapterColor) {
+			this.chooseAdapterColor(item.adapterColor.color_title)
+		}
+		
+		// Загружаем butterfly пряжку
+		if (item.buckleButterfly) {
+			this.chooseBuckleButterfly()
+		}
+		
+		// Переходим на финальный шаг
+		this.nextStep()
+		
+		// Загружаем дополнительные опции
+		if (item.additionalOptions) {
+			if (item.additionalOptions.initials.choosen) {
+				this.toggleInitials(true)
+				if (item.additionalOptions.initials.text) {
+					this.setInitialsText(item.additionalOptions.initials.text)
+				}
+			}
+			if (item.additionalOptions.presentBox.choosen) {
+				this.togglePresentBox(true)
+			}
+			if (item.additionalOptions.postCard.choosen) {
+				this.togglePostCard(true)
+				if (item.additionalOptions.postCard.text) {
+					this.setPostCardText(item.additionalOptions.postCard.text)
+				}
+			}
+		}
+		
+		// Загружаем количество
+		this.productAmount = item.quantity
+	}
+	
+	updateCartItem(itemId: string) {
+		const itemIndex = this.cartItems.findIndex(item => item.id === itemId)
+		if (itemIndex === -1) return
+		
+		// Обновляем товар в корзине с текущей конфигурацией
+		this.cartItems[itemIndex] = {
+			...this.cartItems[itemIndex],
+			watchModel: this.selectedWatchModel,
+			frameColor: this.selectedFrameColor,
+			strapModel: this.selectedStrapModel,
+			leatherColor: this.selectedLeatherColor,
+			stitchingColor: this.selectedStitchingColor,
+			edgeColor: this.selectedEdgeColor,
+			buckleColor: this.selectedBuckleColor,
+			adapterColor: this.selectedAdapterColor,
+			buckleButterfly: this.steps.strapDesign.buckleButterflyChoosen,
+			additionalOptions: { ...this.steps.final.additionalOptions },
+			quantity: this.productAmount,
+			price: this.totalPriceWithDiscount,
+			updatedAt: new Date().toISOString()
+		}
+		
+		this.editingCartItemId = null
+	}
+	
+	cancelEditCartItem() {
+		this.editingCartItemId = null
+		this.resetConfigurator()
+	}
+	
 	nextStep() {
 		if (this.currentStepNum < this.stepsAmount && this.nextStepReady) this.currentStepNum += 1
 	}

@@ -6,6 +6,7 @@ import { ConfiguratorSteps } from './steps/ConfiguratorSteps'
 import { ConfiguratorControls } from './controls/ConfiguratorControls'
 import { StepsProgress } from './steps/StepsProgress'
 import { OrderPopup } from './order-popup/OrderPopup'
+import { ConfiguratorCart } from './cart/ConfiguratorCart'
 import { configuratorStore } from '@/shared/store/configurator.store'
 
 export const SectionConfigurator = observer(function SectionConfigurator() {
@@ -21,6 +22,7 @@ export const SectionConfigurator = observer(function SectionConfigurator() {
 				</div>
 			</div>
 			<OrderPopup visible={configuratorStore.orderPopupVisible} onClose={() => configuratorStore.closeOrderPopup()} />
+			<ConfiguratorCart />
 		</section>
 	)
 })

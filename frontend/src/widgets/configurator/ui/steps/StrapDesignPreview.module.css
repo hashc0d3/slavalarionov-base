@@ -1,0 +1,134 @@
+.preview {
+	width: 100%;
+	position: sticky;
+	top: 20px;
+	height: fit-content;
+	background: transparent;
+	padding: 0;
+	border-radius: 0;
+	box-shadow: none;
+}
+
+.previewFinal {
+	width: 100%;
+	height: fit-content;
+	background: transparent;
+	padding: 0;
+	border-radius: 0;
+	box-shadow: none;
+}
+
+.previewContainer {
+	display: flex;
+	gap: 40px;
+	height: 25vw;
+	max-height: 282px;
+	align-items: stretch;
+}
+
+.previewContainer.previewContainerGrid {
+	display: grid;
+	grid-template-columns: 1.5fr 1fr;
+	grid-template-rows: 375px 375px;
+	gap: 16px;
+	background: #fff;
+}
+
+.previewContainer.previewContainerFlex {
+	display: flex;
+	gap: 40px;
+	height: 25vw;
+	max-height: 282px;
+	align-items: stretch;
+}
+
+.previewView {
+	position: relative;
+	flex: 1;
+	height: 100%;
+	border-radius: 20px;
+	overflow: hidden;
+	background: #efefef;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.previewContainer.previewContainerGrid .previewView:first-child {
+	grid-row: 1 / 3;
+	grid-column: 1;
+}
+
+.previewContainer.previewContainerGrid .previewView:nth-child(2) {
+	grid-column: 2;
+	grid-row: 2;
+}
+
+.previewContainer.previewContainerGrid .previewView:nth-child(3) {
+	grid-column: 2;
+	grid-row: 1;
+}
+
+.baseImage {
+	width: 85%;
+	height: 85%;
+	object-fit: contain;
+	display: block;
+	margin: auto;
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+}
+
+.overlayImage {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	width: 85%;
+	height: 85%;
+	object-fit: contain;
+	pointer-events: none;
+	transform: translate(-50%, -50%);
+}
+
+@media (max-width: 1200px) {
+	.previewContainer.previewContainerFlex {
+		gap: 20px;
+		height: 40vw;
+	}
+}
+
+@media (max-width: 1100px) {
+	.preview {
+		position: static;
+		width: 100%;
+		display: block;
+	}
+	
+	.previewContainer.previewContainerFlex {
+		gap: 16px;
+		height: auto;
+		position: static;
+	}
+	
+	.previewContainer.previewContainerFlex .previewView {
+		height: 280px;
+		flex-shrink: 0;
+	}
+	
+	.previewContainer.previewContainerGrid {
+		grid-template-columns: 1.2fr 1fr;
+		grid-template-rows: minmax(200px, 35vw) minmax(200px, 35vw);
+		gap: 12px;
+		max-width: 600px;
+		margin: 0 auto;
+		position: static;
+	}
+}
+
+@media (max-width: 550px) {
+	.previewContainer.previewContainerGrid {
+		grid-template-rows: minmax(180px, 50vw) minmax(180px, 50vw);
+		max-width: 100%;
+	}
+}
+
