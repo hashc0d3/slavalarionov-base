@@ -25,7 +25,10 @@
    npm run start:dev
    ```
 
-3. Открыть [http://localhost:3000](http://localhost:3000) — фронт и API работают на одном порту.
+3. Открыть:
+   - [http://localhost:8081](http://localhost:8081) — главная страница
+   - [http://localhost:8081/configurator](http://localhost:8081/configurator) — **основной конструктор**
+   - [http://localhost:8081/api/greeting](http://localhost:8081/api/greeting) — пример API
 
 ## Основные команды
 
