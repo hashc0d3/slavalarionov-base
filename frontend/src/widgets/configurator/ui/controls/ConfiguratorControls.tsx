@@ -18,7 +18,7 @@ export const ConfiguratorControls = observer(function ConfiguratorControls() {
 						<div className={styles.selectWrapper}>
 							<select 
 								className={styles.select}
-								value={configuratorStore.steps.model.modelName || ''}
+								value={configuratorStore.selectedWatchModel?.watch_model_name || ''}
 								onChange={(e) => configuratorStore.updateSelectedModel(e.target.value)}
 							>
 								{configuratorStore.watchModels.map((model) => (
@@ -37,7 +37,7 @@ export const ConfiguratorControls = observer(function ConfiguratorControls() {
 							<div className={styles.selectWrapper}>
 								<select 
 									className={styles.select}
-									value={configuratorStore.steps.model.modelSize || ''}
+									value={configuratorStore.selectedWatchModelAllSizes.find(s => s.choosen)?.watch_size || ''}
 									onChange={(e) => configuratorStore.updateWatchModelSize(e.target.value)}
 								>
 									{configuratorStore.selectedWatchModelAllSizes.map((size) => (
@@ -72,15 +72,15 @@ export const ConfiguratorControls = observer(function ConfiguratorControls() {
 							</div>
 						)}
 						
-						{/* Strap model select - показывать только на шагах 3 и 4 */}
-						{currentStep >= 3 && configuratorStore.watchStraps && configuratorStore.watchStraps.length > 0 && (
-							<div className={styles.selectWrapper}>
-								<select 
-									className={styles.select}
-									value={configuratorStore.selectedStrapModel?.attributes.watch_strap.id || ''}
-									onChange={(e) => configuratorStore.chooseStrapModel(Number(e.target.value))}
-								>
-									{configuratorStore.watchStraps.map((strap) => (
+					{/* Strap model select - показывать только на шагах 3 и 4 */}
+					{currentStep >= 3 && configuratorStore.availableWatchStraps && configuratorStore.availableWatchStraps.length > 0 && (
+						<div className={styles.selectWrapper}>
+							<select 
+								className={styles.select}
+								value={configuratorStore.selectedStrapModel?.attributes.watch_strap.id || ''}
+								onChange={(e) => configuratorStore.chooseStrapModel(Number(e.target.value))}
+							>
+								{configuratorStore.availableWatchStraps.map((strap) => (
 										<option key={strap.attributes.watch_strap.id} value={strap.attributes.watch_strap.id}>
 											{strap.attributes.watch_strap.strap_title}
 										</option>

@@ -4,12 +4,8 @@ exports.metadata = void 0;
 exports.default = RootLayout;
 const google_1 = require("next/font/google");
 require("./globals.css");
-const geistSans = (0, google_1.Geist)({
-    variable: "--font-geist-sans",
-    subsets: ["latin"],
-});
-const geistMono = (0, google_1.Geist_Mono)({
-    variable: "--font-geist-mono",
+const inter = (0, google_1.Inter)({
+    variable: "--font-inter",
     subsets: ["latin"],
 });
 exports.metadata = {
@@ -18,7 +14,7 @@ exports.metadata = {
 };
 function RootLayout({ children, }) {
     return (<html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+      <body className={`${inter.variable} antialiased`}>
         {children}
       </body>
     </html>);

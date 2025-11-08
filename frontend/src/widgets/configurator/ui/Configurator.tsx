@@ -32,11 +32,11 @@ export const Configurator = observer(function Configurator() {
 				</div>
 			)}
 
-			{step === 2 && (
-				<div>
-					<h2>{configuratorStore.steps.strap.title}</h2>
-					<ul>
-						{configuratorStore.watchStraps.map((s) => (
+		{step === 2 && (
+			<div>
+				<h2>{configuratorStore.steps.strap.title}</h2>
+				<ul>
+					{configuratorStore.availableWatchStraps.map((s) => (
 							<li key={s.attributes.watch_strap.id} style={{ marginBottom: 8 }}>
 								<label style={{ display: 'block', cursor: 'pointer' }}>
 									<input

@@ -1,4 +1,37 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.configuratorStore = exports.ConfiguratorStore = void 0;
 const mobx_1 = require("mobx");
@@ -65,34 +98,244 @@ const mockWatchModels = [
 ];
 const mockStraps = [
     {
-        choosen: true,
+        choosen: false,
         attributes: {
             watch_strap: {
                 id: 1,
-                strap_name: 'classic-leather',
-                strap_title: 'Классическая кожа',
-                price: 3900,
+                strap_name: 'butterfly',
+                strap_title: 'Butterfly',
+                strap_description: 'Пряжка бабочка для исключительного комфорта',
+                price: 8990,
+                preview_image: 'https://api.slavalarionov.store/uploads/butterfly_6c5fe88b84.png',
+                ultra_preview_image: 'https://api.slavalarionov.store/uploads/butterfly_6c5fe88b84.png',
+                buckle_butterfly_choosen: true,
                 strap_params: {
                     leather_colors: [
-                        { color_title: 'Черный', color_code: '#1b1b1b', choosen: true },
+                        { color_title: 'Черный', color_code: '#1b1b1b', choosen: false },
                         { color_title: 'Коричневый', color_code: '#7b4b2a', choosen: false }
                     ],
                     stitching_colors: [
-                        { color_title: 'Черная', color_code: '#1b1b1b', choosen: true },
+                        { color_title: 'Черная', color_code: '#1b1b1b', choosen: false },
                         { color_title: 'Белая', color_code: '#ffffff', choosen: false }
                     ],
                     edge_colors: [
-                        { color_title: 'Черный', color_code: '#1b1b1b', choosen: true },
+                        { color_title: 'Черный', color_code: '#1b1b1b', choosen: false },
                         { color_title: 'Коричневый', color_code: '#7b4b2a', choosen: false }
                     ],
                     buckle_colors: [
-                        { color_title: 'Silver', color_code: '#C0C0C0', choosen: true },
+                        { color_title: 'Silver', color_code: '#C0C0C0', choosen: false },
                         { color_title: 'Black', color_code: '#000000', choosen: false }
                     ],
                     adapter_colors: [
-                        { color_title: 'Silver', color_code: '#C0C0C0', choosen: true },
+                        { color_title: 'Silver', color_code: '#C0C0C0', choosen: false },
                         { color_title: 'Black', color_code: '#000000', choosen: false }
-                    ]
+                    ],
+                    has_buckle_butterfly: true
+                }
+            }
+        }
+    },
+    {
+        choosen: false,
+        attributes: {
+            watch_strap: {
+                id: 2,
+                strap_name: 'classic',
+                strap_title: 'Classic',
+                strap_description: 'Превосходный классический дизайн и ничего лишнего',
+                price: 8490,
+                preview_image: 'https://api.slavalarionov.store/uploads/classic_8280babad8.png',
+                ultra_preview_image: 'https://api.slavalarionov.store/uploads/classic_8280babad8.png',
+                buckle_butterfly_choosen: false,
+                strap_params: {
+                    leather_colors: [
+                        { color_title: 'Черный', color_code: '#1b1b1b', choosen: false },
+                        { color_title: 'Коричневый', color_code: '#7b4b2a', choosen: false }
+                    ],
+                    stitching_colors: [
+                        { color_title: 'Черная', color_code: '#1b1b1b', choosen: false },
+                        { color_title: 'Белая', color_code: '#ffffff', choosen: false }
+                    ],
+                    edge_colors: [
+                        { color_title: 'Черный', color_code: '#1b1b1b', choosen: false }
+                    ],
+                    buckle_colors: [
+                        { color_title: 'Silver', color_code: '#C0C0C0', choosen: false },
+                        { color_title: 'Black', color_code: '#000000', choosen: false }
+                    ],
+                    adapter_colors: [
+                        { color_title: 'Silver', color_code: '#C0C0C0', choosen: false },
+                        { color_title: 'Black', color_code: '#000000', choosen: false }
+                    ],
+                    has_buckle_butterfly: false
+                }
+            }
+        }
+    },
+    {
+        choosen: false,
+        attributes: {
+            watch_strap: {
+                id: 3,
+                strap_name: 'double-wrap',
+                strap_title: 'Double Wrap',
+                strap_description: 'С двойным оборотом вокруг запястья',
+                price: 9490,
+                preview_image: 'https://api.slavalarionov.store/uploads/aw_dabl_6163afb63b.png',
+                ultra_preview_image: 'https://api.slavalarionov.store/uploads/aw_dabl_6163afb63b.png',
+                buckle_butterfly_choosen: false,
+                strap_params: {
+                    leather_colors: [
+                        { color_title: 'Черный', color_code: '#1b1b1b', choosen: false },
+                        { color_title: 'Коричневый', color_code: '#7b4b2a', choosen: false }
+                    ],
+                    stitching_colors: [
+                        { color_title: 'Черная', color_code: '#1b1b1b', choosen: false },
+                        { color_title: 'Белая', color_code: '#ffffff', choosen: false }
+                    ],
+                    edge_colors: [
+                        { color_title: 'Черный', color_code: '#1b1b1b', choosen: false }
+                    ],
+                    buckle_colors: [
+                        { color_title: 'Silver', color_code: '#C0C0C0', choosen: false },
+                        { color_title: 'Black', color_code: '#000000', choosen: false }
+                    ],
+                    adapter_colors: [
+                        { color_title: 'Silver', color_code: '#C0C0C0', choosen: false },
+                        { color_title: 'Black', color_code: '#000000', choosen: false }
+                    ],
+                    has_buckle_butterfly: false
+                }
+            }
+        }
+    },
+    {
+        choosen: true,
+        attributes: {
+            watch_strap: {
+                id: 4,
+                strap_name: 'brogue',
+                strap_title: 'Brogue',
+                strap_description: 'Ремешок «Brogue» с элегантной перфорацией (словно на стильных классических туфлях) позволит вашей руке дышать. Поверьте, с этой моделью ваше запястье будет чувствовать себя в полном комфорте и будет притягивать взгляды.',
+                strap_short_description: 'Декоративная перфорация в классическом стиле',
+                price: 8990,
+                preview_image: 'https://api.slavalarionov.store/uploads/Brogue_4539ae7e9d.png',
+                ultra_preview_image: 'https://api.slavalarionov.store/uploads/Brogue_4539ae7e9d.png',
+                buckle_butterfly_choosen: false,
+                strap_params: {
+                    leather_colors: [
+                        { color_title: 'Белый', color_code: '#ffffff', choosen: true },
+                        { color_title: 'Чёрный', color_code: '#000000', choosen: false },
+                        { color_title: 'Бежевый', color_code: '#f5f5dc', choosen: false },
+                        { color_title: 'Чароит', color_code: '#7c5a9b', choosen: false },
+                        { color_title: 'Зеленовато-желтый', color_code: '#949e20', choosen: false },
+                        { color_title: 'Шоколадный', color_code: '#684625', choosen: false },
+                        { color_title: 'Зелёный', color_code: '#31584a', choosen: false },
+                        { color_title: 'Фуксия', color_code: '#a8355a', choosen: false },
+                        { color_title: 'Голубой', color_code: '#6b8390', choosen: false },
+                        { color_title: 'Марсала', color_code: '#5e4a4f', choosen: false },
+                        { color_title: 'Мятный', color_code: '#a2b2a9', choosen: false },
+                        { color_title: 'Оранжевый', color_code: '#9f4529', choosen: false },
+                        { color_title: 'Пудра', color_code: '#af9d97', choosen: false },
+                        { color_title: 'Красный', color_code: '#bb4646', choosen: false },
+                        { color_title: 'Королевский синий', color_code: '#373a4d', choosen: false },
+                        { color_title: 'Серый', color_code: '#67605e', choosen: false },
+                        { color_title: 'Ультрамарин', color_code: '#5966ad', choosen: false },
+                        { color_title: 'Фиолетовый', color_code: '#64396b', choosen: false },
+                        { color_title: 'Жёлтый', color_code: '#c79a30', choosen: false }
+                    ],
+                    stitching_colors: [
+                        { color_title: 'Белый', color_code: '#ffffff', choosen: true },
+                        { color_title: 'Бежевый', color_code: '#f5f5dc', choosen: false },
+                        { color_title: 'Чёрный', color_code: '#000000', choosen: false },
+                        { color_title: 'Коричневый', color_code: '#684625', choosen: false },
+                        { color_title: 'Чароит', color_code: '#7c5a9b', choosen: false },
+                        { color_title: 'Зелёный', color_code: '#31584a', choosen: false },
+                        { color_title: 'Фуксия', color_code: '#a8355a', choosen: false },
+                        { color_title: 'Голубой', color_code: '#6b8390', choosen: false },
+                        { color_title: 'Марсала', color_code: '#5e4a4f', choosen: false },
+                        { color_title: 'Мятный', color_code: '#a2b2a9', choosen: false },
+                        { color_title: 'Оранжевый', color_code: '#9f4529', choosen: false },
+                        { color_title: 'Пудра', color_code: '#af9d97', choosen: false },
+                        { color_title: 'Красный', color_code: '#bb4646', choosen: false },
+                        { color_title: 'Королевский синий', color_code: '#373a4d', choosen: false },
+                        { color_title: 'Серый', color_code: '#67605e', choosen: false },
+                        { color_title: 'Ультрамарин', color_code: '#5966ad', choosen: false },
+                        { color_title: 'Фиолетовый', color_code: '#64396b', choosen: false },
+                        { color_title: 'Жёлтый', color_code: '#c79a30', choosen: false },
+                        { color_title: 'Зеленовато-желтый', color_code: '#949e20', choosen: false }
+                    ],
+                    edge_colors: [
+                        { color_title: 'Белый', color_code: '#ffffff', choosen: true },
+                        { color_title: 'Бежевый', color_code: '#f5f5dc', choosen: false },
+                        { color_title: 'Чёрный', color_code: '#000000', choosen: false },
+                        { color_title: 'Коричневый', color_code: '#684625', choosen: false },
+                        { color_title: 'Чароит', color_code: '#7c5a9b', choosen: false },
+                        { color_title: 'Зеленовато-желтый', color_code: '#949e20', choosen: false },
+                        { color_title: 'Зелёный', color_code: '#31584a', choosen: false },
+                        { color_title: 'Фуксия', color_code: '#a8355a', choosen: false },
+                        { color_title: 'Голубой', color_code: '#6b8390', choosen: false },
+                        { color_title: 'Марсала', color_code: '#5e4a4f', choosen: false },
+                        { color_title: 'Мятный', color_code: '#a2b2a9', choosen: false },
+                        { color_title: 'Оранжевый', color_code: '#9f4529', choosen: false },
+                        { color_title: 'Пудра', color_code: '#af9d97', choosen: false },
+                        { color_title: 'Красный', color_code: '#bb4646', choosen: false },
+                        { color_title: 'Королевский синий', color_code: '#373a4d', choosen: false },
+                        { color_title: 'Серый', color_code: '#67605e', choosen: false },
+                        { color_title: 'Ультрамарин', color_code: '#5966ad', choosen: false },
+                        { color_title: 'Фиолетовый', color_code: '#64396b', choosen: false },
+                        { color_title: 'Жёлтый', color_code: '#c79a30', choosen: false }
+                    ],
+                    buckle_colors: [
+                        { color_title: 'Чёрный', color_code: '#000000', choosen: false },
+                        { color_title: 'Розовое золото', color_code: '#b8977e', choosen: false },
+                        { color_title: 'Серебряный', color_code: '#c0c0c0', choosen: true }
+                    ],
+                    adapter_colors: [
+                        { color_title: 'Серебряный', color_code: '#c0c0c0', choosen: true },
+                        { color_title: 'Чёрный', color_code: '#000000', choosen: false },
+                        { color_title: 'Роз. золото', color_code: '#b8977e', choosen: false },
+                        { color_title: 'Синий', color_code: '#4a90e2', choosen: false },
+                        { color_title: 'Зелёный', color_code: '#31584a', choosen: false }
+                    ],
+                    has_buckle_butterfly: false
+                }
+            }
+        }
+    },
+    {
+        choosen: false,
+        attributes: {
+            watch_strap: {
+                id: 5,
+                strap_name: 'minimal',
+                strap_title: 'Minimal',
+                strap_description: 'Элегантно, стильно и безумно аккуратно',
+                price: 6990,
+                preview_image: 'https://api.slavalarionov.store/uploads/Minimal_6d74c24e75.png',
+                ultra_preview_image: 'https://api.slavalarionov.store/uploads/Minimal_6d74c24e75.png',
+                buckle_butterfly_choosen: false,
+                strap_params: {
+                    leather_colors: [
+                        { color_title: 'Черный', color_code: '#1b1b1b', choosen: false },
+                        { color_title: 'Коричневый', color_code: '#7b4b2a', choosen: false }
+                    ],
+                    stitching_colors: [
+                        { color_title: 'Черная', color_code: '#1b1b1b', choosen: false },
+                        { color_title: 'Белая', color_code: '#ffffff', choosen: false }
+                    ],
+                    edge_colors: [
+                        { color_title: 'Черный', color_code: '#1b1b1b', choosen: false }
+                    ],
+                    buckle_colors: [
+                        { color_title: 'Silver', color_code: '#C0C0C0', choosen: false },
+                        { color_title: 'Black', color_code: '#000000', choosen: false }
+                    ],
+                    adapter_colors: [
+                        { color_title: 'Silver', color_code: '#C0C0C0', choosen: false },
+                        { color_title: 'Black', color_code: '#000000', choosen: false }
+                    ],
+                    has_buckle_butterfly: false
                 }
             }
         }
@@ -100,17 +343,69 @@ const mockStraps = [
 ];
 class ConfiguratorStore {
     isLoading = false;
-    watchModels = mockWatchModels;
+    watchModels = this.loadWatchModelsFromStorage();
     watchStraps = mockStraps;
     currentStepNum = 1;
     stepsAmount = 4;
     productAmount = 1;
     deliveryPrice = 0;
-    closestReadyDate = '';
+    closestReadyDate = '13 октября';
     orderNumber = null;
     promoCode = null;
     promoAccepted = false;
     usedPromo = null;
+    orderPopupVisible = false;
+    cartItems = [];
+    editingCartItemId = null;
+    additionalOption = {
+        data: {
+            attributes: {
+                title: 'Ремешок почти готов!',
+                description: 'Вы создали уникальный ремешок и он просто прекрасен! Сейчас вы можете добавить инициалы (2-3 буквы на русском или английском языке), добавить подарочную упаковку и подписать открытку, которую мы приложим к этому ремешку.',
+                additional_options: [
+                    {
+                        option_name: 'initials',
+                        option_title: 'Нанесение инициалов',
+                        option_price: 390,
+                        option_image: {
+                            data: {
+                                attributes: {
+                                    url: '/uploads/caption_88dca0bed8.jpg'
+                                }
+                            }
+                        },
+                        choosen: false
+                    },
+                    {
+                        option_name: 'present_box',
+                        option_title: 'Подарочная коробка',
+                        option_price: 300,
+                        option_image: {
+                            data: {
+                                attributes: {
+                                    url: '/uploads/present_box_75bbc808e1.jpg'
+                                }
+                            }
+                        },
+                        choosen: false
+                    },
+                    {
+                        option_name: 'postcard',
+                        option_title: 'Подарочная открытка',
+                        option_price: 90,
+                        option_image: {
+                            data: {
+                                attributes: {
+                                    url: '/uploads/postcard_4490cc700c.jpg'
+                                }
+                            }
+                        },
+                        choosen: false
+                    }
+                ]
+            }
+        }
+    };
     steps = {
         model: {
             id: 1,
@@ -126,8 +421,8 @@ class ConfiguratorStore {
             title: 'Выберите модель ремешка',
             queryParam: 'strap-model',
             isChoosen: true,
-            strapName: 'Классическая кожа',
-            strapPrice: 3900
+            strapName: 'Brogue',
+            strapPrice: 8990
         },
         strapDesign: {
             id: 3,
@@ -162,6 +457,32 @@ class ConfiguratorStore {
     constructor() {
         (0, mobx_1.makeAutoObservable)(this);
     }
+    loadWatchModelsFromStorage() {
+        if (typeof window === 'undefined')
+            return mockWatchModels;
+        try {
+            const stored = localStorage.getItem('watchModels');
+            if (stored) {
+                return JSON.parse(stored);
+            }
+        }
+        catch (error) {
+            console.error('Error loading watch models from storage:', error);
+        }
+        return mockWatchModels;
+    }
+    saveWatchModelsToStorage() {
+        if (typeof window === 'undefined')
+            return;
+        try {
+            localStorage.setItem('watchModels', JSON.stringify(this.watchModels));
+        }
+        catch (error) {
+            console.error('Error saving watch models to storage:', error);
+        }
+    }
+    showOrderPopup() { this.orderPopupVisible = true; }
+    closeOrderPopup() { this.orderPopupVisible = false; }
     get selectedWatchModel() {
         return this.watchModels.find((m) => m.choosen) || null;
     }
@@ -333,7 +654,11 @@ class ConfiguratorStore {
             target.choosen = true;
     }
     chooseStrapLeatherColor(title) {
-        this.selectedStrapModel?.attributes.watch_strap.strap_params.leather_colors.forEach((c) => (c.choosen = c.color_title === title));
+        console.log('Choosing leather color:', title);
+        this.selectedStrapModel?.attributes.watch_strap.strap_params.leather_colors.forEach((c) => {
+            c.choosen = c.color_title === title;
+            console.log('Color:', c.color_title, 'choosen:', c.choosen);
+        });
     }
     chooseStitchingColor(title) {
         this.selectedStrapModel?.attributes.watch_strap.strap_params.stitching_colors.forEach((c) => (c.choosen = c.color_title === title));
@@ -395,6 +720,157 @@ class ConfiguratorStore {
     togglePostCard(choosen) {
         this.steps.final.additionalOptions.postCard.choosen = choosen;
     }
+    setPostCardText(text) {
+        this.steps.final.additionalOptions.postCard.text = text;
+    }
+    increaseQuantity() {
+        if (this.productAmount < 10)
+            this.productAmount += 1;
+    }
+    decreaseQuantity() {
+        if (this.productAmount > 1)
+            this.productAmount -= 1;
+    }
+    setQuantity(amount) {
+        if (amount >= 1 && amount <= 10)
+            this.productAmount = amount;
+    }
+    addCurrentToCart() {
+        const cartItem = {
+            id: Date.now().toString(),
+            watchModel: this.selectedWatchModel,
+            frameColor: this.selectedFrameColor,
+            strapModel: this.selectedStrapModel,
+            leatherColor: this.selectedLeatherColor,
+            stitchingColor: this.selectedStitchingColor,
+            edgeColor: this.selectedEdgeColor,
+            buckleColor: this.selectedBuckleColor,
+            adapterColor: this.selectedAdapterColor,
+            buckleButterfly: this.steps.strapDesign.buckleButterflyChoosen,
+            additionalOptions: { ...this.steps.final.additionalOptions },
+            quantity: this.productAmount,
+            price: this.totalPriceWithDiscount,
+            addedAt: new Date().toISOString()
+        };
+        this.cartItems.push(cartItem);
+        this.resetConfigurator();
+    }
+    removeFromCart(itemId) {
+        this.cartItems = this.cartItems.filter(item => item.id !== itemId);
+    }
+    clearCart() {
+        this.cartItems = [];
+    }
+    resetConfigurator() {
+        this.currentStepNum = 1;
+        this.productAmount = 1;
+        this.watchModels.forEach(model => {
+            model.choosen = false;
+            model.watch_sizes.forEach(size => size.choosen = false);
+        });
+        this.watchStraps.forEach(strap => strap.choosen = false);
+        this.steps.final.additionalOptions.initials.choosen = false;
+        this.steps.final.additionalOptions.initials.text = null;
+        this.steps.final.additionalOptions.presentBox.choosen = false;
+        this.steps.final.additionalOptions.postCard.choosen = false;
+        this.steps.final.additionalOptions.postCard.text = null;
+        this.steps.strapDesign.buckleButterflyChoosen = false;
+    }
+    get cartTotalPrice() {
+        return this.cartItems.reduce((total, item) => total + item.price, 0);
+    }
+    get cartItemsCount() {
+        return this.cartItems.reduce((total, item) => total + item.quantity, 0);
+    }
+    editCartItem(itemId) {
+        const item = this.cartItems.find(cartItem => cartItem.id === itemId);
+        if (!item)
+            return;
+        if (this.editingCartItemId === itemId)
+            return;
+        this.editingCartItemId = itemId;
+        this.loadItemConfiguration(item);
+    }
+    loadItemConfiguration(item) {
+        this.resetConfigurator();
+        if (item.watchModel) {
+            const watchModelIndex = this.watchModels.findIndex(model => model.watch_model_name === item.watchModel.watch_model_name);
+            if (watchModelIndex !== -1) {
+                this.chooseWatchModel(watchModelIndex, 0);
+            }
+        }
+        if (item.frameColor) {
+            this.chooseFrameColor(item.frameColor.color_name);
+        }
+        this.nextStep();
+        if (item.strapModel) {
+            this.chooseStrapModel(item.strapModel.attributes.watch_strap.id);
+        }
+        this.nextStep();
+        if (item.leatherColor) {
+            this.chooseStrapLeatherColor(item.leatherColor.color_title);
+        }
+        if (item.stitchingColor) {
+            this.chooseStitchingColor(item.stitchingColor.color_title);
+        }
+        if (item.edgeColor) {
+            this.chooseEdgeColor(item.edgeColor.color_title);
+        }
+        if (item.buckleColor) {
+            this.chooseBuckleColor(item.buckleColor.color_title);
+        }
+        if (item.adapterColor) {
+            this.chooseAdapterColor(item.adapterColor.color_title);
+        }
+        if (item.buckleButterfly) {
+            this.chooseBuckleButterfly();
+        }
+        this.nextStep();
+        if (item.additionalOptions) {
+            if (item.additionalOptions.initials.choosen) {
+                this.toggleInitials(true);
+                if (item.additionalOptions.initials.text) {
+                    this.setInitialsText(item.additionalOptions.initials.text);
+                }
+            }
+            if (item.additionalOptions.presentBox.choosen) {
+                this.togglePresentBox(true);
+            }
+            if (item.additionalOptions.postCard.choosen) {
+                this.togglePostCard(true);
+                if (item.additionalOptions.postCard.text) {
+                    this.setPostCardText(item.additionalOptions.postCard.text);
+                }
+            }
+        }
+        this.productAmount = item.quantity;
+    }
+    updateCartItem(itemId) {
+        const itemIndex = this.cartItems.findIndex(item => item.id === itemId);
+        if (itemIndex === -1)
+            return;
+        this.cartItems[itemIndex] = {
+            ...this.cartItems[itemIndex],
+            watchModel: this.selectedWatchModel,
+            frameColor: this.selectedFrameColor,
+            strapModel: this.selectedStrapModel,
+            leatherColor: this.selectedLeatherColor,
+            stitchingColor: this.selectedStitchingColor,
+            edgeColor: this.selectedEdgeColor,
+            buckleColor: this.selectedBuckleColor,
+            adapterColor: this.selectedAdapterColor,
+            buckleButterfly: this.steps.strapDesign.buckleButterflyChoosen,
+            additionalOptions: { ...this.steps.final.additionalOptions },
+            quantity: this.productAmount,
+            price: this.totalPriceWithDiscount,
+            updatedAt: new Date().toISOString()
+        };
+        this.editingCartItemId = null;
+    }
+    cancelEditCartItem() {
+        this.editingCartItemId = null;
+        this.resetConfigurator();
+    }
     nextStep() {
         if (this.currentStepNum < this.stepsAmount && this.nextStepReady)
             this.currentStepNum += 1;
@@ -402,6 +878,129 @@ class ConfiguratorStore {
     prevStep() {
         if (this.currentStepNum > 1)
             this.currentStepNum -= 1;
+    }
+    async loadWatchModelsFromAPI() {
+        try {
+            this.isLoading = true;
+            const { watchModelsApi } = await Promise.resolve().then(() => __importStar(require('../api/watchModels.api')));
+            const models = await watchModelsApi.getAll();
+            this.watchModels = models;
+            this.saveWatchModelsToStorage();
+        }
+        catch (error) {
+            console.error('Error loading watch models from API:', error);
+            this.watchModels = this.loadWatchModelsFromStorage();
+        }
+        finally {
+            this.isLoading = false;
+        }
+    }
+    async addWatchModel(model) {
+        try {
+            const { watchModelsApi } = await Promise.resolve().then(() => __importStar(require('../api/watchModels.api')));
+            const created = await watchModelsApi.create(model);
+            this.watchModels.push({ ...created, choosen: false });
+            this.saveWatchModelsToStorage();
+        }
+        catch (error) {
+            console.error('Error adding watch model:', error);
+            throw error;
+        }
+    }
+    async updateWatchModel(index, updates) {
+        if (index >= 0 && index < this.watchModels.length) {
+            const model = this.watchModels[index];
+            const modelId = model.id;
+            if (!modelId) {
+                console.error('Model ID not found');
+                return;
+            }
+            try {
+                const { watchModelsApi } = await Promise.resolve().then(() => __importStar(require('../api/watchModels.api')));
+                const updatedModel = { ...model, ...updates };
+                const result = await watchModelsApi.update(modelId, updatedModel);
+                this.watchModels[index] = { ...result, choosen: model.choosen };
+                this.saveWatchModelsToStorage();
+            }
+            catch (error) {
+                console.error('Error updating watch model:', error);
+                throw error;
+            }
+        }
+    }
+    async deleteWatchModel(index) {
+        if (index >= 0 && index < this.watchModels.length) {
+            const model = this.watchModels[index];
+            const modelId = model.id;
+            if (!modelId) {
+                console.error('Model ID not found');
+                return;
+            }
+            try {
+                const { watchModelsApi } = await Promise.resolve().then(() => __importStar(require('../api/watchModels.api')));
+                await watchModelsApi.delete(modelId);
+                this.watchModels.splice(index, 1);
+                this.saveWatchModelsToStorage();
+            }
+            catch (error) {
+                console.error('Error deleting watch model:', error);
+                throw error;
+            }
+        }
+    }
+    async createBackup() {
+        try {
+            const { watchModelsApi } = await Promise.resolve().then(() => __importStar(require('../api/watchModels.api')));
+            const backup = await watchModelsApi.backup();
+            const dataStr = JSON.stringify(backup, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+            const exportFileDefaultName = `watch-models-backup-${backup.timestamp.split('T')[0]}.json`;
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', exportFileDefaultName);
+            linkElement.click();
+            return backup;
+        }
+        catch (error) {
+            console.error('Error creating backup:', error);
+            throw error;
+        }
+    }
+    async restoreFromBackup(backupFile) {
+        try {
+            this.isLoading = true;
+            const fileContent = await backupFile.text();
+            const backup = JSON.parse(fileContent);
+            if (!backup.data || !Array.isArray(backup.data)) {
+                throw new Error('Неверный формат файла бэкапа');
+            }
+            const { watchModelsApi } = await Promise.resolve().then(() => __importStar(require('../api/watchModels.api')));
+            const result = await watchModelsApi.restore(backup.data);
+            await this.loadWatchModelsFromAPI();
+            return result;
+        }
+        catch (error) {
+            console.error('Error restoring from backup:', error);
+            throw error;
+        }
+        finally {
+            this.isLoading = false;
+        }
+    }
+    async resetWatchModelsToDefault() {
+        if (confirm('Это пересоздаст базу данных с начальными данными. Продолжить?')) {
+            try {
+                this.watchModels = mockWatchModels;
+                this.saveWatchModelsToStorage();
+                for (const model of mockWatchModels) {
+                    await this.addWatchModel(model);
+                }
+            }
+            catch (error) {
+                console.error('Error resetting to defaults:', error);
+                throw error;
+            }
+        }
     }
 }
 exports.ConfiguratorStore = ConfiguratorStore;

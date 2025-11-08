@@ -10,6 +10,9 @@ const mobx_react_lite_1 = require("mobx-react-lite");
 const ConfiguratorSteps_1 = require("./steps/ConfiguratorSteps");
 const ConfiguratorControls_1 = require("./controls/ConfiguratorControls");
 const StepsProgress_1 = require("./steps/StepsProgress");
+const OrderPopup_1 = require("./order-popup/OrderPopup");
+const ConfiguratorCart_1 = require("./cart/ConfiguratorCart");
+const configurator_store_1 = require("@/shared/store/configurator.store");
 exports.SectionConfigurator = (0, mobx_react_lite_1.observer)(function SectionConfigurator() {
     return (<section className={SectionConfigurator_module_css_1.default.configuratorSection}>
 			<div className={["container", SectionConfigurator_module_css_1.default.container, SectionConfigurator_module_css_1.default.configuratorSectionContainer].join(' ')}>
@@ -21,6 +24,8 @@ exports.SectionConfigurator = (0, mobx_react_lite_1.observer)(function SectionCo
 					<ConfiguratorSteps_1.ConfiguratorSteps />
 				</div>
 			</div>
+			<OrderPopup_1.OrderPopup visible={configurator_store_1.configuratorStore.orderPopupVisible} onClose={() => configurator_store_1.configuratorStore.closeOrderPopup()}/>
+			<ConfiguratorCart_1.ConfiguratorCart />
 		</section>);
 });
 //# sourceMappingURL=SectionConfigurator.js.map

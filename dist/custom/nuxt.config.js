@@ -18,21 +18,8 @@ exports.default = defineNuxtConfig({
                 autoImports: ['defineStore']
             }
         ],
-        '@nuxtjs/apollo',
-        '@nuxtjs/strapi',
         '@nuxtjs/eslint-module'
     ],
-    strapi: {
-        url: process.env.STRAPI_URL || 'http://localhost:1337'
-    },
-    apollo: {
-        clients: {
-            default: {
-                httpEndpoint: process.env.STRAPI_URL + '/graphql' ||
-                    'http://localhost:1337/graphql'
-            }
-        }
-    },
     components: [
         {
             path: '~/components',
@@ -58,7 +45,6 @@ exports.default = defineNuxtConfig({
     },
     runtimeConfig: {
         public: {
-            API_BASE_URL: process.env.STRAPI_URL || 'http://localhost:1337',
             SERVICE_PATH: process.env.SERVICE_PATH,
             BACKEND_BASE_ADDRESS: process.env.BACKEND_BASE_ADDRESS,
             YANDEX_API_KEY: process.env.YANDEX_API_KEY

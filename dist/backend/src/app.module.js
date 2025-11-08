@@ -14,6 +14,8 @@ const next_middleware_1 = require("../next.middleware");
 const legacy_controller_1 = require("./legacy/legacy.controller");
 const axios_1 = require("@nestjs/axios");
 const config_1 = require("@nestjs/config");
+const prisma_module_1 = require("./prisma/prisma.module");
+const watch_models_module_1 = require("./watch-models/watch-models.module");
 let AppModule = class AppModule {
     configure(consumer) {
         consumer
@@ -24,7 +26,12 @@ let AppModule = class AppModule {
 exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
-        imports: [config_1.ConfigModule.forRoot(), axios_1.HttpModule],
+        imports: [
+            config_1.ConfigModule.forRoot(),
+            axios_1.HttpModule,
+            prisma_module_1.PrismaModule,
+            watch_models_module_1.WatchModelsModule,
+        ],
         controllers: [app_controller_1.AppController, legacy_controller_1.LegacyController],
         providers: [app_service_1.AppService],
     })

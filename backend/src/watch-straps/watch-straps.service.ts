@@ -1,0 +1,115 @@
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { CreateWatchStrapDto, UpdateWatchStrapDto } from './dto/watch-strap.dto';
+
+@Injectable()
+export class WatchStrapsService {
+  constructor(private prisma: PrismaService) {}
+
+  async findAll() {
+    const straps = await this.prisma.watchStrap.findMany({
+      orderBy: {
+        id: 'asc',
+      },
+    });
+
+    // Преобразуем JSON string обратно в объекты
+    return straps.map((strap) => ({
+      ...strap,
+      strap_params: JSON.parse(strap.strap_params),
+    }));
+  }
+
+  async findOne(id: number) {
+    const strap = await this.prisma.watchStrap.findUnique({
+      where: { id },
+    });
+
+    if (!strap) return null;
+
+    return {
+      ...strap,
+      strap_params: JSON.parse(strap.strap_params),
+    };
+  }
+
+  async create(data: CreateWatchStrapDto) {
+    return this.prisma.watchStrap.create({
+      data: {
+        strap_name: data.strap_name,
+        strap_title: data.strap_title,
+        strap_description: data.strap_description,
+        strap_short_description: data.strap_short_description,
+        price: data.price,
+        preview_image: data.preview_image,
+        ultra_preview_image: data.ultra_preview_image,
+        has_buckle_butterfly: data.has_buckle_butterfly || false,
+        strap_params: JSON.stringify(data.strap_params),
+      },
+    }).then((strap) => ({
+      ...strap,
+      strap_params: JSON.parse(strap.strap_params),
+    }));
+  }
+
+  async update(id: number, data: UpdateWatchStrapDto) {
+    return this.prisma.watchStrap.update({
+      where: { id },
+      data: {
+        strap_name: data.strap_name,
+        strap_title: data.strap_title,
+        strap_description: data.strap_description,
+        strap_short_description: data.strap_short_description,
+        price: data.price,
+        preview_image: data.preview_image,
+        ultra_preview_image: data.ultra_preview_image,
+        has_buckle_butterfly: data.has_buckle_butterfly,
+        strap_params: data.strap_params ? JSON.stringify(data.strap_params) : undefined,
+      },
+    }).then((strap) => ({
+      ...strap,
+      strap_params: JSON.parse(strap.strap_params),
+    }));
+  }
+
+  async delete(id: number) {
+    return this.prisma.watchStrap.delete({
+      where: { id },
+    });
+  }
+
+  async backup() {
+    const straps = await this.findAll();
+    return {
+      timestamp: new Date().toISOString(),
+      data: straps,
+    };
+  }
+
+  async restoreFromBackup(backupData: any[]) {
+    // Очищаем все существующие ремешки и связанные данные
+    await this.prisma.watchModelStrap.deleteMany();
+    await this.prisma.watchStrap.deleteMany();
+
+    // Создаем ремешки из бэкапа
+    for (const strapData of backupData) {
+      await this.prisma.watchStrap.create({
+        data: {
+          strap_name: strapData.strap_name,
+          strap_title: strapData.strap_title,
+          strap_description: strapData.strap_description,
+          strap_short_description: strapData.strap_short_description,
+          price: strapData.price,
+          preview_image: strapData.preview_image,
+          ultra_preview_image: strapData.ultra_preview_image,
+          has_buckle_butterfly: strapData.has_buckle_butterfly,
+          strap_params: JSON.stringify(strapData.strap_params),
+        },
+      });
+    }
+
+    return { success: true, restoredCount: backupData.length };
+  }
+}
+
+

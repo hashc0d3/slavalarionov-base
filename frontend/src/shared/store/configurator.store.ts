@@ -5,6 +5,7 @@ export type StepKey = 'model' | 'strap' | 'strapDesign' | 'final'
 export type FrameColor = { color_name: string; color_code?: string; choosen: boolean }
 export type WatchSize = { watch_size: string; choosen: boolean }
 export type WatchModel = {
+	id?: number // ID из БД (опциональный для обратной совместимости)
 	model_name: string
 	watch_model_name: string
 	watch_model_manufacturer?: string
@@ -12,6 +13,7 @@ export type WatchModel = {
 	choosen: boolean
 	watch_sizes: WatchSize[]
 	frame_colors: FrameColor[]
+	available_strap_ids?: number[] // ID доступных ремешков для этой модели
 }
 
 export type StrapColor = { color_title: string; color_code?: string; choosen: boolean; price?: number }
@@ -360,7 +362,7 @@ const mockStraps: Strap[] = [
 export class ConfiguratorStore {
 	// base state
 	isLoading: boolean = false
-	watchModels: WatchModel[] = mockWatchModels
+	watchModels: WatchModel[] = mockWatchModels // Инициализируем mock данными для SSR
 	watchStraps: Strap[] = mockStraps
 	currentStepNum: number = 1
 	stepsAmount: number = 4
@@ -480,6 +482,33 @@ export class ConfiguratorStore {
 	constructor() {
 		makeAutoObservable(this)
 	}
+	
+	// Загрузка моделей из localStorage или использование mock данных
+	loadWatchModelsFromStorage(): WatchModel[] {
+		if (typeof window === 'undefined') return mockWatchModels
+		
+		try {
+			const stored = localStorage.getItem('watchModels')
+			if (stored) {
+				return JSON.parse(stored)
+			}
+		} catch (error) {
+			console.error('Error loading watch models from storage:', error)
+		}
+		
+		return mockWatchModels
+	}
+	
+	// Сохранение моделей в localStorage
+	saveWatchModelsToStorage() {
+		if (typeof window === 'undefined') return
+		
+		try {
+			localStorage.setItem('watchModels', JSON.stringify(this.watchModels))
+		} catch (error) {
+			console.error('Error saving watch models to storage:', error)
+		}
+	}
 
 	// modal actions
 	showOrderPopup() { this.orderPopupVisible = true }
@@ -497,6 +526,21 @@ export class ConfiguratorStore {
 	}
 	get selectedFrameColor() {
 		return this.selectedWatchModelFrameColors?.find((c) => c.choosen) || null
+	}
+	
+	// Фильтрация ремешков по доступным для выбранной модели часов
+	get availableWatchStraps() {
+		const selectedModel = this.selectedWatchModel
+		
+		// Если модель не выбрана или у нее нет списка доступных ремешков, показываем все
+		if (!selectedModel || !selectedModel.available_strap_ids || selectedModel.available_strap_ids.length === 0) {
+			return this.watchStraps
+		}
+		
+		// Фильтруем только доступные ремешки
+		return this.watchStraps.filter(strap => 
+			selectedModel.available_strap_ids?.includes(strap.attributes.watch_strap.id)
+		)
 	}
 	get selectedWatchModelStraps() {
 		return { data: this.watchStraps }
@@ -604,31 +648,44 @@ export class ConfiguratorStore {
 		const model = this.watchModels[modelIdx]
 		this.steps.model.modelName = model.model_name
 		this.steps.model.modelSize = model.watch_sizes[sizeIdx].watch_size
+		this.chooseFrameColor()
 	}
 	updateSelectedModel(option: string) {
 		this.watchModels.forEach((item) => {
 			item.watch_sizes.forEach((s) => (s.choosen = false))
 			item.choosen = item.watch_model_name === option
-			if (item.choosen) item.watch_sizes[0].choosen = true
+			if (item.choosen) {
+				item.watch_sizes[0].choosen = true
+				// Обновляем информацию в steps
+				this.steps.model.modelName = item.model_name
+				this.steps.model.modelSize = item.watch_sizes[0].watch_size
+				this.chooseFrameColor()
+			}
 		})
 	}
 	updateWatchModelSize(option: string) {
 		const clean = option.replace(/\D/g, '')
 		this.selectedWatchModelAllSizes?.forEach((size) => {
 			size.choosen = size.watch_size === clean
+			if (size.choosen) {
+				// Обновляем информацию в steps
+				this.steps.model.modelSize = size.watch_size
+			}
 		})
 	}
 	updateSelectedFrameColor(option: string) {
 		this.selectedWatchModelFrameColors?.forEach((c) => (c.choosen = c.color_name === option))
 	}
 	chooseFrameColor(name: string = '') {
+		if (!this.selectedWatchModel?.frame_colors) return
+
 		if (name === '') {
-			if (this.selectedWatchModel && !this.selectedWatchModel.frame_colors.find((c) => c.choosen)) {
-				this.selectedWatchModel.frame_colors[0].choosen = true
-			}
-			return
+			this.selectedWatchModel.frame_colors.forEach((c, idx) => {
+				c.choosen = idx === 0
+			})
+		} else {
+			this.selectedWatchModel.frame_colors.forEach((c) => (c.choosen = c.color_name === name))
 		}
-		this.selectedWatchModel?.frame_colors.forEach((c) => (c.choosen = c.color_name === name))
 	}
 	chooseStrapModel(id: number) {
 		this.watchStraps.forEach((s) => (s.choosen = s.attributes.watch_strap.id === id))
@@ -637,14 +694,30 @@ export class ConfiguratorStore {
 			this.steps.strap.isChoosen = true
 			this.steps.strap.strapName = strap.attributes.watch_strap.strap_title
 			this.steps.strap.strapPrice = strap.attributes.watch_strap.price
+
+			const params = strap.attributes.watch_strap.strap_params
+			const setFirstChoosen = (arr?: { choosen?: boolean }[]) => {
+				if (Array.isArray(arr) && arr.length > 0) {
+					arr.forEach((item, idx) => {
+						item.choosen = idx === 0
+					})
+				}
+			}
+			setFirstChoosen(params?.leather_colors)
+			setFirstChoosen(params?.stitching_colors)
+			setFirstChoosen(params?.edge_colors)
+			setFirstChoosen(params?.buckle_colors)
+			setFirstChoosen(params?.adapter_colors)
+			this.steps.strapDesign.buckleButterflyChoosen = !!strap.attributes.watch_strap.buckle_butterfly_choosen
 		}
 	}
 	updateSelectedStrap(title: string = '') {
 		const target = title
 			? this.watchStraps.find((s) => s.attributes.watch_strap.strap_title === title) || this.watchStraps[0]
 			: this.watchStraps[0]
-		this.watchStraps.forEach((s) => (s.choosen = false))
-		if (target) target.choosen = true
+		if (target) {
+			this.chooseStrapModel(target.attributes.watch_strap.id)
+		}
 	}
 	chooseStrapLeatherColor(title: string) {
 		console.log('Choosing leather color:', title)
@@ -688,15 +761,30 @@ export class ConfiguratorStore {
 		this.promoAccepted = promo !== null
 		this.usedPromo = promo
 	}
-	applyPromo(code: string) {
+	async applyPromo(code: string) {
 		this.updatePromoCodeValue(code)
-		// mock promo logic
-		if (code.toLowerCase() === 'sale10') {
-			this.promoUse({ promoFound: true, type: 'percent', discountValue: 10, code })
-		} else if (code.toLowerCase() === 'minus500') {
-			this.promoUse({ promoFound: true, type: 'ruble', discountValue: 500, code })
-		} else {
+		if (!code.trim()) {
 			this.promoUse(null)
+			return
+		}
+
+		try {
+			const { promocodeApi } = await import('@/shared/api/promocode.api')
+			const result = await promocodeApi.check(code)
+			if (result.promoFound) {
+				this.promoUse({
+					promoFound: true,
+					type: result.type as 'percent' | 'ruble',
+					discountValue: result.discountValue,
+					code: result.code
+				})
+			} else {
+				this.promoUse(null)
+			}
+		} catch (error) {
+			console.error('Ошибка проверки промокода:', error)
+			this.promoUse(null)
+			throw error
 		}
 	}
 	toggleInitials(choosen: boolean) {
@@ -917,6 +1005,424 @@ export class ConfiguratorStore {
 	}
 	prevStep() {
 		if (this.currentStepNum > 1) this.currentStepNum -= 1
+	}
+	
+	// Загрузка моделей из API
+	async loadWatchModelsFromAPI() {
+		try {
+			this.isLoading = true
+			const { watchModelsApi } = await import('../api/watchModels.api')
+			const models = await watchModelsApi.getAll()
+			this.watchModels = models
+			
+			// Если ни одна модель не выбрана, выбираем первую
+			if (!this.selectedWatchModel && this.watchModels.length > 0) {
+				this.watchModels[0].choosen = true
+				if (this.watchModels[0].watch_sizes.length > 0) {
+					this.watchModels[0].watch_sizes[0].choosen = true
+				}
+			}
+			
+			// Также сохраняем в localStorage для оффлайн режима
+			this.saveWatchModelsToStorage()
+			
+			// Обновляем информацию в steps для выбранной модели
+			const selectedModel = this.selectedWatchModel
+			if (selectedModel) {
+				this.steps.model.modelName = selectedModel.model_name
+				const selectedSize = selectedModel.watch_sizes.find(s => s.choosen)
+				if (selectedSize) {
+					this.steps.model.modelSize = selectedSize.watch_size
+				}
+			}
+		} catch (error) {
+			console.error('Error loading watch models from API:', error)
+			// Если API недоступен, используем localStorage
+			this.watchModels = this.loadWatchModelsFromStorage()
+		} finally {
+			this.isLoading = false
+		}
+	}
+	
+	// Admin methods for managing watch models (с сохранением в API)
+	async addWatchModel(model: WatchModel) {
+		try {
+			const { watchModelsApi } = await import('../api/watchModels.api')
+			const created = await watchModelsApi.create(model)
+			this.watchModels.push({ ...created, choosen: false })
+			this.saveWatchModelsToStorage()
+		} catch (error) {
+			console.error('Error adding watch model:', error)
+			throw error
+		}
+	}
+	
+	async updateWatchModel(index: number, updates: Partial<WatchModel>) {
+		if (index >= 0 && index < this.watchModels.length) {
+			const model = this.watchModels[index]
+			const modelId = model.id
+			
+			if (!modelId) {
+				const errorMsg = 'Невозможно обновить модель: ID не найден. Попробуйте перезагрузить страницу.'
+				console.error('Model ID not found for update', model)
+				alert(errorMsg)
+				throw new Error(errorMsg)
+			}
+			
+			try {
+				const { watchModelsApi } = await import('../api/watchModels.api')
+				const updatedModel = { ...model, ...updates }
+				const result = await watchModelsApi.update(modelId, updatedModel)
+				this.watchModels[index] = { ...result, choosen: model.choosen }
+				this.saveWatchModelsToStorage()
+			} catch (error) {
+				console.error('Error updating watch model:', error)
+				throw error
+			}
+		}
+	}
+	
+	async deleteWatchModel(index: number) {
+		if (index >= 0 && index < this.watchModels.length) {
+			const model = this.watchModels[index]
+			const modelId = model.id
+			
+			if (!modelId) {
+				const errorMsg = 'Невозможно удалить модель: ID не найден. Попробуйте перезагрузить страницу.'
+				console.error('Model ID not found for deletion', model)
+				alert(errorMsg)
+				throw new Error(errorMsg)
+			}
+			
+			try {
+				const { watchModelsApi } = await import('../api/watchModels.api')
+				await watchModelsApi.delete(modelId)
+				this.watchModels.splice(index, 1)
+				this.saveWatchModelsToStorage()
+			} catch (error) {
+				console.error('Error deleting watch model:', error)
+				throw error
+			}
+		}
+	}
+	
+	// Создание бэкапа
+	async createBackup() {
+		try {
+			const { watchModelsApi } = await import('../api/watchModels.api')
+			const backup = await watchModelsApi.backup()
+			
+			// Скачиваем как JSON файл
+			const dataStr = JSON.stringify(backup, null, 2)
+			const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr)
+			const exportFileDefaultName = `watch-models-backup-${backup.timestamp.split('T')[0]}.json`
+			
+			const linkElement = document.createElement('a')
+			linkElement.setAttribute('href', dataUri)
+			linkElement.setAttribute('download', exportFileDefaultName)
+			linkElement.click()
+			
+			return backup
+		} catch (error) {
+			console.error('Error creating backup:', error)
+			throw error
+		}
+	}
+	
+	// Восстановление из бэкапа
+	async restoreFromBackup(backupFile: File) {
+		try {
+			this.isLoading = true
+			
+			// Читаем файл
+			const fileContent = await backupFile.text()
+			const backup = JSON.parse(fileContent)
+			
+			// Проверяем структуру бэкапа
+			if (!backup.data || !Array.isArray(backup.data)) {
+				throw new Error('Неверный формат файла бэкапа')
+			}
+			
+			// Отправляем на сервер для восстановления
+			const { watchModelsApi } = await import('../api/watchModels.api')
+			const result = await watchModelsApi.restore(backup.data)
+			
+			// Перезагружаем данные
+			await this.loadWatchModelsFromAPI()
+			
+			return result
+		} catch (error) {
+			console.error('Error restoring from backup:', error)
+			throw error
+		} finally {
+			this.isLoading = false
+		}
+	}
+	
+	// Сброс моделей к начальным (mock) данным - через re-seed БД
+	async resetWatchModelsToDefault() {
+		if (confirm('Это пересоздаст базу данных с начальными данными. Продолжить?')) {
+			try {
+				this.isLoading = true
+				const { watchModelsApi } = await import('../api/watchModels.api')
+				
+				// Преобразуем mockWatchModels в формат БД для restore
+				const mockDataForRestore = mockWatchModels.map((model, index) => ({
+					id: index + 1,
+					model_name: model.model_name,
+					watch_model_name: model.watch_model_name,
+					watch_model_manufacturer: model.watch_model_manufacturer || null,
+					main_image: model.main_image || null,
+					createdAt: new Date().toISOString(),
+					updatedAt: new Date().toISOString(),
+					watch_sizes: model.watch_sizes.map((size, sizeIdx) => ({
+						id: sizeIdx + 1,
+						watch_size: size.watch_size,
+						watchModelId: index + 1
+					})),
+					frame_colors: model.frame_colors.map((color, colorIdx) => ({
+						id: colorIdx + 1,
+						color_name: color.color_name,
+						color_code: color.color_code || null,
+						watchModelId: index + 1
+					}))
+				}))
+				
+				// Используем backend restore endpoint, который удаляет все и создает заново
+				await watchModelsApi.restore(mockDataForRestore)
+				
+				// Загружаем обновленные данные с сервера
+				await this.loadWatchModelsFromAPI()
+			} catch (error) {
+				console.error('Error resetting to defaults:', error)
+				throw error
+			} finally {
+				this.isLoading = false
+			}
+		}
+	}
+	
+	// ========== Методы для управления ремешками ==========
+	
+	// Загрузка ремешков из API
+	async loadWatchStrapsFromAPI() {
+		try {
+			this.isLoading = true
+			const { watchStrapsApi } = await import('../api/watchStraps.api')
+			const straps = await watchStrapsApi.getAll()
+			this.watchStraps = straps
+		} catch (error) {
+			console.error('Error loading watch straps from API:', error)
+			// При ошибке оставляем mock данные
+		} finally {
+			this.isLoading = false
+		}
+	}
+	
+	async addWatchStrap(strap: Strap) {
+		try {
+			const { watchStrapsApi } = await import('../api/watchStraps.api')
+			const created = await watchStrapsApi.create(strap)
+			this.watchStraps.push({ ...created, choosen: false })
+		} catch (error) {
+			console.error('Error adding watch strap:', error)
+			throw error
+		}
+	}
+	
+	async updateWatchStrap(index: number, updates: Partial<Strap>) {
+		if (index >= 0 && index < this.watchStraps.length) {
+			const strap = this.watchStraps[index]
+			const strapId = strap.attributes.watch_strap.id
+			
+			if (!strapId) {
+				const errorMsg = 'Невозможно обновить ремешок: ID не найден. Попробуйте перезагрузить страницу.'
+				console.error('Strap ID not found for update', strap)
+				alert(errorMsg)
+				throw new Error(errorMsg)
+			}
+			
+			try {
+				const { watchStrapsApi } = await import('../api/watchStraps.api')
+				const updatedStrap = { ...strap, ...updates }
+				const result = await watchStrapsApi.update(strapId, updatedStrap)
+				this.watchStraps[index] = { ...result, choosen: strap.choosen }
+			} catch (error) {
+				console.error('Error updating watch strap:', error)
+				throw error
+			}
+		}
+	}
+	
+	async deleteWatchStrap(index: number) {
+		if (index >= 0 && index < this.watchStraps.length) {
+			const strap = this.watchStraps[index]
+			const strapId = strap.attributes.watch_strap.id
+			
+			if (!strapId) {
+				const errorMsg = 'Невозможно удалить ремешок: ID не найден. Попробуйте перезагрузить страницу.'
+				console.error('Strap ID not found for deletion', strap)
+				alert(errorMsg)
+				throw new Error(errorMsg)
+			}
+			
+			try {
+				const { watchStrapsApi } = await import('../api/watchStraps.api')
+				await watchStrapsApi.delete(strapId)
+				this.watchStraps.splice(index, 1)
+			} catch (error) {
+				console.error('Error deleting watch strap:', error)
+				throw error
+			}
+		}
+	}
+	
+	// Создание бэкапа ремешков
+	async createStrapsBackup() {
+		try {
+			const { watchStrapsApi } = await import('../api/watchStraps.api')
+			const backup = await watchStrapsApi.backup()
+			
+			// Скачиваем файл
+			const blob = new Blob([JSON.stringify(backup.data, null, 2)], { type: 'application/json' })
+			const url = window.URL.createObjectURL(blob)
+			const a = document.createElement('a')
+			a.href = url
+			a.download = `watch-straps-backup-${new Date().toISOString().split('T')[0]}.json`
+			a.click()
+			window.URL.revokeObjectURL(url)
+		} catch (error) {
+			console.error('Error creating straps backup:', error)
+			throw error
+		}
+	}
+	
+	// Восстановление ремешков из бэкапа
+	async restoreStrapsFromBackup(backupFile: File) {
+		try {
+			this.isLoading = true
+			const text = await backupFile.text()
+			const backupData = JSON.parse(text)
+			
+			const { watchStrapsApi } = await import('../api/watchStraps.api')
+			await watchStrapsApi.restore(backupData)
+			
+			// Перезагружаем данные
+			await this.loadWatchStrapsFromAPI()
+		} catch (error) {
+			console.error('Error restoring straps from backup:', error)
+			throw error
+		} finally {
+			this.isLoading = false
+		}
+	}
+	
+	// Создание полного бэкапа всех данных админки
+	async createFullBackup() {
+		try {
+			this.isLoading = true
+			
+			// Получаем данные моделей часов
+			const { watchModelsApi } = await import('../api/watchModels.api')
+			const modelsBackup = await watchModelsApi.backup()
+			
+			// Получаем данные ремешков
+			const { watchStrapsApi } = await import('../api/watchStraps.api')
+			const strapsBackup = await watchStrapsApi.backup()
+			
+			// Получаем данные промокодов
+			const { promocodeApi } = await import('../api/promocode.api')
+			const promoCodesBackup = await promocodeApi.backup()
+			
+			// Создаем полный бэкап
+			const fullBackup = {
+				timestamp: new Date().toISOString(),
+				version: '1.1',
+				models: modelsBackup,
+				straps: strapsBackup,
+				promoCodes: promoCodesBackup,
+				description: 'Полный бэкап всех данных админки (модели, ремешки, промокоды)'
+			}
+			
+			// Скачиваем как JSON файл
+			const dataStr = JSON.stringify(fullBackup, null, 2)
+			const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr)
+			const exportFileDefaultName = `admin-full-backup-${fullBackup.timestamp.split('T')[0]}.json`
+			
+			const linkElement = document.createElement('a')
+			linkElement.setAttribute('href', dataUri)
+			linkElement.setAttribute('download', exportFileDefaultName)
+			linkElement.click()
+			
+			return fullBackup
+		} catch (error) {
+			console.error('Error creating full backup:', error)
+			throw error
+		} finally {
+			this.isLoading = false
+		}
+	}
+	
+	// Восстановление из полного бэкапа
+	async restoreFromFullBackup(backupFile: File) {
+		try {
+			this.isLoading = true
+			
+			// Проверяем тип файла
+			if (!backupFile.name.endsWith('.json')) {
+				throw new Error('Файл должен быть в формате JSON')
+			}
+			
+			const text = await backupFile.text()
+			let backupData
+			
+			try {
+				backupData = JSON.parse(text)
+			} catch (parseError) {
+				throw new Error('Неверный формат JSON файла')
+			}
+			
+			// Проверяем структуру бэкапа (модели и ремешки обязательны, промокоды опциональны для старых бэкапов)
+			if (!backupData.models || !backupData.straps) {
+				throw new Error('Неверный формат файла бэкапа. Отсутствуют данные моделей или ремешков.')
+			}
+			
+			// Проверяем версию бэкапа
+			if (backupData.version && backupData.version !== '1.0' && backupData.version !== '1.1') {
+				console.warn('Версия бэкапа отличается от текущей:', backupData.version)
+			}
+			
+			console.log('Начинаем восстановление из бэкапа:', backupData.timestamp)
+			
+			// Восстанавливаем модели часов
+			const { watchModelsApi } = await import('../api/watchModels.api')
+			await watchModelsApi.restore(backupData.models)
+			console.log('Модели часов восстановлены')
+			
+			// Восстанавливаем ремешки
+			const { watchStrapsApi } = await import('../api/watchStraps.api')
+			await watchStrapsApi.restore(backupData.straps)
+			console.log('Ремешки восстановлены')
+			
+			// Восстанавливаем промокоды (если есть в бэкапе)
+			if (backupData.promoCodes?.data) {
+				const { promocodeApi } = await import('../api/promocode.api')
+				await promocodeApi.restore(backupData.promoCodes.data)
+				console.log('Промокоды восстановлены')
+			}
+			
+			// Перезагружаем все данные
+			await this.loadWatchModelsFromAPI()
+			await this.loadWatchStrapsFromAPI()
+			
+			console.log('Все данные успешно восстановлены')
+			
+		} catch (error) {
+			console.error('Error restoring from full backup:', error)
+			throw error
+		} finally {
+			this.isLoading = false
+		}
 	}
 }
 

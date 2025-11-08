@@ -1,0 +1,46 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model WatchModel {
+  id                       Int      @id @default(autoincrement())
+  model_name               String
+  watch_model_name         String   @unique
+  watch_model_manufacturer String?
+  main_image               String?
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  watch_sizes  WatchSize[]
+  frame_colors FrameColor[]
+
+  @@map("watch_models")
+}
+
+model WatchSize {
+  id           Int        @id @default(autoincrement())
+  watch_size   String
+  watchModelId Int
+  watchModel   WatchModel @relation(fields: [watchModelId], references: [id], onDelete: Cascade)
+
+  @@map("watch_sizes")
+}
+
+model FrameColor {
+  id           Int        @id @default(autoincrement())
+  color_name   String
+  color_code   String?
+  watchModelId Int
+  watchModel   WatchModel @relation(fields: [watchModelId], references: [id], onDelete: Cascade)
+
+  @@map("frame_colors")
+}

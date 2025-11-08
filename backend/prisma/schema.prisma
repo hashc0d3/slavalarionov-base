@@ -1,0 +1,89 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model WatchModel {
+  id                        Int           @id @default(autoincrement())
+  model_name                String
+  watch_model_name          String        @unique
+  watch_model_manufacturer  String?
+  main_image                String?
+  createdAt                 DateTime      @default(now())
+  updatedAt                 DateTime      @updatedAt
+  
+  watch_sizes               WatchSize[]
+  frame_colors              FrameColor[]
+  available_straps          WatchModelStrap[]
+  
+  @@map("watch_models")
+}
+
+model WatchSize {
+  id            Int         @id @default(autoincrement())
+  watch_size    String
+  watchModelId  Int
+  watchModel    WatchModel  @relation(fields: [watchModelId], references: [id], onDelete: Cascade)
+  
+  @@map("watch_sizes")
+}
+
+model FrameColor {
+  id            Int         @id @default(autoincrement())
+  color_name    String
+  color_code    String?
+  watchModelId  Int
+  watchModel    WatchModel  @relation(fields: [watchModelId], references: [id], onDelete: Cascade)
+  
+  @@map("frame_colors")
+}
+
+model WatchStrap {
+  id                      Int       @id @default(autoincrement())
+  strap_name              String    @unique
+  strap_title             String
+  strap_description       String?
+  strap_short_description String?
+  price                   Float
+  preview_image           String?
+  ultra_preview_image     String?
+  has_buckle_butterfly    Boolean   @default(false)
+  strap_params            String    // JSON string для хранения всех параметров цветов
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  
+  compatible_models       WatchModelStrap[]
+  
+  @@map("watch_straps")
+}
+
+model WatchModelStrap {
+  id            Int         @id @default(autoincrement())
+  watchModelId  Int
+  watchStrapId  Int
+  watchModel    WatchModel  @relation(fields: [watchModelId], references: [id], onDelete: Cascade)
+  watchStrap    WatchStrap  @relation(fields: [watchStrapId], references: [id], onDelete: Cascade)
+  
+  @@unique([watchModelId, watchStrapId])
+  @@map("watch_model_straps")
+}
+
+model PromoCode {
+  id              Int      @id @default(autoincrement())
+  code            String   @unique
+  discountPercent Int?
+  discountAmount  Int?
+  activationsLeft Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("promo_codes")
+}

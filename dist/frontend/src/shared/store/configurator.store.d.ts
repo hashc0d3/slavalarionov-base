@@ -9,6 +9,7 @@ export type WatchSize = {
     choosen: boolean;
 };
 export type WatchModel = {
+    id?: number;
     model_name: string;
     watch_model_name: string;
     watch_model_manufacturer?: string;
@@ -29,6 +30,7 @@ export type StrapParams = {
     edge_colors: StrapColor[];
     buckle_colors: StrapColor[];
     adapter_colors: StrapColor[];
+    has_buckle_butterfly?: boolean;
 };
 export type Strap = {
     choosen: boolean;
@@ -38,7 +40,11 @@ export type Strap = {
             id: number;
             strap_name: string;
             strap_title: string;
+            strap_description?: string;
+            strap_short_description?: string;
             price: number;
+            preview_image?: string;
+            ultra_preview_image?: string;
             buckle_butterfly_choosen?: boolean;
             strap_params: StrapParams;
         };
@@ -63,8 +69,16 @@ export declare class ConfiguratorStore {
     promoCode: string | null;
     promoAccepted: boolean;
     usedPromo: Promo | null;
+    orderPopupVisible: boolean;
+    cartItems: any[];
+    editingCartItemId: string | null;
+    additionalOption: any;
     steps: any;
     constructor();
+    loadWatchModelsFromStorage(): WatchModel[];
+    saveWatchModelsToStorage(): void;
+    showOrderPopup(): void;
+    closeOrderPopup(): void;
     get selectedWatchModel(): WatchModel | null;
     get selectedWatchModelAllSizes(): WatchSize[] | null;
     get selectedWatchModelFrameColors(): FrameColor[] | null;
@@ -118,7 +132,34 @@ export declare class ConfiguratorStore {
     setInitialsText(text: string): void;
     togglePresentBox(choosen: boolean): void;
     togglePostCard(choosen: boolean): void;
+    setPostCardText(text: string): void;
+    increaseQuantity(): void;
+    decreaseQuantity(): void;
+    setQuantity(amount: number): void;
+    addCurrentToCart(): void;
+    removeFromCart(itemId: string): void;
+    clearCart(): void;
+    resetConfigurator(): void;
+    get cartTotalPrice(): any;
+    get cartItemsCount(): any;
+    editCartItem(itemId: string): void;
+    loadItemConfiguration(item: any): void;
+    updateCartItem(itemId: string): void;
+    cancelEditCartItem(): void;
     nextStep(): void;
     prevStep(): void;
+    loadWatchModelsFromAPI(): Promise<void>;
+    addWatchModel(model: WatchModel): Promise<void>;
+    updateWatchModel(index: number, updates: Partial<WatchModel>): Promise<void>;
+    deleteWatchModel(index: number): Promise<void>;
+    createBackup(): Promise<{
+        timestamp: string;
+        data: import("../api/watchModels.api").WatchModelDB[];
+    }>;
+    restoreFromBackup(backupFile: File): Promise<{
+        success: boolean;
+        restoredCount: number;
+    }>;
+    resetWatchModelsToDefault(): Promise<void>;
 }
 export declare const configuratorStore: ConfiguratorStore;

@@ -10,7 +10,7 @@ export const StrapModelStep = observer(function StrapModelStep() {
 	return (
 		<div className={styles.step}>
 			<div className={styles.stepWrapper}>
-				{configuratorStore.watchStraps.map((strap) => (
+				{configuratorStore.availableWatchStraps.map((strap) => (
 					<div
 						key={strap.attributes.watch_strap.id}
 						className={[styles.item, strap.choosen ? styles.choosen : ''].join(' ')}
