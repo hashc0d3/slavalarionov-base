@@ -436,6 +436,7 @@ export class ConfiguratorStore {
 			title: 'Ваша модель часов',
 			queryParam: 'watch-model',
 			isChoosen: true,
+			completed: false,
 			modelName: mockWatchModels[0].model_name,
 			modelSize: mockWatchModels[0].watch_sizes[0].watch_size,
 			color: { name: 'Silver', code: '#C0C0C0' }
@@ -445,6 +446,7 @@ export class ConfiguratorStore {
 			title: 'Выберите модель ремешка',
 			queryParam: 'strap-model',
 			isChoosen: true,
+			completed: false,
 			strapName: 'Brogue',
 			strapPrice: 8990
 		},
@@ -453,6 +455,7 @@ export class ConfiguratorStore {
 			title: 'Создайте уникальный дизайн',
 			queryParam: 'strap-design',
 			isChoosen: true,
+			completed: false,
 			leatherColor: { title: 'Кожа', name: 'Черный' },
 			stitchingColor: { title: 'Строчка', name: 'Черная' },
 			edgeColor: { title: 'Край', name: 'Черный' },
@@ -479,8 +482,83 @@ export class ConfiguratorStore {
 		}
 	}
 
+	updateModelStepState() {
+		const selectedModel = this.selectedWatchModel
+		const selectedSize = selectedModel?.watch_sizes.find((size) => size.choosen)?.watch_size
+		const selectedColor = this.selectedFrameColor
+
+		this.steps.model.modelName = selectedModel?.model_name || ''
+		this.steps.model.modelSize = selectedSize || ''
+		this.steps.model.color = {
+			name: selectedColor?.color_name || '',
+			code: selectedColor?.color_code || '#C0C0C0'
+		}
+		const isComplete = !!(selectedModel && selectedSize && selectedColor)
+		this.steps.model.isChoosen = isComplete
+		this.steps.model.completed = isComplete
+	}
+
+	updateStrapStepState() {
+		const strap = this.selectedStrapModel?.attributes.watch_strap
+		if (strap) {
+			this.steps.strap.strapName = strap.strap_title
+			this.steps.strap.strapPrice = strap.price
+		} else {
+			this.steps.strap.strapName = ''
+			this.steps.strap.strapPrice = 0
+		}
+		const hasStrap = !!strap
+		this.steps.strap.isChoosen = hasStrap
+		this.steps.strap.completed = hasStrap
+	}
+
+	updateStrapDesignStepState() {
+		if (!this.selectedStrapModel) {
+			this.steps.strapDesign.leatherColor = { ...this.steps.strapDesign.leatherColor, name: '' }
+			this.steps.strapDesign.stitchingColor = { ...this.steps.strapDesign.stitchingColor, name: '' }
+			this.steps.strapDesign.edgeColor = { ...this.steps.strapDesign.edgeColor, name: '' }
+			this.steps.strapDesign.buckleColor = { ...this.steps.strapDesign.buckleColor, name: '' }
+			this.steps.strapDesign.adapterColor = { ...this.steps.strapDesign.adapterColor, name: '' }
+			this.steps.strapDesign.completed = false
+			this.steps.strapDesign.isChoosen = false
+			return
+		}
+
+		const leather = this.selectedLeatherColor
+		const stitching = this.selectedStitchingColor
+		const edge = this.selectedEdgeColor
+		const buckle = this.selectedBuckleColor
+		const adapter = this.selectedAdapterColor
+
+		this.steps.strapDesign.leatherColor = {
+			...this.steps.strapDesign.leatherColor,
+			name: leather?.color_title || ''
+		}
+		this.steps.strapDesign.stitchingColor = {
+			...this.steps.strapDesign.stitchingColor,
+			name: stitching?.color_title || ''
+		}
+		this.steps.strapDesign.edgeColor = {
+			...this.steps.strapDesign.edgeColor,
+			name: edge?.color_title || ''
+		}
+		this.steps.strapDesign.buckleColor = {
+			...this.steps.strapDesign.buckleColor,
+			name: buckle?.color_title || ''
+		}
+		this.steps.strapDesign.adapterColor = {
+			...this.steps.strapDesign.adapterColor,
+			name: adapter?.color_title || ''
+		}
+		this.steps.strapDesign.completed = this.isStrapParamsSelected
+		this.steps.strapDesign.isChoosen = this.steps.strapDesign.completed
+	}
+
 	constructor() {
 		makeAutoObservable(this)
+		this.updateModelStepState()
+		this.updateStrapStepState()
+		this.updateStrapDesignStepState()
 	}
 	
 	// Загрузка моделей из localStorage или использование mock данных
@@ -567,7 +645,23 @@ export class ConfiguratorStore {
 		return this.selectedStrapModelParams?.adapter_colors.find((c) => c.choosen) || null
 	}
 	get isStrapParamsSelected() {
-		return this.selectedLeatherColor !== null
+		const params = this.selectedStrapModelParams
+		if (!params) return false
+
+		const checks: boolean[] = []
+		const ensureSelected = (list: { choosen?: boolean }[] | undefined, selected: any) => {
+			if (Array.isArray(list) && list.length > 0) {
+				checks.push(!!selected)
+			}
+		}
+
+		ensureSelected(params.leather_colors, this.selectedLeatherColor)
+		ensureSelected(params.stitching_colors, this.selectedStitchingColor)
+		ensureSelected(params.edge_colors, this.selectedEdgeColor)
+		ensureSelected(params.buckle_colors, this.selectedBuckleColor)
+		ensureSelected(params.adapter_colors, this.selectedAdapterColor)
+
+		return checks.every(Boolean)
 	}
 	get selectedAdditionalOptions() {
 		const opts = this.steps.final.additionalOptions
@@ -607,9 +701,9 @@ export class ConfiguratorStore {
 	}
 	get nextStepReady() {
 		const step = this.currentStepNum
-		if (step === 1) return !!this.steps.model.modelName
-		if (step === 2) return this.steps.strap.isChoosen
-		if (step === 3) return this.isStrapParamsSelected
+		if (step === 1) return this.steps.model.completed
+		if (step === 2) return this.steps.strap.completed
+		if (step === 3) return this.steps.strapDesign.completed
 		return true
 	}
 	get currentAvailableStep() {
@@ -648,7 +742,9 @@ export class ConfiguratorStore {
 		const model = this.watchModels[modelIdx]
 		this.steps.model.modelName = model.model_name
 		this.steps.model.modelSize = model.watch_sizes[sizeIdx].watch_size
+		this.steps.model.isChoosen = true
 		this.chooseFrameColor()
+		this.updateModelStepState()
 	}
 	updateSelectedModel(option: string) {
 		this.watchModels.forEach((item) => {
@@ -659,9 +755,11 @@ export class ConfiguratorStore {
 				// Обновляем информацию в steps
 				this.steps.model.modelName = item.model_name
 				this.steps.model.modelSize = item.watch_sizes[0].watch_size
+				this.steps.model.isChoosen = true
 				this.chooseFrameColor()
 			}
 		})
+		this.updateModelStepState()
 	}
 	updateWatchModelSize(option: string) {
 		const clean = option.replace(/\D/g, '')
@@ -672,6 +770,8 @@ export class ConfiguratorStore {
 				this.steps.model.modelSize = size.watch_size
 			}
 		})
+		this.steps.model.isChoosen = true
+		this.updateModelStepState()
 	}
 	updateSelectedFrameColor(option: string) {
 		this.selectedWatchModelFrameColors?.forEach((c) => (c.choosen = c.color_name === option))
@@ -686,6 +786,8 @@ export class ConfiguratorStore {
 		} else {
 			this.selectedWatchModel.frame_colors.forEach((c) => (c.choosen = c.color_name === name))
 		}
+		this.steps.model.isChoosen = !!this.selectedFrameColor
+		this.updateModelStepState()
 	}
 	chooseStrapModel(id: number) {
 		this.watchStraps.forEach((s) => (s.choosen = s.attributes.watch_strap.id === id))
@@ -710,6 +812,8 @@ export class ConfiguratorStore {
 			setFirstChoosen(params?.adapter_colors)
 			this.steps.strapDesign.buckleButterflyChoosen = !!strap.attributes.watch_strap.buckle_butterfly_choosen
 		}
+		this.updateStrapStepState()
+		this.updateStrapDesignStepState()
 	}
 	updateSelectedStrap(title: string = '') {
 		const target = title
@@ -720,23 +824,26 @@ export class ConfiguratorStore {
 		}
 	}
 	chooseStrapLeatherColor(title: string) {
-		console.log('Choosing leather color:', title)
 		this.selectedStrapModel?.attributes.watch_strap.strap_params.leather_colors.forEach((c) => {
 			c.choosen = c.color_title === title
-			console.log('Color:', c.color_title, 'choosen:', c.choosen)
 		})
+		this.updateStrapDesignStepState()
 	}
 	chooseStitchingColor(title: string) {
 		this.selectedStrapModel?.attributes.watch_strap.strap_params.stitching_colors.forEach((c) => (c.choosen = c.color_title === title))
+		this.updateStrapDesignStepState()
 	}
 	chooseEdgeColor(title: string) {
 		this.selectedStrapModel?.attributes.watch_strap.strap_params.edge_colors.forEach((c) => (c.choosen = c.color_title === title))
+		this.updateStrapDesignStepState()
 	}
 	chooseBuckleColor(title: string) {
 		this.selectedStrapModel?.attributes.watch_strap.strap_params.buckle_colors.forEach((c) => (c.choosen = c.color_title === title))
+		this.updateStrapDesignStepState()
 	}
 	chooseAdapterColor(title: string) {
 		this.selectedStrapModel?.attributes.watch_strap.strap_params.adapter_colors.forEach((c) => (c.choosen = c.color_title === title))
+		this.updateStrapDesignStepState()
 	}
 	chooseBuckleButterfly() {
 		const strap = this.selectedStrapModel
@@ -744,6 +851,7 @@ export class ConfiguratorStore {
 			strap.attributes.watch_strap.buckle_butterfly_choosen = !strap.attributes.watch_strap.buckle_butterfly_choosen
 			this.steps.strapDesign.buckleButterflyChoosen = !!strap.attributes.watch_strap.buckle_butterfly_choosen
 		}
+		this.updateStrapDesignStepState()
 	}
 	setClosestReadyDate(str: string) {
 		this.closestReadyDate = str
@@ -868,6 +976,28 @@ export class ConfiguratorStore {
 		this.steps.final.additionalOptions.postCard.choosen = false
 		this.steps.final.additionalOptions.postCard.text = null
 		this.steps.strapDesign.buckleButterflyChoosen = false
+
+		this.steps.model.isChoosen = false
+		this.steps.model.completed = false
+		this.steps.model.modelName = ''
+		this.steps.model.modelSize = ''
+		this.steps.model.color = { name: '', code: '' }
+
+		this.steps.strap.isChoosen = false
+		this.steps.strap.completed = false
+		this.steps.strap.strapName = ''
+		this.steps.strap.strapPrice = 0
+
+		this.steps.strapDesign.completed = false
+		this.steps.strapDesign.leatherColor = { title: 'Кожа', name: '' }
+		this.steps.strapDesign.stitchingColor = { title: 'Строчка', name: '' }
+		this.steps.strapDesign.edgeColor = { title: 'Край', name: '' }
+		this.steps.strapDesign.buckleColor = { title: 'Пряжка', name: '' }
+		this.steps.strapDesign.adapterColor = { title: 'Адаптер', name: '' }
+
+		this.updateModelStepState()
+		this.updateStrapStepState()
+		this.updateStrapDesignStepState()
 	}
 	
 	get cartTotalPrice() {
@@ -968,6 +1098,10 @@ export class ConfiguratorStore {
 		
 		// Загружаем количество
 		this.productAmount = item.quantity
+
+		this.updateModelStepState()
+		this.updateStrapStepState()
+		this.updateStrapDesignStepState()
 	}
 	
 	updateCartItem(itemId: string) {
@@ -1035,6 +1169,9 @@ export class ConfiguratorStore {
 					this.steps.model.modelSize = selectedSize.watch_size
 				}
 			}
+			this.updateModelStepState()
+			this.updateStrapStepState()
+			this.updateStrapDesignStepState()
 		} catch (error) {
 			console.error('Error loading watch models from API:', error)
 			// Если API недоступен, используем localStorage
