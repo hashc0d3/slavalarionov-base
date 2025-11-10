@@ -2,6 +2,7 @@
 
 import { observer } from 'mobx-react-lite'
 import { configuratorStore } from '@/shared/store/configurator.store'
+import { resolveMediaUrl } from '@/shared/lib/media'
 import styles from './StrapDesignPreview.module.css'
 
 interface StrapDesignPreviewProps {
@@ -12,12 +13,12 @@ interface StrapDesignPreviewProps {
 
 export const StrapDesignPreview = observer(function StrapDesignPreview({ className, variant = 'default', layout = 'flex' }: StrapDesignPreviewProps) {
 	const selectedStrapModel = configuratorStore.selectedStrapModel
-	const selectedFrameColor = configuratorStore.selectedFrameColor
 	const selectedLeatherColor = configuratorStore.selectedLeatherColor
 	const selectedStitchingColor = configuratorStore.selectedStitchingColor
 	const selectedEdgeColor = configuratorStore.selectedEdgeColor
 	const selectedBuckleColor = configuratorStore.selectedBuckleColor
 	const selectedAdapterColor = configuratorStore.selectedAdapterColor
+	const frameColorImages = configuratorStore.selectedFrameColorImages
 
 	if (!selectedStrapModel) {
 		return null
@@ -25,17 +26,38 @@ export const StrapDesignPreview = observer(function StrapDesignPreview({ classNa
 
 	const strapData = selectedStrapModel.attributes.watch_strap
 
-	// Real image URLs from the provided HTML
 	const baseImageUrl = 'https://api.slavalarionov.store/uploads'
-	
-	// Генерируем URL для изображений на основе выбранных цветов
-	const getImageUrl = (type: string, view: number) => {
-		const colorName = type === 'leather' ? selectedLeatherColor?.color_title?.toLowerCase() || 'white' :
-			type === 'stitching' ? selectedStitchingColor?.color_title?.toLowerCase() || 'white' :
-			type === 'edge' ? selectedEdgeColor?.color_title?.toLowerCase() || 'white' :
-			type === 'buckle' ? selectedBuckleColor?.color_title?.toLowerCase() || 'silver' :
-			type === 'adapter' ? selectedAdapterColor?.color_title?.toLowerCase() || 'silver' : 'white'
-		
+
+	const pickImagePath = (value: any): string | undefined => {
+		if (!value) return undefined
+		if (typeof value === 'string') return value
+		if (typeof value === 'object') {
+			if ('url' in value && typeof value.url === 'string') return value.url
+			if ('data' in value && value.data?.attributes?.url) return value.data.attributes.url
+		}
+		return undefined
+	}
+
+	const getDynamicColorImage = (color: any, view: number): string | undefined => {
+		if (!color) return undefined
+		const candidates = [
+			pickImagePath(color.images?.[`view${view}`]),
+			pickImagePath(color.images?.[`view_${view}`]),
+			pickImagePath(color[`view${view}`]),
+			pickImagePath(color[`view_${view}`])
+		]
+		for (const candidate of candidates) {
+			const resolved = resolveMediaUrl(candidate)
+			if (resolved) {
+				return resolved
+			}
+		}
+		return undefined
+	}
+
+	const getLegacyImageUrl = (type: string, view: number, color?: any) => {
+		const colorName = (color?.color_title ?? '').toLowerCase()
+
 		// Маппинг цветов для правильных URL с хешами для разных видов
 		const getColorHash = (colorName: string, type: string, view: number) => {
 			// Базовые хеши для view 1
@@ -145,7 +167,7 @@ export const StrapDesignPreview = observer(function StrapDesignPreview({ classNa
 			'зелёный': 'green'
 		}
 		
-		const mappedColor = colorMapping[colorName] || colorName
+		const mappedColor = colorMapping[colorName] || colorName || 'white'
 		const hash = getColorHash(colorName, type, view)
 		
 		// Для разных типов ремешков используются разные префиксы
@@ -156,35 +178,38 @@ export const StrapDesignPreview = observer(function StrapDesignPreview({ classNa
 		}
 	}
 
-	// Получаем URL для изображения корпуса часов
-	const getWatchImageUrl = (view: number) => {
-		const frameColor = selectedFrameColor?.color_name?.toLowerCase() || 'starlight'
-		
-		const getWatchHash = (color: string, viewNum: number) => {
-			const hashes: Record<string, Record<number, string>> = {
-				'silver': { 1: 'c934eac370', 2: 'e0541c47ae', 3: 'e0541c47ae' },
-				'black': { 1: '4487db25f0', 2: 'f0755d2934', 3: 'f0755d2934' },
-				'red': { 1: '71beb18575', 2: '0e42bec469', 3: '0e42bec469' },
-				'blue': { 1: '2a5db7479a', 2: '8eac170faa', 3: '8eac170faa' },
-				'green': { 1: 'ade7cd8b2b', 2: '44d4c02d5d', 3: '44d4c02d5d' },
-				'starlight': { 1: 'ad610ff403', 2: '8c161b111d', 3: '8c161b111d' }
-			}
-			return hashes[color]?.[viewNum] || hashes['starlight'][viewNum]
+	const getImageUrl = (type: 'leather' | 'stitching' | 'edge' | 'buckle' | 'adapter', view: number) => {
+		const color =
+			type === 'leather'
+				? selectedLeatherColor
+				: type === 'stitching'
+					? selectedStitchingColor
+					: type === 'edge'
+						? selectedEdgeColor
+						: type === 'buckle'
+							? selectedBuckleColor
+							: selectedAdapterColor
+
+		const dynamic = getDynamicColorImage(color, view)
+		if (dynamic) {
+			return dynamic
 		}
-		
-		const colorMapping: Record<string, string> = {
-			'silver': 'silver',
-			'black': 'midnight',
-			'red': 'red',
-			'blue': 'blue',
-			'green': 'green',
-			'starlight': 'starlight'
+
+		return getLegacyImageUrl(type, view, color)
+	}
+
+	const getBaseViewImage = (view: number) => {
+		const dynamic = resolveMediaUrl(pickImagePath(strapData.strap_params?.view_images?.[`view${view}`]))
+		if (dynamic) {
+			return dynamic
 		}
-		
-		const mappedColor = colorMapping[frameColor] || 'starlight'
-		const hash = getWatchHash(mappedColor, view)
-		
-		return `${baseImageUrl}/watch_classic_${mappedColor}_${view}_${hash}.png`
+		if (view === 1) {
+			return `${baseImageUrl}/base_${strapData.strap_name}_1_739ae2aa10.png`
+		}
+		if (view === 2) {
+			return `${baseImageUrl}/base_${strapData.strap_name}_2_26fa993a75.png`
+		}
+		return `${baseImageUrl}/base_${strapData.strap_name}_3_50228196b7.png`
 	}
 
 	return (
@@ -192,159 +217,90 @@ export const StrapDesignPreview = observer(function StrapDesignPreview({ classNa
 			<div className={`${styles.previewContainer} ${layout === 'grid' ? styles.previewContainerGrid : styles.previewContainerFlex}`}>
 				{/* View 1 */}
 				<div className={styles.previewView}>
-					<img 
-						src={`${baseImageUrl}/base_${strapData.strap_name}_1_739ae2aa10.png`} 
-						alt="Strap view 1" 
-						className={styles.baseImage}
-					/>
-					{/* Watch frame color */}
-					{selectedFrameColor && (
-						<img 
-							src={getWatchImageUrl(1)} 
-							alt="Watch frame" 
-							className={styles.overlayImage}
-						/>
-					)}
+					<img src={getBaseViewImage(1)} alt="Strap view 1" className={styles.baseImage} />
+					{(() => {
+						const url = resolveMediaUrl(frameColorImages?.view1)
+						return url ? <img src={url} alt="" className={`${styles.overlayImage} ${styles.frameOverlay}`} /> : null
+					})()}
 					{/* Overlay images for different parts */}
-					{selectedLeatherColor && (
-						<img 
-							src={getImageUrl('leather', 1)} 
-							alt="Leather color" 
-							className={styles.overlayImage}
-						/>
-					)}
-					{selectedStitchingColor && (
-						<img 
-							src={getImageUrl('stitching', 1)} 
-							alt="Stitching color" 
-							className={styles.overlayImage}
-						/>
-					)}
-					{selectedEdgeColor && (
-						<img 
-							src={getImageUrl('edge', 1)} 
-							alt="Edge color" 
-							className={styles.overlayImage}
-						/>
-					)}
-					{selectedBuckleColor && (
-						<img 
-							src={getImageUrl('buckle', 1)} 
-							alt="Buckle color" 
-							className={styles.overlayImage}
-						/>
-					)}
-					{selectedAdapterColor && (
-						<img 
-							src={getImageUrl('adapter', 1)} 
-							alt="Adapter color" 
-							className={styles.overlayImage}
-						/>
-					)}
+					{selectedLeatherColor && (() => {
+						const url = getImageUrl('leather', 1)
+						return url ? <img src={url} alt="" className={styles.overlayImage} /> : null
+					})()}
+					{selectedStitchingColor && (() => {
+						const url = getImageUrl('stitching', 1)
+						return url ? <img src={url} alt="" className={styles.overlayImage} /> : null
+					})()}
+					{selectedEdgeColor && (() => {
+						const url = getImageUrl('edge', 1)
+						return url ? <img src={url} alt="" className={styles.overlayImage} /> : null
+					})()}
+					{selectedBuckleColor && (() => {
+						const url = getImageUrl('buckle', 1)
+						return url ? <img src={url} alt="" className={styles.overlayImage} /> : null
+					})()}
+					{selectedAdapterColor && (() => {
+						const url = getImageUrl('adapter', 1)
+						return url ? <img src={url} alt="" className={styles.overlayImage} /> : null
+					})()}
 				</div>
 
 				{/* View 2 */}
 				<div className={styles.previewView}>
-					<img 
-						src={`${baseImageUrl}/base_${strapData.strap_name}_2_26fa993a75.png`} 
-						alt="Strap view 2" 
-						className={styles.baseImage}
-					/>
-					{/* Watch frame color */}
-					{selectedFrameColor && (
-						<img 
-							src={getWatchImageUrl(2)} 
-							alt="Watch frame" 
-							className={styles.overlayImage}
-						/>
-					)}
-					{selectedLeatherColor && (
-						<img 
-							src={getImageUrl('leather', 2)} 
-							alt="Leather color" 
-							className={styles.overlayImage}
-						/>
-					)}
-					{selectedStitchingColor && (
-						<img 
-							src={getImageUrl('stitching', 2)} 
-							alt="Stitching color" 
-							className={styles.overlayImage}
-						/>
-					)}
-					{selectedEdgeColor && (
-						<img 
-							src={getImageUrl('edge', 2)} 
-							alt="Edge color" 
-							className={styles.overlayImage}
-						/>
-					)}
-					{selectedBuckleColor && (
-						<img 
-							src={getImageUrl('buckle', 2)} 
-							alt="Buckle color" 
-							className={styles.overlayImage}
-						/>
-					)}
-					{selectedAdapterColor && (
-						<img 
-							src={getImageUrl('adapter', 2)} 
-							alt="Adapter color" 
-							className={styles.overlayImage}
-						/>
-					)}
+					<img src={getBaseViewImage(2)} alt="Strap view 2" className={styles.baseImage} />
+					{(() => {
+						const url = resolveMediaUrl(frameColorImages?.view2)
+						return url ? <img src={url} alt="" className={`${styles.overlayImage} ${styles.frameOverlay}`} /> : null
+					})()}
+					{selectedLeatherColor && (() => {
+						const url = getImageUrl('leather', 2)
+						return url ? <img src={url} alt="" className={styles.overlayImage} /> : null
+					})()}
+					{selectedStitchingColor && (() => {
+						const url = getImageUrl('stitching', 2)
+						return url ? <img src={url} alt="" className={styles.overlayImage} /> : null
+					})()}
+					{selectedEdgeColor && (() => {
+						const url = getImageUrl('edge', 2)
+						return url ? <img src={url} alt="" className={styles.overlayImage} /> : null
+					})()}
+					{selectedBuckleColor && (() => {
+						const url = getImageUrl('buckle', 2)
+						return url ? <img src={url} alt="" className={styles.overlayImage} /> : null
+					})()}
+					{selectedAdapterColor && (() => {
+						const url = getImageUrl('adapter', 2)
+						return url ? <img src={url} alt="" className={styles.overlayImage} /> : null
+					})()}
 				</div>
 
 				{/* View 3 */}
 				<div className={styles.previewView}>
-					<img 
-						src={`${baseImageUrl}/base_${strapData.strap_name}_3_50228196b7.png`} 
-						alt="Strap view 3" 
-						className={styles.baseImage}
-					/>
-					{/* Watch frame color */}
-					{selectedFrameColor && (
-						<img 
-							src={getWatchImageUrl(3)} 
-							alt="Watch frame" 
-							className={styles.overlayImage}
-						/>
-					)}
-					{selectedLeatherColor && (
-						<img 
-							src={getImageUrl('leather', 3)} 
-							alt="Leather color" 
-							className={styles.overlayImage}
-						/>
-					)}
-					{selectedStitchingColor && (
-						<img 
-							src={getImageUrl('stitching', 3)} 
-							alt="Stitching color" 
-							className={styles.overlayImage}
-						/>
-					)}
-					{selectedEdgeColor && (
-						<img 
-							src={getImageUrl('edge', 3)} 
-							alt="Edge color" 
-							className={styles.overlayImage}
-						/>
-					)}
-					{selectedBuckleColor && (
-						<img 
-							src={getImageUrl('buckle', 3)} 
-							alt="Buckle color" 
-							className={styles.overlayImage}
-						/>
-					)}
-					{selectedAdapterColor && (
-						<img 
-							src={getImageUrl('adapter', 3)} 
-							alt="Adapter color" 
-							className={styles.overlayImage}
-						/>
-					)}
+					<img src={getBaseViewImage(3)} alt="Strap view 3" className={styles.baseImage} />
+					{(() => {
+						const url = resolveMediaUrl(frameColorImages?.view3)
+						return url ? <img src={url} alt="" className={`${styles.overlayImage} ${styles.frameOverlay}`} /> : null
+					})()}
+					{selectedLeatherColor && (() => {
+						const url = getImageUrl('leather', 3)
+						return url ? <img src={url} alt="" className={styles.overlayImage} /> : null
+					})()}
+					{selectedStitchingColor && (() => {
+						const url = getImageUrl('stitching', 3)
+						return url ? <img src={url} alt="" className={styles.overlayImage} /> : null
+					})()}
+					{selectedEdgeColor && (() => {
+						const url = getImageUrl('edge', 3)
+						return url ? <img src={url} alt="" className={styles.overlayImage} /> : null
+					})()}
+					{selectedBuckleColor && (() => {
+						const url = getImageUrl('buckle', 3)
+						return url ? <img src={url} alt="" className={styles.overlayImage} /> : null
+					})()}
+					{selectedAdapterColor && (() => {
+						const url = getImageUrl('adapter', 3)
+						return url ? <img src={url} alt="" className={styles.overlayImage} /> : null
+					})()}
 				</div>
 			</div>
 		</div>

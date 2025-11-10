@@ -5,9 +5,30 @@ import { configuratorStore, WatchModel } from '@/shared/store/configurator.store
 import { useState, useEffect } from 'react'
 import {
   Card, Text, Button, Group, Stack, TextInput, Image, Badge,
-  Modal, Title, ActionIcon, Pill, MultiSelect, Box
+  Modal, Title, Pill, MultiSelect, Box, FileButton
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
+import { uploadStrapColorImage } from '@/shared/api/uploads.api'
+
+type FrameColorForm = {
+  color_name: string
+  color_code: string
+  view_images: {
+    view1: string
+    view2: string
+    view3: string
+  }
+}
+
+const emptyFrameColorForm: FrameColorForm = {
+  color_name: '',
+  color_code: '#000000',
+  view_images: {
+    view1: '',
+    view2: '',
+    view3: ''
+  }
+}
 
 export const AdminModelsMantine = observer(() => {
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
@@ -21,6 +42,14 @@ export const AdminModelsMantine = observer(() => {
     watch_sizes: [],
     frame_colors: [],
     available_strap_ids: []
+  })
+  const [colorModalOpened, setColorModalOpened] = useState(false)
+  const [colorEditingIndex, setColorEditingIndex] = useState<number | null>(null)
+  const [colorFormData, setColorFormData] = useState<FrameColorForm>(emptyFrameColorForm)
+  const [colorUploadLoading, setColorUploadLoading] = useState<{ view1: boolean; view2: boolean; view3: boolean }>({
+    view1: false,
+    view2: false,
+    view3: false
   })
 
   useEffect(() => {
@@ -139,20 +168,128 @@ export const AdminModelsMantine = observer(() => {
   }
 
   const addColor = () => {
-    const name = prompt('Название цвета:')
-    const code = prompt('Код цвета (например, #000000):')
-    if (name) {
-      setFormData({
-        ...formData,
-        frame_colors: [...(formData.frame_colors || []), { color_name: name, color_code: code || '', choosen: false }]
-      })
-    }
+    setColorFormData(emptyFrameColorForm)
+    setColorEditingIndex(null)
+    setColorModalOpened(true)
   }
 
   const deleteColor = (index: number) => {
     const newColors = [...(formData.frame_colors || [])]
     newColors.splice(index, 1)
     setFormData({ ...formData, frame_colors: newColors })
+  }
+
+  const handleColorFieldChange = (key: keyof FrameColorForm, value: string) => {
+    setColorFormData((prev) => ({
+      ...prev,
+      [key]: value
+    }))
+  }
+
+  const setColorViewImage = (view: 'view1' | 'view2' | 'view3', value: string) => {
+    setColorFormData((prev) => ({
+      ...prev,
+      view_images: {
+        ...prev.view_images,
+        [view]: value
+      }
+    }))
+  }
+
+  const handleColorViewUpload = async (view: 'view1' | 'view2' | 'view3', file: File | null) => {
+    if (!file) return
+
+    try {
+      setColorUploadLoading((prev) => ({ ...prev, [view]: true }))
+      const response = await uploadStrapColorImage({
+        file,
+        group: 'frame',
+        view,
+        colorTitle: colorFormData.color_name
+      })
+      setColorViewImage(view, response.url)
+      notifications.show({
+        title: 'Файл загружен',
+        message: 'Изображение успешно сохранено',
+        color: 'green'
+      })
+    } catch (error: any) {
+      console.error('Upload frame color image error:', error)
+      notifications.show({
+        title: 'Ошибка загрузки',
+        message: error?.message || 'Не удалось загрузить изображение',
+        color: 'red'
+      })
+    } finally {
+      setColorUploadLoading((prev) => ({ ...prev, [view]: false }))
+    }
+  }
+
+  const openEditColorModal = (index: number) => {
+    const colors = formData.frame_colors || []
+    const target = colors[index]
+    if (!target) return
+
+    setColorFormData({
+      color_name: target.color_name,
+      color_code: target.color_code || '#000000',
+      view_images: {
+        view1: target.view_images?.view1 || '',
+        view2: target.view_images?.view2 || '',
+        view3: target.view_images?.view3 || ''
+      }
+    })
+    setColorEditingIndex(index)
+    setColorModalOpened(true)
+  }
+
+  const closeColorModal = () => {
+    setColorModalOpened(false)
+    setColorEditingIndex(null)
+    setColorFormData(emptyFrameColorForm)
+    setColorUploadLoading({ view1: false, view2: false, view3: false })
+  }
+
+  const saveColorModal = () => {
+    const trimmedName = colorFormData.color_name.trim()
+    if (!trimmedName) {
+      notifications.show({
+        title: 'Ошибка',
+        message: 'Введите название цвета',
+        color: 'red'
+      })
+      return
+    }
+
+    const sanitizedViewImages = Object.entries(colorFormData.view_images).reduce(
+      (acc, [key, value]) => {
+        const trimmed = value.trim()
+        if (trimmed) {
+          acc[key as 'view1' | 'view2' | 'view3'] = trimmed
+        }
+        return acc
+      },
+      {} as Record<'view1' | 'view2' | 'view3', string>
+    )
+
+    const nextColors = [...(formData.frame_colors || [])]
+    const existing = colorEditingIndex !== null ? nextColors[colorEditingIndex] : undefined
+
+    const nextColor = {
+      color_name: trimmedName,
+      color_code: colorFormData.color_code.trim() || '',
+      choosen: existing?.choosen ?? false,
+      view_images: Object.keys(sanitizedViewImages).length > 0 ? sanitizedViewImages : undefined
+    }
+
+    if (colorEditingIndex !== null) {
+      nextColors[colorEditingIndex] = nextColor
+    } else {
+      nextColors.push(nextColor)
+    }
+
+    setFormData({ ...formData, frame_colors: nextColors })
+    closeColorModal()
   }
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -164,6 +301,10 @@ export const AdminModelsMantine = observer(() => {
       }
       reader.readAsDataURL(file)
     }
+  }
+
+  const editColor = (index: number) => {
+    openEditColorModal(index)
   }
 
   const handleBackup = async () => {
@@ -183,12 +324,6 @@ export const AdminModelsMantine = observer(() => {
     }
   }
 
-  const resetToDefault = () => {
-    if (confirm('Вы уверены, что хотите сбросить все модели к начальным данным? Все изменения будут удалены.')) {
-      configuratorStore.resetWatchModelsToDefault()
-    }
-  }
-
   const strapOptions = configuratorStore.watchStraps.map(strap => ({
     value: String(strap.attributes.watch_strap.id),
     label: strap.attributes.watch_strap.strap_title
@@ -201,9 +336,6 @@ export const AdminModelsMantine = observer(() => {
         <Group>
           <Button variant="light" onClick={handleBackup}>
             💾 Скачать бэкап
-          </Button>
-          <Button variant="light" color="orange" onClick={resetToDefault}>
-            🔄 Сбросить к начальным
           </Button>
           <Button onClick={startAdd}>
             ➕ Добавить модель
@@ -349,14 +481,19 @@ export const AdminModelsMantine = observer(() => {
               <Text size="sm" fw={500}>Цвета корпуса</Text>
               <Button onClick={addColor} size="xs" variant="light">Добавить</Button>
             </Group>
-            <Group gap="xs">
-              {formData.frame_colors?.map((color, idx) => (
-                <Pill key={idx} withRemoveButton onRemove={() => deleteColor(idx)}>
+          <Stack gap="xs">
+            {formData.frame_colors?.map((color, idx) => (
+              <Group key={idx} gap="xs">
+                <Pill withRemoveButton onRemove={() => deleteColor(idx)}>
                   <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: '50%', backgroundColor: color.color_code, marginRight: 4 }}></span>
                   {color.color_name}
                 </Pill>
-              ))}
-            </Group>
+                <Button size="xs" variant="subtle" onClick={() => editColor(idx)}>
+                  ✏️
+                </Button>
+              </Group>
+            ))}
+          </Stack>
           </Box>
 
           <MultiSelect
@@ -376,6 +513,74 @@ export const AdminModelsMantine = observer(() => {
             <Button onClick={saveModel}>
               {isAdding ? '➕ Добавить' : '💾 Сохранить'}
             </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      <Modal
+        opened={colorModalOpened}
+        onClose={closeColorModal}
+        title={colorEditingIndex !== null ? 'Редактировать цвет корпуса' : 'Добавить цвет корпуса'}
+        size="lg"
+      >
+        <Stack gap="md">
+          <TextInput
+            label="Название цвета"
+            placeholder="Например, Silver"
+            value={colorFormData.color_name}
+            onChange={(e) => handleColorFieldChange('color_name', e.currentTarget.value)}
+            required
+          />
+          <TextInput
+            label="Код цвета"
+            placeholder="#FFFFFF"
+            value={colorFormData.color_code}
+            onChange={(e) => handleColorFieldChange('color_code', e.currentTarget.value)}
+          />
+
+          {(['view1', 'view2', 'view3'] as const).map((viewKey, idx) => (
+            <Stack key={viewKey} gap="xs">
+              <Group justify="space-between" align="center">
+                <Text size="sm" fw={500}>
+                  Вид {idx + 1}
+                </Text>
+                <Group gap="xs">
+                  <FileButton onChange={(file) => handleColorViewUpload(viewKey, file)} accept="image/*">
+                    {(props) => (
+                      <Button
+                        {...props}
+                        size="xs"
+                        variant="outline"
+                        loading={colorUploadLoading[viewKey]}
+                      >
+                        Загрузить
+                      </Button>
+                    )}
+                  </FileButton>
+                  <Button
+                    size="xs"
+                    variant="subtle"
+                    color="red"
+                    disabled={!colorFormData.view_images[viewKey]}
+                    onClick={() => setColorViewImage(viewKey, '')}
+                  >
+                    Очистить
+                  </Button>
+                </Group>
+              </Group>
+              <TextInput
+                placeholder={`/uploads/strap-colors/frame/${viewKey}/image.png`}
+                value={colorFormData.view_images[viewKey]}
+                onChange={(e) => setColorViewImage(viewKey, e.currentTarget.value)}
+              />
+            </Stack>
+          ))}
+
+          <Group justify="flex-end" mt="md">
+            <Button variant="light" onClick={closeColorModal}>
+              Отмена
+            </Button>
+            <Button onClick={saveColorModal}>Сохранить</Button>
           </Group>
         </Stack>
       </Modal>

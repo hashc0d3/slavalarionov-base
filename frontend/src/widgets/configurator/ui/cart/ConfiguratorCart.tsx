@@ -13,6 +13,11 @@ export const ConfiguratorCart = observer(function ConfiguratorCart() {
 	const selectedWatchModel = configuratorStore.selectedWatchModel
 	const selectedFrameColor = configuratorStore.selectedFrameColor
 	const selectedStrapModel = configuratorStore.selectedStrapModel
+	const selectedButterflyPrice = selectedStrapModel?.attributes.watch_strap.buckle_butterfly_price ?? 0
+	const selectedButterflyLabel =
+		selectedButterflyPrice > 0
+			? `Butterfly пряжка (+ ${selectedButterflyPrice.toLocaleString('ru-RU')}₽)`
+			: 'Butterfly пряжка (в комплекте)'
 	const selectedLeatherColor = configuratorStore.selectedLeatherColor
 	const selectedStitchingColor = configuratorStore.selectedStitchingColor
 	const selectedEdgeColor = configuratorStore.selectedEdgeColor
@@ -81,7 +86,13 @@ export const ConfiguratorCart = observer(function ConfiguratorCart() {
 									<p>Добавьте товары, чтобы увидеть их здесь</p>
 								</div>
 							) : (
-								configuratorStore.cartItems.map((item, index) => (
+								configuratorStore.cartItems.map((item, index) => {
+									const itemButterflyPrice = item.strapModel?.attributes?.watch_strap?.buckle_butterfly_price ?? 0
+									const itemButterflyLabel =
+										itemButterflyPrice > 0
+											? `Butterfly пряжка (+ ${itemButterflyPrice.toLocaleString('ru-RU')}₽)`
+											: 'Butterfly пряжка (в комплекте)'
+									return (
 								<div 
 									key={item.id} 
 									className={`${styles.cartItemCard} ${configuratorStore.editingCartItemId === item.id ? styles.cartItemCardEditing : ''}`}
@@ -212,7 +223,7 @@ export const ConfiguratorCart = observer(function ConfiguratorCart() {
 											<div className={styles.cartItemDetail}>
 												<span className={styles.cartItemDetailLabel}>Дополнительно:</span>
 												<span className={styles.cartItemDetailValue}>
-													Butterfly пряжка (+ 500₽)
+													{itemButterflyLabel}
 												</span>
 											</div>
 										)}
@@ -263,7 +274,8 @@ export const ConfiguratorCart = observer(function ConfiguratorCart() {
 										</button>
 									</div>
 								</div>
-								))
+									)
+								})
 							)}
 
 							{/* Текущий конфигурируемый товар */}
@@ -388,7 +400,7 @@ export const ConfiguratorCart = observer(function ConfiguratorCart() {
 											<div className={styles.cartItemDetail}>
 												<span className={styles.cartItemDetailLabel}>Дополнительно:</span>
 												<span className={styles.cartItemDetailValue}>
-													Butterfly пряжка (+ 500₽)
+								{selectedButterflyLabel}
 												</span>
 											</div>
 										)}

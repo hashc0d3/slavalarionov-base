@@ -3,7 +3,10 @@
 import { observer } from 'mobx-react-lite'
 import { configuratorStore } from '@/shared/store/configurator.store'
 import { StrapParams, StrapColor } from '@/shared/store/configurator.store'
+import { resolveMediaUrl } from '@/shared/lib/media'
 import styles from './StrapDesignParams.module.css'
+
+const defaultButterflyImage = 'https://api.slavalarionov.store/uploads/buckle_butterfly_d2b9bce6c1.png'
 
 interface StrapDesignParamsProps {
 	params: StrapParams
@@ -90,8 +93,26 @@ const StrapDesignParamItem = observer(function StrapDesignParamItem({
 	hasButterflyBuckle
 }: StrapDesignParamItemProps) {
 	const buckleButterfly = configuratorStore.selectedStrapModel?.attributes.watch_strap.buckle_butterfly_choosen
+	const strapData = configuratorStore.selectedStrapModel?.attributes.watch_strap
+	const butterflyPrice = strapData?.buckle_butterfly_price ?? 0
+	const butterflyImageSrc = strapData?.buckle_butterfly_image
+		? resolveMediaUrl(strapData.buckle_butterfly_image)
+		: defaultButterflyImage
+	const butterflyPriceLabel =
+		butterflyPrice > 0 ? `+ ${butterflyPrice.toLocaleString('ru-RU')} ₽` : 'В комплекте'
 
-	const getAdapterImageUrl = (colorTitle: string) => {
+	const getAdapterImageUrl = (color: StrapColor) => {
+		const icon = resolveMediaUrl(color.images?.icon || color.icon)
+		if (icon) {
+			return icon
+		}
+
+		const dynamic = resolveMediaUrl(color.images?.view1 || color.view1)
+
+		if (dynamic) {
+			return dynamic
+		}
+
 		const baseUrl = 'https://api.slavalarionov.store/uploads'
 		const colorMapping: Record<string, { name: string; hash: string }> = {
 			'Серебряный': { name: 'silver', hash: '1fd6eb2557' },
@@ -100,7 +121,7 @@ const StrapDesignParamItem = observer(function StrapDesignParamItem({
 			'Синий': { name: 'blue', hash: '398dff917a' },
 			'Зелёный': { name: 'green', hash: 'dcf0b463d9' }
 		}
-		const colorInfo = colorMapping[colorTitle] || { name: colorTitle.toLowerCase(), hash: '1fd6eb2557' }
+		const colorInfo = colorMapping[color.color_title] || { name: color.color_title.toLowerCase(), hash: '1fd6eb2557' }
 		return `${baseUrl}/adapter_${colorInfo.name}_${colorInfo.hash}.png`
 	}
 
@@ -121,10 +142,7 @@ const StrapDesignParamItem = observer(function StrapDesignParamItem({
 						<button
 							key={idx}
 							className={`${styles.paramOption} ${color.choosen ? styles.choosen : ''}`}
-							onClick={() => {
-								console.log('Clicking color:', color.color_title, 'param:', paramName)
-								func(color.color_title)
-							}}
+								onClick={() => func(color.color_title)}
 						>
 							<div
 								className={styles.paramOptionColorPreview}
@@ -148,11 +166,11 @@ const StrapDesignParamItem = observer(function StrapDesignParamItem({
 							Butterfly
 						</p>
 						<p className={styles.paramBuckleButterflyPrice}>
-							+ 500 ₽
+							{butterflyPriceLabel}
 						</p>
 					</div>
 					<img
-						src="https://api.slavalarionov.store/uploads/buckle_butterfly_d2b9bce6c1.png"
+						src={butterflyImageSrc}
 						alt="Butterfly buckle"
 						className={styles.paramBuckleButterflyImage}
 					/>
@@ -165,14 +183,11 @@ const StrapDesignParamItem = observer(function StrapDesignParamItem({
 						<button
 							key={idx}
 							className={`${styles.paramOption} ${styles.adapterParamOption} ${color.choosen ? styles.choosen : ''}`}
-							onClick={() => {
-								console.log('Clicking adapter color:', color.color_title)
-								func(color.color_title)
-							}}
+								onClick={() => func(color.color_title)}
 						>
 							<div className={styles.paramOptionPreviewImgInner}>
 								<img
-									src={getAdapterImageUrl(color.color_title)}
+									src={getAdapterImageUrl(color)}
 									alt={color.color_title}
 									className={styles.paramOptionPreviewImg}
 								/>

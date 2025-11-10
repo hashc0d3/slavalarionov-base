@@ -170,8 +170,22 @@ export const AdminModels = observer(() => {
     const name = prompt('Название цвета:')
     const code = prompt('Код цвета (например, #000000):')
     if (name) {
+      const view1 = prompt('URL изображения (Вид 1) для этого цвета (опционально):', '') || ''
+      const view2 = prompt('URL изображения (Вид 2) для этого цвета (опционально):', '') || ''
+      const view3 = prompt('URL изображения (Вид 3) для этого цвета (опционально):', '') || ''
+      const normalizedViews = {
+        view1: view1.trim(),
+        view2: view2.trim(),
+        view3: view3.trim()
+      }
+      const hasViews = Object.values(normalizedViews).some((value) => value.length > 0)
       const newColors = [...(formData.frame_colors || [])]
-      newColors.push({ color_name: name, color_code: code || '', choosen: false })
+      newColors.push({
+        color_name: name,
+        color_code: code || '',
+        choosen: false,
+        view_images: hasViews ? normalizedViews : undefined
+      })
       setFormData({ ...formData, frame_colors: newColors })
     }
   }
@@ -180,6 +194,36 @@ export const AdminModels = observer(() => {
     const newColors = [...(formData.frame_colors || [])]
     newColors.splice(colorIndex, 1)
     setFormData({ ...formData, frame_colors: newColors })
+  }
+
+  const editColor = (index: number) => {
+    const colors = formData.frame_colors || []
+    const target = colors[index]
+    if (!target) return
+
+    const name = prompt('Название цвета:', target.color_name) ?? target.color_name
+    const codePrompt = prompt('Код цвета (например, #000000):', target.color_code || '')
+    const code = (codePrompt ?? target.color_code ?? '').toString()
+    const view1 = prompt('URL изображения (Вид 1):', target.view_images?.view1 || '') || ''
+    const view2 = prompt('URL изображения (Вид 2):', target.view_images?.view2 || '') || ''
+    const view3 = prompt('URL изображения (Вид 3):', target.view_images?.view3 || '') || ''
+
+    const normalizedViews = {
+      view1: view1.trim(),
+      view2: view2.trim(),
+      view3: view3.trim()
+    }
+    const hasViews = Object.values(normalizedViews).some((value) => value.length > 0)
+
+    const updatedColors = [...colors]
+    updatedColors[index] = {
+      ...target,
+      color_name: name,
+      color_code: code,
+      view_images: hasViews ? normalizedViews : undefined
+    }
+
+    setFormData({ ...formData, frame_colors: updatedColors })
   }
 
   const addSize = () => {
@@ -195,13 +239,6 @@ export const AdminModels = observer(() => {
     const newSizes = [...(formData.watch_sizes || [])]
     newSizes.splice(sizeIndex, 1)
     setFormData({ ...formData, watch_sizes: newSizes })
-  }
-
-  const resetToDefault = () => {
-    if (confirm('Вы уверены, что хотите сбросить все модели к начальным данным? Все изменения будут удалены.')) {
-      configuratorStore.resetWatchModelsToDefault()
-      cancelEdit()
-    }
   }
 
   return (
@@ -224,9 +261,6 @@ export const AdminModels = observer(() => {
                 onChange={handleFileSelect}
                 style={{ display: 'none' }}
               />
-              <button onClick={resetToDefault} className={styles.resetButton}>
-                🔄 Сбросить к начальным
-              </button>
               <button onClick={startAdd} className={styles.addButton}>
                 + Добавить новую модель
               </button>
@@ -328,9 +362,14 @@ export const AdminModels = observer(() => {
                     />
                     <span>{color.color_name}</span>
                   </div>
-                  <button onClick={() => deleteColor(idx)} className={styles.deleteBtn}>
-                    ✕
-                  </button>
+                  <div className={styles.colorActions}>
+                    <button onClick={() => editColor(idx)} className={styles.editBtn}>
+                      ✎
+                    </button>
+                    <button onClick={() => deleteColor(idx)} className={styles.deleteBtn}>
+                      ✕
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>

@@ -7,9 +7,10 @@ import { useEffect } from 'react'
 
 export default function Page() {
 	useEffect(() => {
-		// Загружаем модели часов и ремешки из API при старте
+		// Загружаем данные из API при старте
 		configuratorStore.loadWatchModelsFromAPI()
 		configuratorStore.loadWatchStrapsFromAPI()
+		configuratorStore.loadConfiguratorSettings()
 	}, [])
 
 	return (

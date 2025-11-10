@@ -1,33 +1,40 @@
 "use client"
 
-import { ChangeEvent, useEffect, useState } from 'react'
+import { ChangeEvent, useEffect, useMemo, useRef, useState } from 'react'
 import s from './OrderPopup.module.css'
 import { observer } from 'mobx-react-lite'
 import { configuratorStore } from '@/shared/store/configurator.store'
 import { OrderItem, retailCrmApi } from '@/shared/api/retailcrm.api'
 import { paymentApi } from '@/shared/api/payment.api'
 import { StrapDesignPreview } from '@/widgets/configurator/ui/steps/StrapDesignPreview'
+import { DeliveryOption, DeliveryValue } from './orderPopup.types'
+import {
+	deliveryApi,
+	type CdekCalculation,
+	type CdekCity,
+	type CdekPvz,
+	type DadataSuggestion
+} from '@/shared/api/delivery.api'
+import deliveryStyles from './OrderPopupDelivery.module.css'
+import widgetStyles from './OrderPopupWidget.module.css'
+
+declare global {
+	interface Window {
+		CDEKWidget?: any
+	}
+}
+
+const CDEK_WIDGET_SCRIPT_SRC = 'https://cdn.jsdelivr.net/gh/cdek-it/widget@latest/dist/cdek-widget.umd.js'
+const CDEK_WIDGET_SCRIPT_ID = 'cdek-widget-script'
+const DEFAULT_WIDGET_API_KEY = '6f29a26c-6dd5-42b8-a755-83a4d6d75b6c'
+const CDEK_WIDGET_API_KEY = process.env.NEXT_PUBLIC_CDEK_WIDGET_API_KEY || DEFAULT_WIDGET_API_KEY
+const DEFAULT_CITY_NAME = 'Санкт-Петербург'
+const DEFAULT_CITY_CODE = 137
+const DEFAULT_CITY_UUID = ''
 
 type Props = {
 	visible: boolean
 	onClose: () => void
-}
-
-type DeliveryValue =
-	| 'point-delivery'
-	| 'parcel-locker-omnicdek'
-	| 'cdek-door-delivery'
-	| 'post-office'
-	| 'city-courier-delivery'
-	| 'self-pickup'
-
-type DeliveryOption = {
-	value: DeliveryValue
-	label: string
-	time?: string
-	price?: number
-	priceFixed?: boolean
-	note?: string
 }
 
 type FormState = {
@@ -35,9 +42,15 @@ type FormState = {
 	phone: string
 	email: string
 	city: string
+	cityCode: number | null
+	cityUuid: string | null
 	courierAddress: string
+	street: string
+	streetFiasId: string | null
+	building: string
 	mailAddress: string
 	pickupPoint: string
+	deliveryPointData: CdekPvz | null
 	comment: string
 	promoCode: string
 	remember: boolean
@@ -46,31 +59,38 @@ type FormState = {
 
 type ValidationErrors = Partial<Record<keyof FormState | 'general', string>>
 
-const DELIVERY_OPTIONS: DeliveryOption[] = [
+const initialDeliveryOptions: DeliveryOption[] = [
 	{
 		value: 'point-delivery',
 		label: 'СДЭК до пункта выдачи',
 		time: 'от 3 дней',
-		price: 235
+		price: undefined,
+		requiresPvz: true,
+		tariffs: [136]
 	},
 	{
 		value: 'parcel-locker-omnicdek',
 		label: 'Постамат OmniCDEK',
 		time: 'от 3 дней',
-		price: 235
+		price: undefined,
+		requiresPvz: true,
+		tariffs: [136]
 	},
 	{
 		value: 'cdek-door-delivery',
 		label: 'СДЭК курьером до двери',
 		time: 'от 3 дней',
-		price: 375
+		price: undefined,
+		requiresCourierAddress: true,
+		tariffs: [137]
 	},
 	{
 		value: 'post-office',
 		label: 'Почта России 1 класс',
 		time: '4–6 дней',
 		price: 250,
-		priceFixed: true
+		priceFixed: true,
+		requiresMailAddress: true
 	},
 	{
 		value: 'city-courier-delivery',
@@ -107,13 +127,19 @@ const initialFormState: FormState = {
 	phone: '',
 	email: '',
 	city: '',
+	cityCode: null,
+	cityUuid: null,
 	courierAddress: '',
+	street: '',
+	streetFiasId: null,
+	building: '',
 	mailAddress: '',
 	pickupPoint: '',
+	deliveryPointData: null,
 	comment: '',
 	promoCode: '',
 	remember: false,
-	deliveryValue: DELIVERY_OPTIONS[0].value
+	deliveryValue: initialDeliveryOptions[0].value
 }
 
 export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Props) {
@@ -124,6 +150,57 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 	const [promoStatus, setPromoStatus] = useState<'success' | 'error' | null>(null)
 	const [promoLoading, setPromoLoading] = useState(false)
 	const [activePayment, setActivePayment] = useState<'card' | 'sbp'>('card')
+	const [deliveryOptions, setDeliveryOptions] = useState<DeliveryOption[]>(initialDeliveryOptions)
+	const [cityQuery, setCityQuery] = useState('')
+	const [citySuggestions, setCitySuggestions] = useState<CdekCity[]>([])
+	const [isCityLoading, setIsCityLoading] = useState(false)
+	const [pvzList, setPvzList] = useState<CdekPvz[]>([])
+	const [pvzQuery, setPvzQuery] = useState('')
+	const [isPvzLoading, setIsPvzLoading] = useState(false)
+	const [tariffs, setTariffs] = useState<CdekCalculation[]>([])
+	const [isTariffsLoading, setIsTariffsLoading] = useState(false)
+	const [streetQuery, setStreetQuery] = useState('')
+	const [streetSuggestions, setStreetSuggestions] = useState<DadataSuggestion[]>([])
+	const [isStreetLoading, setIsStreetLoading] = useState(false)
+	const [buildingQuery, setBuildingQuery] = useState('')
+	const [buildingSuggestions, setBuildingSuggestions] = useState<DadataSuggestion[]>([])
+	const [isBuildingLoading, setIsBuildingLoading] = useState(false)
+	const [isWidgetOpen, setIsWidgetOpen] = useState(false)
+	const [isWidgetReady, setIsWidgetReady] = useState(false)
+	const [widgetError, setWidgetError] = useState<string | null>(null)
+	const widgetContainerRef = useRef<HTMLDivElement | null>(null)
+	const widgetInstanceRef = useRef<any>(null)
+	const defaultCityAppliedRef = useRef(false)
+	const autoWidgetTriggerRef = useRef(false)
+	const isSettingDefaultCityRef = useRef(false)
+
+	const updateForm = (
+		updater: Partial<FormState> | ((prev: FormState) => Partial<FormState>),
+		errorKeys: (keyof ValidationErrors)[] = []
+	) => {
+		setForm((prev) => {
+			const changes = typeof updater === 'function' ? updater(prev) : updater
+			return { ...prev, ...changes }
+		})
+		if (errorKeys.length) {
+			setErrors((prev) => {
+				const next = { ...prev }
+				errorKeys.forEach((key) => {
+					delete next[key]
+				})
+				return next
+			})
+		}
+	}
+
+	const clearError = (key: keyof ValidationErrors) => {
+		if (!errors[key]) return
+		setErrors((prev) => {
+			const next = { ...prev }
+			delete next[key]
+			return next
+		})
+	}
 
 	// Сбрасываем формы при закрытии
 	useEffect(() => {
@@ -132,6 +209,13 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 			setPromoMessage(null)
 			setPromoStatus(null)
 			setIsLoading(false)
+			defaultCityAppliedRef.current = false
+			autoWidgetTriggerRef.current = false
+			setIsWidgetOpen(false)
+			setWidgetError(null)
+			setCitySuggestions([])
+			setStreetSuggestions([])
+			setBuildingSuggestions([])
 		}
 	}, [visible])
 
@@ -186,11 +270,32 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 		configuratorStore.steps.final.name = { firstName, lastName, middleName }
 	}, [form.name])
 
+	useEffect(() => {
+		const next = form.city || ''
+		if (next !== cityQuery) {
+			setCityQuery(next)
+		}
+	}, [form.city, cityQuery])
+
+	useEffect(() => {
+		const next = form.street || ''
+		if (next !== streetQuery) {
+			setStreetQuery(next)
+		}
+	}, [form.street, streetQuery])
+
+	useEffect(() => {
+		const next = form.building || ''
+		if (next !== buildingQuery) {
+			setBuildingQuery(next)
+		}
+	}, [form.building, buildingQuery])
+
 	// Актуализируем стоимость доставки
 	useEffect(() => {
-		const option = DELIVERY_OPTIONS.find((item) => item.value === form.deliveryValue)
+		const option = deliveryOptions.find((item) => item.value === form.deliveryValue)
 		configuratorStore.deliveryPrice = option?.price ?? 0
-	}, [form.deliveryValue])
+	}, [deliveryOptions, form.deliveryValue])
 
 	useEffect(() => {
 		if (!visible) return
@@ -199,8 +304,357 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 		}
 	}, [form.remember, visible])
 
+useEffect(() => {
+	if (!visible) return
+	if (defaultCityAppliedRef.current) return
+	if (form.cityCode || form.city.trim()) {
+		defaultCityAppliedRef.current = true
+		return
+	}
+
+	let cancelled = false
+	setIsCityLoading(true)
+	isSettingDefaultCityRef.current = true
+
+	deliveryApi
+		.searchCities(DEFAULT_CITY_NAME)
+		.then((cities) => {
+			if (cancelled || !visible) return
+			let target =
+				cities.find(
+					(city) =>
+						city.cityName?.toLowerCase().includes('санкт') ||
+						city.cityName?.toLowerCase().includes('spb'),
+				) || cities[0]
+
+			if (!target) {
+				target = {
+					cityName: DEFAULT_CITY_NAME,
+					cityCode: DEFAULT_CITY_CODE,
+					cityUuid: DEFAULT_CITY_UUID,
+					country: 'Россия',
+					countryCode: 'RU',
+					region: 'Санкт-Петербург',
+					subRegion: 'Санкт-Петербург'
+				} as CdekCity
+			}
+
+			defaultCityAppliedRef.current = true
+			autoWidgetTriggerRef.current = true
+			setCityQuery(target.cityName)
+			updateForm(
+				() => ({
+					city: target.cityName,
+					cityCode: target.cityCode ?? DEFAULT_CITY_CODE,
+					cityUuid: target.cityUuid || DEFAULT_CITY_UUID
+				}),
+				['city']
+			)
+		})
+		.catch((error) => {
+			console.error('Failed to preload default city', error)
+			defaultCityAppliedRef.current = true
+			autoWidgetTriggerRef.current = true
+			setCityQuery(DEFAULT_CITY_NAME)
+			updateForm(
+				() => ({
+					city: DEFAULT_CITY_NAME,
+					cityCode: DEFAULT_CITY_CODE,
+					cityUuid: DEFAULT_CITY_UUID
+				}),
+				['city']
+			)
+		})
+		.finally(() => {
+			if (!cancelled) {
+				setIsCityLoading(false)
+				isSettingDefaultCityRef.current = false
+			}
+		})
+
+	return () => {
+		cancelled = true
+	}
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+}, [visible])
+
+	useEffect(() => {
+		if (!isWidgetOpen) return
+
+		const ensureScript = () => {
+			return new Promise<void>((resolve, reject) => {
+				if (document.getElementById(CDEK_WIDGET_SCRIPT_ID)) {
+					resolve()
+					return
+				}
+				const script = document.createElement('script')
+				script.id = CDEK_WIDGET_SCRIPT_ID
+				script.src = CDEK_WIDGET_SCRIPT_SRC
+				script.async = true
+				script.onload = () => resolve()
+				script.onerror = () => reject(new Error('Failed to load CDEK widget script'))
+				document.body.appendChild(script)
+			})
+		}
+
+		let mounted = true
+		setWidgetError(null)
+		setIsWidgetReady(false)
+
+		ensureScript()
+			.then(() => {
+				if (!mounted) return
+				if (typeof window.CDEKWidget !== 'function') {
+					throw new Error('CDEK widget script loaded but constructor missing')
+				}
+				if (!widgetContainerRef.current) {
+					throw new Error('Widget container not available')
+				}
+
+				widgetInstanceRef.current = new window.CDEKWidget({
+					from: form.city || '',
+					root: widgetContainerRef.current.id,
+					apiKey: CDEK_WIDGET_API_KEY,
+					servicePath: '/api/delivery/cdek/widget',
+					defaultLocation: form.city || '',
+					tariffs: { office: [136, 137] },
+					hideDeliveryOptions: { office: false, door: true },
+					hideFilters: { type: true },
+					onChoose: (
+						_mode: any,
+						_tariff: any,
+						address: {
+							code: string
+							name: string
+							address: string
+							work_time?: string
+							phone?: string
+							city?: string
+						}
+					) => {
+						if (!address) return
+						if (
+							address.city &&
+							form.city &&
+							address.city.toLowerCase() !== form.city.toLowerCase()
+						) {
+							setWidgetError('Выберите пункт в выбранном городе')
+							return
+						}
+						setWidgetError(null)
+						updateForm(
+							() => ({
+								pickupPoint: `${address.name}, ${address.address}`,
+								deliveryPointData: {
+									code: address.code,
+									name: address.name,
+									address: address.address,
+									workTime: address.work_time,
+									city: form.city || ''
+								} as CdekPvz
+							}),
+							['pickupPoint']
+						)
+						setIsWidgetOpen(false)
+					},
+					onReady: () => {
+						if (mounted) {
+							setIsWidgetReady(true)
+						}
+					}
+				})
+			})
+			.catch((error: any) => {
+				console.error('CDEK widget init error', error)
+				if (mounted) {
+					setWidgetError(error?.message || 'Не удалось загрузить карту CDEK')
+				}
+			})
+
+		return () => {
+			mounted = false
+			setIsWidgetReady(false)
+			if (widgetInstanceRef.current?.destroy) {
+				try {
+					widgetInstanceRef.current.destroy()
+				} catch (err) {
+					console.warn('CDEK widget destroy error', err)
+				}
+			}
+			widgetInstanceRef.current = null
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [isWidgetOpen])
+
+	useEffect(() => {
+		if (!visible) return
+		if (!cityQuery || cityQuery.length < 2 || cityQuery === form.city) {
+			setCitySuggestions([])
+			setIsCityLoading(false)
+			return
+		}
+
+		setIsCityLoading(true)
+		const handler = setTimeout(async () => {
+			try {
+				const suggestions = await deliveryApi.searchCities(cityQuery)
+				setCitySuggestions(suggestions)
+			} catch (error) {
+				console.error('Failed to load CDEK cities', error)
+				setCitySuggestions([])
+			} finally {
+				setIsCityLoading(false)
+			}
+		}, 300)
+
+		return () => clearTimeout(handler)
+	}, [cityQuery, form.city, visible])
+
+	useEffect(() => {
+		if (!visible) return
+		if (!streetQuery || streetQuery.length < 3 || !form.city) {
+			setStreetSuggestions([])
+			setIsStreetLoading(false)
+			return
+		}
+		if (streetQuery === form.street) {
+			setStreetSuggestions([])
+			return
+		}
+
+		setIsStreetLoading(true)
+		const handler = setTimeout(async () => {
+			try {
+				const suggestions = await deliveryApi.searchStreets(streetQuery, form.city)
+				setStreetSuggestions(suggestions)
+			} catch (error) {
+				console.error('Failed to load street suggestions', error)
+				setStreetSuggestions([])
+			} finally {
+				setIsStreetLoading(false)
+			}
+		}, 300)
+
+		return () => clearTimeout(handler)
+	}, [streetQuery, form.city, form.street, visible])
+
+	useEffect(() => {
+		if (!visible) return
+		if (!form.streetFiasId || !buildingQuery || buildingQuery.length < 1) {
+			setBuildingSuggestions([])
+			setIsBuildingLoading(false)
+			return
+		}
+		if (buildingQuery === form.building) {
+			setBuildingSuggestions([])
+			return
+		}
+
+		setIsBuildingLoading(true)
+		const handler = setTimeout(async () => {
+			try {
+				const suggestions = await deliveryApi.searchBuildings(form.streetFiasId as string, buildingQuery)
+				setBuildingSuggestions(suggestions)
+			} catch (error) {
+				console.error('Failed to load building suggestions', error)
+				setBuildingSuggestions([])
+			} finally {
+				setIsBuildingLoading(false)
+			}
+		}, 300)
+
+		return () => clearTimeout(handler)
+	}, [buildingQuery, form.building, form.streetFiasId, visible])
+
+	useEffect(() => {
+		if (!form.cityCode) {
+			setPvzList([])
+			setTariffs([])
+			return
+		}
+
+		setIsPvzLoading(true)
+		setPvzQuery('')
+		setForm((prev) => ({ ...prev, deliveryPointData: null, pickupPoint: '' }))
+		setErrors((prev) => {
+			if (!prev.pickupPoint) return prev
+			const next = { ...prev }
+			delete next.pickupPoint
+			return next
+		})
+
+		deliveryApi
+			.getPvzList(form.cityCode)
+			.then((points) => {
+				setPvzList(points)
+			})
+			.catch((error) => {
+				console.error('Failed to load CDEK PVZ list', error)
+				setPvzList([])
+			})
+			.finally(() => setIsPvzLoading(false))
+
+		setIsTariffsLoading(true)
+		deliveryApi
+			.calculateTariffs(form.cityCode)
+			.then((items) => {
+				setTariffs(items)
+			})
+			.catch((error) => {
+				console.error('Failed to calculate CDEK tariffs', error)
+				setTariffs([])
+			})
+			.finally(() => setIsTariffsLoading(false))
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [form.cityCode])
+
+	useEffect(() => {
+		if (!tariffs.length) {
+			setDeliveryOptions(initialDeliveryOptions)
+			return
+		}
+
+		const tariffById = new Map<number, CdekCalculation>()
+		tariffs.forEach((item) => {
+			tariffById.set(item.tariffId, item)
+		})
+
+		const nextOptions = initialDeliveryOptions.map((option) => {
+			if (!option.tariffs || option.tariffs.length === 0) {
+				return { ...option }
+			}
+			const matched = option.tariffs
+				.map((id) => tariffById.get(id))
+				.find((item): item is CdekCalculation => Boolean(item))
+
+			if (!matched) {
+				return { ...option }
+			}
+
+			const days = matched.minDays && matched.minDays > 0 ? matched.minDays : 1
+			return {
+				...option,
+				price: matched.price,
+				time: `от ${days} ${days === 1 ? 'дня' : 'дней'}`
+			}
+		})
+
+		setDeliveryOptions(nextOptions)
+	}, [tariffs])
+
 	const currentDeliveryOption =
-		DELIVERY_OPTIONS.find((item) => item.value === form.deliveryValue) ?? DELIVERY_OPTIONS[0]
+		deliveryOptions.find((item) => item.value === form.deliveryValue) ??
+		deliveryOptions[0] ??
+		initialDeliveryOptions[0]
+
+	useEffect(() => {
+		if (!visible) return
+		if (!autoWidgetTriggerRef.current) return
+		if (!form.cityCode) return
+		if (!currentDeliveryOption.requiresPvz) return
+		autoWidgetTriggerRef.current = false
+		setIsWidgetOpen(true)
+	}, [visible, form.cityCode, currentDeliveryOption.requiresPvz])
 
 	const productsPrice = configuratorStore.productsPrice || 0
 	const productsPriceWithDiscount = configuratorStore.productsPriceWithDiscount || productsPrice
@@ -228,6 +682,17 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 		configuratorStore.steps.strapDesign.edgeColor?.name ||
 		'в тон'
 
+	const filteredPvzList = useMemo(() => {
+		if (!pvzQuery.trim()) return pvzList
+		const lower = pvzQuery.trim().toLowerCase()
+		return pvzList.filter((item) => {
+			const name = item.name?.toLowerCase() || ''
+			const address = item.address?.toLowerCase() || ''
+			const code = item.code?.toLowerCase() || ''
+			return name.includes(lower) || address.includes(lower) || code.includes(lower)
+		})
+	}, [pvzList, pvzQuery])
+
 	const handleFieldChange =
 		(key: keyof FormState) =>
 		(event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -237,25 +702,81 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 					? target.checked
 					: target.value
 
-			setForm((prev) => ({
-				...prev,
-				[key]: value as FormState[typeof key]
-			}))
-			if (errors[key]) {
-				setErrors((prev) => {
-					const next = { ...prev }
-					delete next[key]
-					return next
-				})
-			}
+			updateForm({ [key]: value } as Partial<FormState>, [key])
 		}
 
 	const handleRememberToggle = (event: ChangeEvent<HTMLInputElement>) => {
 		const checked = event.target.checked
-		setForm((prev) => ({
-			...prev,
-			remember: checked
-		}))
+		updateForm({ remember: checked })
+	}
+
+	const handleCitySelect = (city: CdekCity) => {
+		updateForm(
+			(prev) => ({
+				city: city.cityName,
+				cityCode: city.cityCode ?? null,
+				cityUuid: city.cityUuid || null,
+				pickupPoint: '',
+				deliveryPointData: null,
+				street: '',
+				streetFiasId: null,
+				building: '',
+				courierAddress: '',
+				mailAddress: '',
+				deliveryValue: initialDeliveryOptions[0].value
+			}),
+			['city', 'pickupPoint', 'street', 'building', 'courierAddress', 'mailAddress']
+		)
+		setCityQuery(city.cityName)
+		setCitySuggestions([])
+		setStreetQuery('')
+		setStreetSuggestions([])
+		setBuildingQuery('')
+		setBuildingSuggestions([])
+	}
+
+	const handlePvzSelect = (pvz: CdekPvz) => {
+		updateForm(
+			() => ({
+				pickupPoint: `${pvz.name}, ${pvz.address}`,
+				deliveryPointData: pvz
+			}),
+			['pickupPoint']
+		)
+	}
+
+	const handleStreetSelect = (suggestion: DadataSuggestion) => {
+		const streetName = suggestion.value || suggestion.unrestricted_value || ''
+		const fias =
+			suggestion.data?.street_fias_id ||
+			suggestion.data?.fias_id ||
+			suggestion.data?.street_kladr_id ||
+			null
+
+		setStreetQuery(streetName)
+		setStreetSuggestions([])
+		updateForm(
+			(prev) => ({
+				street: streetName,
+				streetFiasId: fias,
+				courierAddress: [streetName, prev.building].filter(Boolean).join(', ')
+			}),
+			['street', 'courierAddress']
+		)
+	}
+
+	const handleBuildingSelect = (suggestion: DadataSuggestion) => {
+		const buildingValue = suggestion.value || suggestion.unrestricted_value || ''
+
+		setBuildingQuery(buildingValue)
+		setBuildingSuggestions([])
+		updateForm(
+			(prev) => ({
+				building: buildingValue,
+				courierAddress: [prev.street || streetQuery, buildingValue].filter(Boolean).join(', ')
+			}),
+			['building', 'courierAddress']
+		)
 	}
 
 	const validateForm = () => {
@@ -274,20 +795,32 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 		if (!form.city.trim()) {
 			nextErrors.city = 'Укажите город доставки'
 		}
+		if (!form.cityCode) {
+			nextErrors.city = 'Выберите город из списка CDEK'
+		}
 
-		if (form.deliveryValue === 'point-delivery' || form.deliveryValue === 'parcel-locker-omnicdek') {
-			if (!form.pickupPoint.trim()) {
-				nextErrors.pickupPoint = 'Укажите выбранный пункт выдачи'
+		const selectedOption =
+			deliveryOptions.find((item) => item.value === form.deliveryValue) ?? currentDeliveryOption
+
+		if (selectedOption.requiresPvz) {
+			if (!form.deliveryPointData) {
+				nextErrors.pickupPoint = 'Выберите пункт выдачи'
 			}
 		}
 
-		if (form.deliveryValue === 'cdek-door-delivery' || form.deliveryValue === 'city-courier-delivery') {
+		if (selectedOption.requiresCourierAddress) {
+			if (!form.street.trim()) {
+				nextErrors.street = 'Укажите улицу'
+			}
+			if (!form.building.trim()) {
+				nextErrors.building = 'Укажите дом'
+			}
 			if (!form.courierAddress.trim()) {
 				nextErrors.courierAddress = 'Укажите адрес доставки'
 			}
 		}
 
-		if (form.deliveryValue === 'post-office') {
+		if (selectedOption.requiresMailAddress) {
 			if (!form.mailAddress.trim()) {
 				nextErrors.mailAddress = 'Укажите адрес отделения или индекс'
 			}
@@ -333,10 +866,11 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 			postCard: { choosen: false, text: null, price: 0 }
 		}
 
-		const buckleButterflyAvailable = !!item.strapModel?.attributes?.watch_strap?.strap_params?.has_buckle_butterfly
+		const buckleButterflyAvailable = !!strapModelData.has_buckle_butterfly
 		const buckleButterflyChoosen = item.buckleButterfly || false
 		const basePrice = strapModelData.price || 0
-		const butterflyPrice = buckleButterflyChoosen ? 700 : 0
+		const strapButterflyPrice = strapModelData.buckle_butterfly_price || 0
+		const butterflyPrice = buckleButterflyChoosen ? strapButterflyPrice : 0
 		const productsPriceValue = basePrice + butterflyPrice
 		const additionalOptionsPrice =
 			(additionalOptions.initials?.choosen && additionalOptions.initials?.price ? additionalOptions.initials.price : 0) +
@@ -378,51 +912,24 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 		const option = currentDeliveryOption
 		const deliveryType = option.label
 
-		if (form.deliveryValue === 'point-delivery' || form.deliveryValue === 'parcel-locker-omnicdek') {
-			return {
-				deliveryCity: form.city,
-				deliveryType,
-				deliveryPoint: form.pickupPoint
-					? { name: form.pickupPoint, address: form.pickupPoint }
-					: null,
-				deliveryAddressInfo: null,
-				mailAddress: '',
-				curierAddress: '',
-				deliveryComment: form.comment
-			}
-		}
-
-		if (form.deliveryValue === 'cdek-door-delivery' || form.deliveryValue === 'city-courier-delivery') {
-			return {
-				deliveryCity: form.city,
-				deliveryType,
-				deliveryPoint: null,
-				deliveryAddressInfo: null,
-				mailAddress: '',
-				curierAddress: form.courierAddress,
-				deliveryComment: form.comment
-			}
-		}
-
-		if (form.deliveryValue === 'post-office') {
-			return {
-				deliveryCity: form.city,
-				deliveryType,
-				deliveryPoint: null,
-				deliveryAddressInfo: null,
-				mailAddress: form.mailAddress,
-				curierAddress: '',
-				deliveryComment: form.comment
-			}
-		}
-
 		return {
 			deliveryCity: form.city,
 			deliveryType,
-			deliveryPoint: null,
-			deliveryAddressInfo: null,
-			mailAddress: '',
-			curierAddress: '',
+			deliveryPoint: form.deliveryPointData
+				? {
+						name: form.deliveryPointData.name,
+						address: form.deliveryPointData.address
+				  }
+				: null,
+			deliveryAddressInfo:
+				option.requiresCourierAddress && (form.street || form.building)
+					? {
+							street: form.street || '',
+							building: form.building || ''
+					  }
+					: null,
+			mailAddress: option.requiresMailAddress ? form.mailAddress : '',
+			curierAddress: option.requiresCourierAddress ? form.courierAddress : '',
 			deliveryComment: form.comment
 		}
 	}
@@ -505,10 +1012,7 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 				tel: `+${digitsOnly(form.phone)}`,
 				deliveryCity: delivery.deliveryCity,
 				deliveryType: delivery.deliveryType,
-				deliveryPoint:
-					form.deliveryValue === 'point-delivery' || form.deliveryValue === 'parcel-locker-omnicdek'
-						? delivery.deliveryPoint
-						: null,
+				deliveryPoint: delivery.deliveryPoint,
 				deliveryAddressInfo: delivery.deliveryAddressInfo,
 				mailAddress: delivery.mailAddress,
 				curierAddress: delivery.curierAddress,
@@ -668,6 +1172,43 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 					</div>
 				</section>
 
+				{isWidgetOpen && (
+					<div className={widgetStyles.overlay} role="dialog" aria-modal="true">
+						<div className={widgetStyles.modal}>
+							<header className={widgetStyles.header}>
+								<h4 className={widgetStyles.title}>Выберите пункт выдачи на карте</h4>
+								<button className={widgetStyles.close} onClick={() => setIsWidgetOpen(false)}>
+									×
+								</button>
+							</header>
+							<div className={widgetStyles.body}>
+								{widgetError ? (
+									<p className={widgetStyles.errorMessage}>{widgetError}</p>
+								) : (
+									<>
+										{!isWidgetReady && (
+											<p className={widgetStyles.message}>Загружаем карту CDEK...</p>
+										)}
+										<div
+											ref={widgetContainerRef}
+											id="cdek-widget-container"
+											className={widgetStyles.mapContainer}
+										/>
+									</>
+								)}
+							</div>
+							<footer className={widgetStyles.footer}>
+								<span>
+									Карта предоставляет сервис CDEK. После выбора точка появится в списке пунктов выдачи.
+								</span>
+								<button className={deliveryStyles.mapButton} onClick={() => setIsWidgetOpen(false)}>
+									Закрыть
+								</button>
+							</footer>
+						</div>
+					</div>
+				)}
+
 				<section className={s.section}>
 					<h4 className={s.sectionTitle}>Контактные данные</h4>
 					<div className={s.inputsGrid}>
@@ -710,110 +1251,336 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 
 				<section className={s.section}>
 					<h4 className={s.sectionTitle}>Доставка</h4>
-					<div className={s.field}>
-						<label className={s.label}>Город*</label>
-						<input
-							className={`${s.input} ${errors.city ? s.inputError : ''}`}
-							placeholder="Например, Санкт-Петербург"
-							value={form.city}
-							onChange={handleFieldChange('city')}
-							disabled={isLoading}
-						/>
-						{errors.city && <p className={s.errorText}>{errors.city}</p>}
-					</div>
+					<div className={deliveryStyles.section}>
+						<div className={deliveryStyles.field}>
+							<div className={deliveryStyles.labelRow}>
+								<span>Город*</span>
+								{isCityLoading && <span className={deliveryStyles.loader}>Загрузка...</span>}
+							</div>
+							<div className={deliveryStyles.suggestions}>
+								<input
+									className={[
+										deliveryStyles.input,
+										errors.city ? deliveryStyles.inputError : ''
+									].join(' ')}
+									placeholder="Начните вводить город"
+									value={cityQuery}
+									onChange={(event) => {
+										const value = event.target.value
+										setCityQuery(value)
+										setCitySuggestions([])
+										updateForm(
+											() => ({
+												city: value,
+												cityCode: null,
+												cityUuid: null
+											}),
+											['city']
+										)
+									}}
+									disabled={isLoading}
+								/>
+								{citySuggestions.length > 0 && (
+									<div className={deliveryStyles.suggestionsList}>
+										{citySuggestions.map((city) => (
+											<button
+												type="button"
+												key={`${city.cityCode}-${city.cityName}`}
+												className={deliveryStyles.suggestionsItem}
+												onClick={() => handleCitySelect(city)}
+											>
+												<span>{city.cityName}</span>
+												{city.region && (
+													<span className={deliveryStyles.helper}>{city.region}</span>
+												)}
+											</button>
+										))}
+									</div>
+								)}
+							</div>
+							{!isCityLoading &&
+								cityQuery.length >= 2 &&
+								citySuggestions.length === 0 &&
+								cityQuery !== form.city && (
+									<p className={deliveryStyles.helper}>Выберите город из списка CDEK.</p>
+								)}
+							{errors.city && <p className={deliveryStyles.errorText}>{errors.city}</p>}
+						</div>
 
-					<ul className={s.deliveryList}>
-						{DELIVERY_OPTIONS.map((option) => (
-							<li key={option.value} className={s.deliveryItem}>
-								<label className={s.deliveryLabel}>
+						<div className={deliveryStyles.sectionDivider} />
+
+						<div className={deliveryStyles.field}>
+							<div className={deliveryStyles.labelRow}>
+								<span>Способ доставки*</span>
+								{isTariffsLoading && (
+									<span className={deliveryStyles.loader}>Обновляем тарифы...</span>
+								)}
+							</div>
+							<div className={deliveryStyles.section}>
+								{deliveryOptions.map((option) => {
+									const isActive = form.deliveryValue === option.value
+									const priceLabel =
+										typeof option.price === 'number'
+											? `${option.priceFixed ? '' : 'от '}${formatCurrency(option.price)} ₽`
+											: '—'
+									return (
+										<label
+											key={option.value}
+											className={[
+												deliveryStyles.deliveryOption,
+												isActive ? deliveryStyles.deliveryOptionActive : ''
+											].join(' ')}
+										>
+											<input
+												type="radio"
+												className={deliveryStyles.radio}
+												name="delivery-type"
+												value={option.value}
+												checked={isActive}
+												onChange={() =>
+													updateForm(
+														(prev) => ({
+															deliveryValue: option.value,
+															pickupPoint: option.requiresPvz ? prev.pickupPoint : '',
+															deliveryPointData: option.requiresPvz
+																? prev.deliveryPointData
+																: null,
+															street: option.requiresCourierAddress ? prev.street : '',
+															streetFiasId: option.requiresCourierAddress
+																? prev.streetFiasId
+																: null,
+															building: option.requiresCourierAddress ? prev.building : '',
+															courierAddress: option.requiresCourierAddress
+																? prev.courierAddress
+																: '',
+															mailAddress: option.requiresMailAddress ? prev.mailAddress : ''
+														}),
+														['pickupPoint', 'street', 'building', 'courierAddress', 'mailAddress']
+													)
+												}
+												disabled={isLoading}
+											/>
+											<div className={deliveryStyles.deliveryOptionContent}>
+												<span className={deliveryStyles.deliveryOptionTitle}>{option.label}</span>
+												<div className={deliveryStyles.deliveryOptionMeta}>
+													{option.time && <span>{option.time}</span>}
+													<span>{priceLabel}</span>
+												</div>
+												{option.note && (
+													<p className={deliveryStyles.deliveryOptionNote}>{option.note}</p>
+												)}
+											</div>
+										</label>
+									)
+								})}
+							</div>
+						</div>
+
+						{currentDeliveryOption.requiresPvz && (
+							<>
+								<div className={deliveryStyles.sectionDivider} />
+								<div className={deliveryStyles.field}>
+									<div className={deliveryStyles.labelRow}>
+										<span>Пункт выдачи*</span>
+										{isPvzLoading && (
+											<span className={deliveryStyles.loader}>Загрузка пунктов...</span>
+										)}
+									</div>
+									{pvzList.length > 0 ? (
+										<>
+											<input
+												className={deliveryStyles.input}
+												placeholder="Поиск по адресу или коду"
+												value={pvzQuery}
+												onChange={(event) => setPvzQuery(event.target.value)}
+												disabled={isLoading}
+											/>
+											<div className={deliveryStyles.pvzList}>
+												{filteredPvzList.map((pvz) => {
+													const isActive = form.deliveryPointData?.code === pvz.code
+													return (
+														<button
+															type="button"
+															key={pvz.code}
+															className={[
+																deliveryStyles.pvzItem,
+																isActive ? deliveryStyles.pvzItemActive : ''
+															].join(' ')}
+															onClick={() => handlePvzSelect(pvz)}
+															disabled={isLoading}
+														>
+															<span className={deliveryStyles.pvzTitle}>{pvz.name}</span>
+															<span className={deliveryStyles.pvzAddress}>{pvz.address}</span>
+															<div className={deliveryStyles.pvzMeta}>
+																{pvz.workTime && <span>Время работы: {pvz.workTime}</span>}
+																{pvz.phone && <span>Телефон: {pvz.phone}</span>}
+																{pvz.code && <span>Код: {pvz.code}</span>}
+															</div>
+														</button>
+													)
+												})}
+											</div>
+										</>
+									) : (
+										<p className={deliveryStyles.helper}>
+											{form.cityCode
+												? 'Пункты выдачи не найдены. Попробуйте другой город.'
+												: 'Сначала выберите город.'}
+										</p>
+									)}
+									{errors.pickupPoint && (
+										<p className={deliveryStyles.errorText}>{errors.pickupPoint}</p>
+									)}
+									<button
+										type="button"
+										className={deliveryStyles.mapButton}
+										onClick={() => setIsWidgetOpen(true)}
+										disabled={!form.cityCode || isLoading}
+									>
+										Выбрать на карте CDEK
+									</button>
+									{!form.cityCode && (
+										<p className={deliveryStyles.helper}>
+											Укажите город, чтобы открыть карту CDEK.
+										</p>
+									)}
+								</div>
+							</>
+						)}
+
+						{currentDeliveryOption.requiresCourierAddress && (
+							<>
+								<div className={deliveryStyles.sectionDivider} />
+								<div className={deliveryStyles.field}>
+									<div className={deliveryStyles.labelRow}>
+										<span>Улица*</span>
+										{isStreetLoading && (
+											<span className={deliveryStyles.loader}>Подбираем варианты...</span>
+										)}
+									</div>
+									<div className={deliveryStyles.suggestions}>
+										<input
+											className={[
+												deliveryStyles.input,
+												errors.street ? deliveryStyles.inputError : ''
+											].join(' ')}
+											placeholder="Например, Тверская"
+											value={streetQuery}
+											onChange={(event) => {
+												const value = event.target.value
+												setStreetQuery(value)
+												setStreetSuggestions([])
+												updateForm(
+													(prev) => ({
+														street: value,
+														streetFiasId: null,
+														courierAddress: [value, prev.building].filter(Boolean).join(', ')
+													}),
+													['street', 'courierAddress']
+												)
+											}}
+											disabled={isLoading}
+										/>
+										{streetSuggestions.length > 0 && (
+											<div className={deliveryStyles.suggestionsList}>
+												{streetSuggestions.map((suggestion, index) => (
+													<button
+														type="button"
+														key={`${suggestion.value}-${index}`}
+														className={deliveryStyles.suggestionsItem}
+														onClick={() => handleStreetSelect(suggestion)}
+													>
+														<span>{suggestion.value}</span>
+													</button>
+												))}
+											</div>
+										)}
+									</div>
+									{errors.street && <p className={deliveryStyles.errorText}>{errors.street}</p>}
+								</div>
+
+								<div className={deliveryStyles.field}>
+									<div className={deliveryStyles.labelRow}>
+										<span>Дом*</span>
+										{isBuildingLoading && (
+											<span className={deliveryStyles.loader}>Ищем дома...</span>
+										)}
+									</div>
+									<div className={deliveryStyles.suggestions}>
+										<input
+											className={[
+												deliveryStyles.input,
+												errors.building ? deliveryStyles.inputError : ''
+											].join(' ')}
+											placeholder="Например, 15"
+											value={buildingQuery}
+											onChange={(event) => {
+												const value = event.target.value
+												setBuildingQuery(value)
+												setBuildingSuggestions([])
+												updateForm(
+													(prev) => ({
+														building: value,
+														courierAddress: [prev.street || streetQuery, value]
+															.filter(Boolean)
+															.join(', ')
+													}),
+													['building', 'courierAddress']
+												)
+											}}
+											disabled={isLoading || !form.street}
+										/>
+										{buildingSuggestions.length > 0 && (
+											<div className={deliveryStyles.suggestionsList}>
+												{buildingSuggestions.map((suggestion, index) => (
+													<button
+														type="button"
+														key={`${suggestion.value}-${index}`}
+														className={deliveryStyles.suggestionsItem}
+														onClick={() => handleBuildingSelect(suggestion)}
+													>
+														<span>{suggestion.value}</span>
+													</button>
+												))}
+											</div>
+										)}
+									</div>
+									{errors.building && <p className={deliveryStyles.errorText}>{errors.building}</p>}
+									{errors.courierAddress && (
+										<p className={deliveryStyles.errorText}>{errors.courierAddress}</p>
+									)}
+								</div>
+							</>
+						)}
+
+						{currentDeliveryOption.requiresMailAddress && (
+							<>
+								<div className={deliveryStyles.sectionDivider} />
+								<div className={deliveryStyles.field}>
+									<div className={deliveryStyles.labelRow}>
+										<span>Адрес отделения*</span>
+									</div>
 									<input
-										type="radio"
-										className={s.radio}
-										name="delivery"
-										value={option.value}
-										checked={form.deliveryValue === option.value}
-										onChange={(event) =>
-											setForm((prev) => ({
-												...prev,
-												deliveryValue: event.target.value as DeliveryValue
-											}))
-										}
+										className={[
+											deliveryStyles.input,
+											errors.mailAddress ? deliveryStyles.inputError : ''
+										].join(' ')}
+										placeholder="Индекс, улица, отделение"
+										value={form.mailAddress}
+										onChange={handleFieldChange('mailAddress')}
 										disabled={isLoading}
 									/>
-									<span className={s.deliveryContent}>
-										<span className={s.deliveryTitle}>{option.label}</span>
-										<span className={s.deliveryMeta}>
-											{option.time && <span>{option.time}</span>}
-											{typeof option.price === 'number' && (
-												<span>
-													{option.priceFixed ? '' : 'от '}
-													{formatCurrency(option.price)} ₽
-												</span>
-											)}
-										</span>
-									</span>
-								</label>
-							</li>
-						))}
-					</ul>
+									{errors.mailAddress && (
+										<p className={deliveryStyles.errorText}>{errors.mailAddress}</p>
+									)}
+								</div>
+							</>
+						)}
 
-					{(form.deliveryValue === 'point-delivery' || form.deliveryValue === 'parcel-locker-omnicdek') && (
-						<div className={s.field}>
-							<label className={s.label}>Пункт выдачи*</label>
-							<input
-								className={`${s.input} ${errors.pickupPoint ? s.inputError : ''}`}
-								placeholder="Укажите выбранный пункт выдачи"
-								value={form.pickupPoint}
-								onChange={handleFieldChange('pickupPoint')}
-								disabled={isLoading}
-							/>
-							{errors.pickupPoint && <p className={s.errorText}>{errors.pickupPoint}</p>}
-						</div>
-					)}
-
-					{form.deliveryValue === 'cdek-door-delivery' && (
-						<div className={s.field}>
-							<label className={s.label}>Адрес доставки*</label>
-							<input
-								className={`${s.input} ${errors.courierAddress ? s.inputError : ''}`}
-								placeholder="Город, улица, дом, квартира"
-								value={form.courierAddress}
-								onChange={handleFieldChange('courierAddress')}
-								disabled={isLoading}
-							/>
-							{errors.courierAddress && <p className={s.errorText}>{errors.courierAddress}</p>}
-						</div>
-					)}
-
-					{form.deliveryValue === 'city-courier-delivery' && (
-						<div className={s.field}>
-							<label className={s.label}>Адрес доставки*</label>
-							<input
-								className={`${s.input} ${errors.courierAddress ? s.inputError : ''}`}
-								placeholder="Город, улица, дом, квартира"
-								value={form.courierAddress}
-								onChange={handleFieldChange('courierAddress')}
-								disabled={isLoading}
-							/>
-							{errors.courierAddress && <p className={s.errorText}>{errors.courierAddress}</p>}
-						</div>
-					)}
-
-					{form.deliveryValue === 'post-office' && (
-						<div className={s.field}>
-							<label className={s.label}>Адрес отделения*</label>
-							<input
-								className={`${s.input} ${errors.mailAddress ? s.inputError : ''}`}
-								placeholder="Индекс, улица, отделение"
-								value={form.mailAddress}
-								onChange={handleFieldChange('mailAddress')}
-								disabled={isLoading}
-							/>
-							{errors.mailAddress && <p className={s.errorText}>{errors.mailAddress}</p>}
-						</div>
-					)}
-
-					{currentDeliveryOption.note && <p className={s.deliveryNote}>{currentDeliveryOption.note}</p>}
+						{currentDeliveryOption.note && (
+							<p className={deliveryStyles.deliveryOptionNote}>{currentDeliveryOption.note}</p>
+						)}
+					</div>
 				</section>
 
 				<section className={s.section}>

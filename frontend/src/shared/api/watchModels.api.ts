@@ -11,7 +11,15 @@ export interface WatchModelDB {
   createdAt: string
   updatedAt: string
   watch_sizes: { id: number; watch_size: string; watchModelId: number }[]
-  frame_colors: { id: number; color_name: string; color_code?: string | null; watchModelId: number }[]
+  frame_colors: {
+    id: number
+    color_name: string
+    color_code?: string | null
+    view1Image?: string | null
+    view2Image?: string | null
+    view3Image?: string | null
+    watchModelId: number
+  }[]
   available_straps?: { id: number; watchModelId: number; watchStrapId: number; watchStrap: any }[]
 }
 
@@ -21,7 +29,15 @@ export interface CreateWatchModelData {
   watch_model_manufacturer?: string
   main_image?: string
   watch_sizes: { watch_size: string }[]
-  frame_colors: { color_name: string; color_code?: string }[]
+  frame_colors: {
+    color_name: string
+    color_code?: string
+    view_images?: {
+      view1?: string
+      view2?: string
+      view3?: string
+    }
+  }[]
   available_strap_ids?: number[]
 }
 
@@ -40,7 +56,12 @@ export const mapDBToStore = (dbModel: WatchModelDB): WatchModel => ({
   frame_colors: dbModel.frame_colors.map(c => ({
     color_name: c.color_name,
     color_code: c.color_code || undefined,
-    choosen: false
+    choosen: false,
+    view_images: {
+      view1: c.view1Image || undefined,
+      view2: c.view2Image || undefined,
+      view3: c.view3Image || undefined
+    }
   })),
   available_strap_ids: dbModel.available_straps?.map(s => s.watchStrapId) || []
 })
@@ -54,7 +75,8 @@ export const mapStoreToAPI = (storeModel: WatchModel): CreateWatchModelData => (
   watch_sizes: storeModel.watch_sizes.map(s => ({ watch_size: s.watch_size })),
   frame_colors: storeModel.frame_colors.map(c => ({
     color_name: c.color_name,
-    color_code: c.color_code
+    color_code: c.color_code,
+    view_images: c.view_images
   })),
   available_strap_ids: storeModel.available_strap_ids || []
 })

@@ -1,0 +1,52 @@
+FROM node:20-alpine AS build
+
+WORKDIR /app
+
+# Install system dependencies
+RUN apk add --no-cache libc6-compat openssl
+
+# Install backend dependencies (with dev deps for build)
+COPY backend/package.json backend/package-lock.json ./backend/
+# Prisma schema нужна уже на этапе установки (postinstall → prisma generate)
+COPY backend/prisma ./backend/prisma
+RUN cd backend && npm ci
+
+# Install frontend dependencies (with dev deps for build)
+COPY frontend/package.json frontend/package-lock.json ./frontend/
+RUN cd frontend && npm ci
+
+# Copy source code
+COPY backend ./backend
+COPY frontend ./frontend
+
+# Build backend (NestJS + Prisma)
+RUN cd backend && npm run build
+
+# Build frontend (Next.js) for production
+RUN cd frontend && npm run build
+
+# Remove devDependencies to keep runtime image slim
+RUN cd backend && npm prune --omit=dev
+RUN cd frontend && npm prune --omit=dev
+
+FROM node:20-alpine AS runner
+
+WORKDIR /app/backend
+
+ENV NODE_ENV=production
+ENV PORT=8081
+
+# Copy backend artifacts
+COPY --from=build /app/backend/package.json /app/backend/package-lock.json ./
+COPY --from=build /app/backend/node_modules ./node_modules
+COPY --from=build /app/backend/dist ./dist
+COPY --from=build /app/backend/prisma ./prisma
+COPY --from=build /app/backend/uploads ./uploads
+
+# Copy frontend build needed for Next middleware
+COPY --from=build /app/frontend /app/frontend
+
+EXPOSE 8081
+
+CMD ["sh", "-c", "npx prisma migrate deploy && npm run start:prod"]
+

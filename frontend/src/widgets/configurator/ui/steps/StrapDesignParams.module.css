@@ -91,14 +91,14 @@
 	align-items: flex-start;
 	padding: 30px 36px 20px;
 	border-radius: 40px;
-	border: 1px solid transparent;
+	border: 1px solid #d9d9d9;
 	margin-top: 35px;
 	transition: 0.2s ease;
 	cursor: pointer;
 }
 
 .paramBuckleButterfly:hover {
-	border-color: #ccc;
+	border-color: #bfbfbf;
 }
 
 .paramBuckleButterfly.choosen {

@@ -12,6 +12,8 @@ export interface WatchStrapDB {
   preview_image?: string | null
   ultra_preview_image?: string | null
   has_buckle_butterfly: boolean
+  buckle_butterfly_price: number
+  buckle_butterfly_image?: string | null
   strap_params: StrapParams
   createdAt: string
   updatedAt: string
@@ -26,6 +28,8 @@ export interface CreateWatchStrapData {
   preview_image?: string
   ultra_preview_image?: string
   has_buckle_butterfly?: boolean
+  buckle_butterfly_price?: number
+  buckle_butterfly_image?: string
   strap_params: StrapParams
 }
 
@@ -43,8 +47,15 @@ export const mapDBToStore = (dbStrap: WatchStrapDB): Strap => ({
       price: dbStrap.price,
       preview_image: dbStrap.preview_image || undefined,
       ultra_preview_image: dbStrap.ultra_preview_image || undefined,
-      buckle_butterfly_choosen: dbStrap.has_buckle_butterfly,
-      strap_params: dbStrap.strap_params
+      has_buckle_butterfly: dbStrap.has_buckle_butterfly,
+      buckle_butterfly_choosen: false,
+      buckle_butterfly_price: dbStrap.buckle_butterfly_price,
+      buckle_butterfly_image: dbStrap.buckle_butterfly_image || undefined,
+      strap_params: {
+        ...dbStrap.strap_params,
+        has_buckle_butterfly:
+          dbStrap.strap_params?.has_buckle_butterfly ?? dbStrap.has_buckle_butterfly
+      }
     }
   }
 })
@@ -58,8 +69,15 @@ export const mapStoreToAPI = (storeStrap: Strap): CreateWatchStrapData => ({
   price: storeStrap.attributes.watch_strap.price,
   preview_image: storeStrap.attributes.watch_strap.preview_image,
   ultra_preview_image: storeStrap.attributes.watch_strap.ultra_preview_image,
-  has_buckle_butterfly: storeStrap.attributes.watch_strap.buckle_butterfly_choosen,
-  strap_params: storeStrap.attributes.watch_strap.strap_params
+  has_buckle_butterfly: !!storeStrap.attributes.watch_strap.has_buckle_butterfly,
+  buckle_butterfly_price: storeStrap.attributes.watch_strap.buckle_butterfly_price,
+  buckle_butterfly_image: storeStrap.attributes.watch_strap.buckle_butterfly_image,
+  strap_params: {
+    ...storeStrap.attributes.watch_strap.strap_params,
+    has_buckle_butterfly:
+      storeStrap.attributes.watch_strap.has_buckle_butterfly ??
+      storeStrap.attributes.watch_strap.strap_params?.has_buckle_butterfly
+  }
 })
 
 export const watchStrapsApi = {
@@ -89,10 +107,15 @@ export const watchStrapsApi = {
   },
 
   async update(id: number, strap: Strap): Promise<Strap> {
+    const payload = mapStoreToAPI(strap)
+    if (process.env.NODE_ENV !== 'production') {
+      // eslint-disable-next-line no-console
+      console.debug('watchStrapsApi.update payload', id, payload)
+    }
     const response = await fetch(`${API_URL}/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(mapStoreToAPI(strap))
+      body: JSON.stringify(payload)
     })
     if (!response.ok) throw new Error('Failed to update watch strap')
     const data: WatchStrapDB = await response.json()

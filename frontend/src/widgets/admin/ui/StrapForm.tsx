@@ -4,9 +4,15 @@ import { observer } from 'mobx-react-lite'
 import { Strap, StrapColor } from '@/shared/store/configurator.store'
 import styles from './AdminPanel.module.css'
 
+type StrapFormData = Partial<Omit<Strap, 'attributes'>> & {
+  attributes?: {
+    watch_strap?: Partial<Strap['attributes']['watch_strap']>
+  }
+}
+
 interface StrapFormProps {
-  formData: Partial<Strap>
-  onChange: (data: Partial<Strap>) => void
+  formData: StrapFormData
+  onChange: (data: StrapFormData) => void
   onSave: () => void
   onCancel: () => void
   isAdding: boolean

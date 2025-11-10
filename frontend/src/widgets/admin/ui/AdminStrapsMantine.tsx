@@ -5,15 +5,17 @@ import { configuratorStore, Strap } from '@/shared/store/configurator.store'
 import { useState, useEffect } from 'react'
 import {
   Card, Text, Button, Group, Stack, TextInput, Image, Badge,
-  Modal, Title, NumberInput, Textarea, Checkbox, Box, Tabs
+  Modal, Title, NumberInput, Textarea, Checkbox, Box, Tabs, Skeleton
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import StrapParamsEditor from './StrapParamsEditor'
+import { uploadStrapColorImage } from '@/shared/api/uploads.api'
 
 export const AdminStrapsMantine = observer(() => {
   const [editingIndex, setEditingIndex] = useState<number | null>(null)
   const [isAdding, setIsAdding] = useState(false)
   const [opened, setOpened] = useState(false)
+  const [isUploadingButterflyImage, setIsUploadingButterflyImage] = useState(false)
   const [formData, setFormData] = useState<Partial<Strap>>({
     attributes: {
       watch_strap: {
@@ -24,13 +26,20 @@ export const AdminStrapsMantine = observer(() => {
         price: 0,
         preview_image: '',
         has_buckle_butterfly: false,
+        buckle_butterfly_price: 0,
+        buckle_butterfly_image: '',
         strap_params: {
           leather_colors: [],
           stitching_colors: [],
           edge_colors: [],
           buckle_colors: [],
           adapter_colors: [],
-          has_buckle_butterfly: false
+          has_buckle_butterfly: false,
+          view_images: {
+            view1: '',
+            view2: '',
+            view3: ''
+          }
         }
       }
     }
@@ -55,14 +64,25 @@ export const AdminStrapsMantine = observer(() => {
           id: 0,
           strap_name: '',
           strap_title: '',
+          strap_description: '',
+          preview_image: '',
+          ultra_preview_image: '',
           price: 0,
+          has_buckle_butterfly: false,
+          buckle_butterfly_price: 0,
+          buckle_butterfly_image: '',
           strap_params: {
             leather_colors: [],
             stitching_colors: [],
             edge_colors: [],
             buckle_colors: [],
             adapter_colors: [],
-            has_buckle_butterfly: false
+            has_buckle_butterfly: false,
+            view_images: {
+              view1: '',
+              view2: '',
+              view3: ''
+            }
           }
         }
       }
@@ -91,9 +111,11 @@ export const AdminStrapsMantine = observer(() => {
     try {
       if (isAdding) {
         await configuratorStore.addWatchStrap(strapData)
+        await configuratorStore.loadWatchStrapsFromAPI()
         notifications.show({ title: 'Успешно', message: 'Ремешок добавлен', color: 'green' })
       } else if (editingIndex !== null) {
         await configuratorStore.updateWatchStrap(editingIndex, strapData)
+        await configuratorStore.loadWatchStrapsFromAPI()
         notifications.show({ title: 'Успешно', message: 'Ремешок обновлён', color: 'green' })
       }
       cancelEdit()
@@ -139,6 +161,33 @@ export const AdminStrapsMantine = observer(() => {
         })
       }
       reader.readAsDataURL(file)
+    }
+  }
+
+  const handleButterflyImageUpload = async (file: File | null) => {
+    if (!file) return
+    try {
+      setIsUploadingButterflyImage(true)
+      const response = await uploadStrapColorImage({
+        file,
+        group: 'buckle',
+        view: 'butterfly',
+        colorTitle: formData.attributes?.watch_strap.strap_title || 'butterfly'
+      })
+      setFormData({
+        attributes: {
+          watch_strap: {
+            ...formData.attributes!.watch_strap,
+            buckle_butterfly_image: response.url
+          }
+        }
+      })
+      notifications.show({ title: 'Успешно', message: 'Изображение загружено', color: 'green' })
+    } catch (error: any) {
+      console.error('Ошибка загрузки изображения butterfly:', error)
+      notifications.show({ title: 'Ошибка', message: error?.message || 'Не удалось загрузить изображение', color: 'red' })
+    } finally {
+      setIsUploadingButterflyImage(false)
     }
   }
 
@@ -319,22 +368,152 @@ export const AdminStrapsMantine = observer(() => {
               <Checkbox
                 label="Есть пряжка-бабочка"
                 checked={formData.attributes?.watch_strap.has_buckle_butterfly || false}
-                onChange={(e) => setFormData({
-                  attributes: { watch_strap: { ...formData.attributes!.watch_strap, has_buckle_butterfly: e.currentTarget.checked } }
-                })}
+                onChange={(e) => {
+                  const checked = e.currentTarget.checked
+                  setFormData((prev) => {
+                    const prevStrap = prev.attributes?.watch_strap
+                    if (!prevStrap) return prev
+                    return {
+                      attributes: {
+                        watch_strap: {
+                          ...prevStrap,
+                          has_buckle_butterfly: checked,
+                          buckle_butterfly_price: checked ? (prevStrap.buckle_butterfly_price ?? 0) : 0,
+                          buckle_butterfly_image: checked ? prevStrap.buckle_butterfly_image || '' : '',
+                          strap_params: {
+                            ...prevStrap.strap_params,
+                            has_buckle_butterfly: checked
+                          }
+                        }
+                      }
+                    }
+                  })
+                }}
               />
+
+              {formData.attributes?.watch_strap.has_buckle_butterfly && (
+                <Stack gap="sm">
+                  <NumberInput
+                    label="Доплата за пряжку-бабочку"
+                    placeholder="500"
+                    min={0}
+                    value={formData.attributes?.watch_strap.buckle_butterfly_price ?? 0}
+                    onChange={(value) =>
+                      setFormData((prev) => {
+                        const prevStrap = prev.attributes?.watch_strap
+                        if (!prevStrap) return prev
+                        return {
+                          attributes: {
+                            watch_strap: {
+                              ...prevStrap,
+                              buckle_butterfly_price: Number(value) || 0
+                            }
+                          }
+                        }
+                      })
+                    }
+                  />
+
+                  <Box>
+                    <Text size="sm" fw={500} mb="xs">
+                      Изображение пряжки-бабочки
+                    </Text>
+                    <Stack gap="xs">
+                      <Group gap="xs">
+                        <Button
+                          component="label"
+                          variant="filled"
+                          size="sm"
+                          disabled={isUploadingButterflyImage}
+                        >
+                          {isUploadingButterflyImage ? 'Загрузка...' : '📁 Загрузить'}
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(event) => {
+                              const file = event.target.files?.[0] || null
+                              handleButterflyImageUpload(file)
+                              event.target.value = ''
+                            }}
+                            style={{ display: 'none' }}
+                          />
+                        </Button>
+                        {formData.attributes?.watch_strap.buckle_butterfly_image && (
+                          <Button
+                            variant="light"
+                            color="red"
+                            size="sm"
+                            onClick={() =>
+                              setFormData((prev) => {
+                                const prevStrap = prev.attributes?.watch_strap
+                                if (!prevStrap) return prev
+                                return {
+                                  attributes: {
+                                    watch_strap: {
+                                      ...prevStrap,
+                                      buckle_butterfly_image: ''
+                                    }
+                                  }
+                                }
+                              })
+                            }
+                          >
+                            🗑️ Удалить
+                          </Button>
+                        )}
+                      </Group>
+
+                      <TextInput
+                        label="или введите URL изображения"
+                        placeholder="https://api.slavalarionov.store/uploads/..."
+                        value={formData.attributes?.watch_strap.buckle_butterfly_image || ''}
+                        onChange={(e) =>
+                          setFormData((prev) => {
+                            const prevStrap = prev.attributes?.watch_strap
+                            if (!prevStrap) return prev
+                            return {
+                              attributes: {
+                                watch_strap: {
+                                  ...prevStrap,
+                                  buckle_butterfly_image: e.target.value
+                                }
+                              }
+                            }
+                          })
+                        }
+                      />
+
+                      {(isUploadingButterflyImage || formData.attributes?.watch_strap.buckle_butterfly_image) && (
+                        <Card withBorder p="xs" style={{ width: 'fit-content' }}>
+                          {isUploadingButterflyImage ? (
+                            <Skeleton h={120} w={120} radius="md" />
+                          ) : (
+                            <Image
+                              src={formData.attributes?.watch_strap.buckle_butterfly_image}
+                              h={120}
+                              w={120}
+                              fit="contain"
+                              alt="Butterfly preview"
+                            />
+                          )}
+                        </Card>
+                      )}
+                    </Stack>
+                  </Box>
+                </Stack>
+              )}
             </Stack>
           </Tabs.Panel>
 
           <Tabs.Panel value="design" pt="md">
             <StrapParamsEditor
-              strapParams={formData.attributes?.watch_strap.strap_params || {
-                leather_colors: [],
-                stitching_colors: [],
-                edge_colors: [],
-                buckle_colors: [],
-                adapter_colors: [],
-                has_buckle_butterfly: false
+              strapParams={{
+                leather_colors: formData.attributes?.watch_strap.strap_params?.leather_colors ?? [],
+                stitching_colors: formData.attributes?.watch_strap.strap_params?.stitching_colors ?? [],
+                edge_colors: formData.attributes?.watch_strap.strap_params?.edge_colors ?? [],
+                buckle_colors: formData.attributes?.watch_strap.strap_params?.buckle_colors ?? [],
+                adapter_colors: formData.attributes?.watch_strap.strap_params?.adapter_colors ?? [],
+                has_buckle_butterfly: formData.attributes?.watch_strap.strap_params?.has_buckle_butterfly ?? false
               }}
               onUpdate={(updatedParams) => setFormData({
                 attributes: {
