@@ -6,6 +6,9 @@ async function main() {
   console.log('Seeding database...')
 
   // Очищаем существующие данные
+  await prisma.configuratorAdditionalOption.deleteMany()
+  await prisma.configuratorSettings.deleteMany()
+  await prisma.watchModelStrap.deleteMany()
   await prisma.watchModel.deleteMany()
   await prisma.watchStrap.deleteMany()
 
@@ -102,6 +105,7 @@ async function main() {
       preview_image: 'https://api.slavalarionov.store/uploads/butterfly_6c5fe88b84.png',
       ultra_preview_image: 'https://api.slavalarionov.store/uploads/butterfly_6c5fe88b84.png',
       has_buckle_butterfly: true,
+      buckle_butterfly_price: 700,
       strap_params: JSON.stringify({
         leather_colors: [
           { color_title: 'Черный', color_code: '#1b1b1b', choosen: false },
@@ -134,6 +138,7 @@ async function main() {
       preview_image: 'https://api.slavalarionov.store/uploads/classic_8280babad8.png',
       ultra_preview_image: 'https://api.slavalarionov.store/uploads/classic_8280babad8.png',
       has_buckle_butterfly: false,
+      buckle_butterfly_price: 0,
       strap_params: JSON.stringify({
         leather_colors: [
           { color_title: 'Черный', color_code: '#1b1b1b', choosen: false },
@@ -165,6 +170,7 @@ async function main() {
       preview_image: 'https://api.slavalarionov.store/uploads/aw_dabl_6163afb63b.png',
       ultra_preview_image: 'https://api.slavalarionov.store/uploads/aw_dabl_6163afb63b.png',
       has_buckle_butterfly: false,
+      buckle_butterfly_price: 0,
       strap_params: JSON.stringify({
         leather_colors: [
           { color_title: 'Черный', color_code: '#1b1b1b', choosen: false },
@@ -197,6 +203,7 @@ async function main() {
       preview_image: 'https://api.slavalarionov.store/uploads/Brogue_4539ae7e9d.png',
       ultra_preview_image: 'https://api.slavalarionov.store/uploads/Brogue_4539ae7e9d.png',
       has_buckle_butterfly: false,
+      buckle_butterfly_price: 0,
       strap_params: JSON.stringify({
         leather_colors: [
           { color_title: 'Белый', color_code: '#ffffff', choosen: true },
@@ -284,6 +291,7 @@ async function main() {
       preview_image: 'https://api.slavalarionov.store/uploads/Minimal_6d74c24e75.png',
       ultra_preview_image: 'https://api.slavalarionov.store/uploads/Minimal_6d74c24e75.png',
       has_buckle_butterfly: false,
+      buckle_butterfly_price: 0,
       strap_params: JSON.stringify({
         leather_colors: [
           { color_title: 'Черный', color_code: '#1b1b1b', choosen: false },
@@ -316,6 +324,42 @@ async function main() {
   }
 
   console.log('✓ Watch straps seeded!')
+
+  // Конфигурация дополнительных опций
+  await prisma.configuratorSettings.create({
+    data: {
+      title: 'Ремешок почти готов!',
+      description:
+        'Вы создали уникальный ремешок и он просто прекрасен! Сейчас вы можете добавить инициалы (2-3 буквы на русском или английском языке), добавить подарочную упаковку и подписать открытку, которую мы приложим к этому ремешку.',
+      additional_options: {
+        create: [
+          {
+            option_name: 'initials',
+            option_title: 'Нанесение инициалов',
+            option_price: 390,
+            option_image: '/uploads/caption_88dca0bed8.jpg',
+            sort_order: 1
+          },
+          {
+            option_name: 'present_box',
+            option_title: 'Подарочная коробка',
+            option_price: 300,
+            option_image: '/uploads/present_box_75bbc808e1.jpg',
+            sort_order: 2
+          },
+          {
+            option_name: 'postcard',
+            option_title: 'Подарочная открытка',
+            option_price: 90,
+            option_image: '/uploads/postcard_4490cc700c.jpg',
+            sort_order: 3
+          }
+        ]
+      }
+    }
+  })
+
+  console.log('✓ Configurator settings seeded!')
 
   // Связываем модели часов с ремешками (все ремешки доступны для всех моделей)
   const allModels = await prisma.watchModel.findMany()

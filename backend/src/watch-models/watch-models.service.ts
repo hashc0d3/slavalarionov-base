@@ -49,7 +49,14 @@ export class WatchModelsService {
           create: data.watch_sizes || [],
         },
         frame_colors: {
-          create: data.frame_colors || [],
+          create:
+            data.frame_colors?.map((color) => ({
+              color_name: color.color_name,
+              color_code: color.color_code,
+              view1Image: color.view_images?.view1 || null,
+              view2Image: color.view_images?.view2 || null,
+              view3Image: color.view_images?.view3 || null,
+            })) || [],
         },
         available_straps: {
           create: (data.available_strap_ids || []).map((strapId) => ({
@@ -87,7 +94,14 @@ export class WatchModelsService {
           create: data.watch_sizes || [],
         },
         frame_colors: {
-          create: data.frame_colors || [],
+          create:
+            data.frame_colors?.map((color) => ({
+              color_name: color.color_name,
+              color_code: color.color_code,
+              view1Image: color.view_images?.view1 || null,
+              view2Image: color.view_images?.view2 || null,
+              view3Image: color.view_images?.view3 || null,
+            })) || [],
         },
         available_straps: {
           create: (data.available_strap_ids || []).map((strapId) => ({
@@ -143,6 +157,9 @@ export class WatchModelsService {
             create: modelData.frame_colors.map((c: any) => ({
               color_name: c.color_name,
               color_code: c.color_code,
+              view1Image: c.view1Image ?? c.view_images?.view1 ?? null,
+              view2Image: c.view2Image ?? c.view_images?.view2 ?? null,
+              view3Image: c.view3Image ?? c.view_images?.view3 ?? null,
             })),
           },
         },

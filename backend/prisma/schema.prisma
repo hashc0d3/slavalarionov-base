@@ -40,6 +40,9 @@ model FrameColor {
   id            Int         @id @default(autoincrement())
   color_name    String
   color_code    String?
+  view1Image    String?
+  view2Image    String?
+  view3Image    String?
   watchModelId  Int
   watchModel    WatchModel  @relation(fields: [watchModelId], references: [id], onDelete: Cascade)
   
@@ -56,6 +59,8 @@ model WatchStrap {
   preview_image           String?
   ultra_preview_image     String?
   has_buckle_butterfly    Boolean   @default(false)
+  buckle_butterfly_price  Float     @default(0)
+  buckle_butterfly_image  String?
   strap_params            String    // JSON string для хранения всех параметров цветов
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
@@ -86,4 +91,31 @@ model PromoCode {
   updatedAt       DateTime @updatedAt
 
   @@map("promo_codes")
+}
+
+model ConfiguratorSettings {
+  id                  Int                            @id @default(autoincrement())
+  title               String
+  description         String
+  additional_options  ConfiguratorAdditionalOption[]
+  createdAt           DateTime                       @default(now())
+  updatedAt           DateTime                       @updatedAt
+
+  @@map("configurator_settings")
+}
+
+model ConfiguratorAdditionalOption {
+  id                       Int                  @id @default(autoincrement())
+  option_name              String
+  option_title             String
+  option_price             Int
+  option_image             String?
+  sort_order               Int                  @default(0)
+  configuratorSettingsId   Int
+  configuratorSettings     ConfiguratorSettings @relation(fields: [configuratorSettingsId], references: [id], onDelete: Cascade)
+  createdAt                DateTime             @default(now())
+  updatedAt                DateTime             @updatedAt
+
+  @@unique([configuratorSettingsId, option_name])
+  @@map("configurator_additional_options")
 }

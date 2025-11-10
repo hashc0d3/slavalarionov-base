@@ -12,6 +12,9 @@ import { PaymentModule } from './payment/payment.module';
 import { RetailCrmModule } from './retailcrm/retailcrm.module';
 import { TelegramModule } from './telegram/telegram.module';
 import { PromocodesModule } from './promocodes/promocodes.module';
+import { DeliveryModule } from './delivery/delivery.module';
+import { UploadsModule } from './uploads/uploads.module';
+import { ConfiguratorModule } from './configurator/configurator.module';
 
 @Module({
   imports: [
@@ -24,6 +27,9 @@ import { PromocodesModule } from './promocodes/promocodes.module';
     RetailCrmModule,
     TelegramModule,
     PromocodesModule,
+    DeliveryModule,
+    UploadsModule,
+    ConfiguratorModule,
   ],
   controllers: [AppController, LegacyController],
   providers: [AppService],

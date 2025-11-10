@@ -1,0 +1,376 @@
+import { HttpService } from '@nestjs/axios';
+import { BadRequestException, Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { firstValueFrom } from 'rxjs';
+
+export interface CdekCity {
+  cityName: string;
+  cityCode: number;
+  cityUuid: string;
+  country: string;
+  countryCode: string;
+  region: string;
+  subRegion: string;
+  regionCode?: number;
+  latitude?: number;
+  longitude?: number;
+  kladr?: string;
+}
+
+export interface CdekPvz {
+  code: string;
+  name: string;
+  address: string;
+  addressComment?: string;
+  type: string;
+  city: string;
+  cityCode: number;
+  workTime?: string;
+  postalCode?: string;
+  phone?: string;
+  phoneDetails?: string;
+  coordX?: number;
+  coordY?: number;
+}
+
+export interface CdekCalculation {
+  price: number;
+  minDays: number;
+  tariffId: number;
+}
+
+@Injectable()
+export class DeliveryService {
+  private readonly logger = new Logger(DeliveryService.name);
+
+  private readonly dadataToken: string;
+  private readonly dadataSecret: string;
+  private readonly cdekClientId: string;
+  private readonly cdekClientSecret: string;
+
+  private cdekToken: string | null = null;
+  private cdekTokenExpiresAt: number | null = null;
+
+  constructor(private readonly http: HttpService, private readonly config: ConfigService) {
+    this.dadataToken = this.config.get<string>('DADATA_API_KEY') || '';
+    this.dadataSecret = this.config.get<string>('DADATA_SECRET') || '';
+    this.cdekClientId = this.config.get<string>('CDEK_CLIENT_ID') || '';
+    this.cdekClientSecret = this.config.get<string>('CDEK_CLIENT_SECRET') || '';
+  }
+
+  private ensureDadataCredentials() {
+    if (!this.dadataToken || !this.dadataSecret) {
+      throw new InternalServerErrorException('DaData credentials are not configured');
+    }
+  }
+
+  private ensureCdekCredentials() {
+    if (!this.cdekClientId || !this.cdekClientSecret) {
+      throw new InternalServerErrorException('CDEK credentials are not configured');
+    }
+  }
+
+  private async getCdekToken(): Promise<string> {
+    this.ensureCdekCredentials();
+
+    const now = Date.now();
+    if (this.cdekToken && this.cdekTokenExpiresAt && now < this.cdekTokenExpiresAt) {
+      return this.cdekToken;
+    }
+
+    try {
+      const params = new URLSearchParams({
+        grant_type: 'client_credentials',
+        client_id: this.cdekClientId,
+        client_secret: this.cdekClientSecret,
+      });
+
+      const response = await firstValueFrom(
+        this.http.post('https://api.cdek.ru/v2/oauth/token', params.toString(), {
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            Accept: 'application/json',
+          },
+        }),
+      );
+
+      const { access_token, expires_in } = response.data as { access_token: string; expires_in: number };
+      if (!access_token) {
+        throw new Error('Empty token received from CDEK');
+      }
+
+      this.cdekToken = access_token;
+      const ttl = Number.isFinite(expires_in) ? (expires_in as number) : 3600;
+      this.cdekTokenExpiresAt = now + (ttl - 60) * 1000; // refresh token 1 minute before expiration
+      return this.cdekToken;
+    } catch (error) {
+      this.logger.error('Failed to obtain CDEK access token', error);
+      throw new InternalServerErrorException('Failed to authorize with CDEK API');
+    }
+  }
+
+  async searchCdekCities(query: string): Promise<CdekCity[]> {
+    if (!query || !query.trim()) {
+      return [];
+    }
+
+    const token = await this.getCdekToken();
+
+    try {
+      const response = await firstValueFrom(
+        this.http.get('https://api.cdek.ru/v2/location/cities', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+          },
+          params: {
+            city: query.trim(),
+            country_codes: 'RU',
+            size: 10,
+          },
+        }),
+      );
+
+      const entities: any[] = response.data?.entity || [];
+
+      return entities.map((item) => ({
+        cityName: item.city || item.city_name || '',
+        cityCode: item.code || item.city_code,
+        cityUuid: item.uuid || item.city_uuid || '',
+        country: item.country || item.country_name || '',
+        countryCode: item.country_code || item.country_codes || '',
+        region: item.region || item.region_name || '',
+        subRegion: item.sub_region || item.subregion || '',
+        regionCode: item.region_code,
+        latitude: item.latitude,
+        longitude: item.longitude,
+        kladr: item.kladr,
+      })) as CdekCity[];
+    } catch (error) {
+      this.logger.error('Failed to fetch CDEK cities', error);
+      throw new InternalServerErrorException('Не удалось получить список городов CDEK');
+    }
+  }
+
+  async getCdekPvzList(cityCode: number): Promise<CdekPvz[]> {
+    if (!cityCode) {
+      return [];
+    }
+    const token = await this.getCdekToken();
+
+    try {
+      const response = await firstValueFrom(
+        this.http.get('https://api.cdek.ru/v2/deliverypoints', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+          },
+          params: {
+            city_code: cityCode,
+            type: 'ALL',
+          },
+        }),
+      );
+
+      const entities: any[] = response.data || [];
+
+      return entities.map((item) => ({
+        code: item.code,
+        name: item.name,
+        address: item.location?.address || item.address,
+        addressComment: item.address_comment,
+        type: item.type,
+        city: item.location?.city || item.city,
+        cityCode: item.location?.city_code || item.city_code,
+        workTime: item.work_time,
+        postalCode: item.location?.postal_code || item.postal_code,
+        phone: item.phone,
+        phoneDetails: item.phone_additional,
+        coordX: item.location?.longitude ?? item.longitude,
+        coordY: item.location?.latitude ?? item.latitude,
+      })) as CdekPvz[];
+    } catch (error) {
+      this.logger.error('Failed to fetch CDEK delivery points', error);
+      throw new InternalServerErrorException('Не удалось получить список пунктов выдачи CDEK');
+    }
+  }
+
+  async calculateCdekTariffs(cityCode: number): Promise<CdekCalculation[]> {
+    if (!cityCode) {
+      return [];
+    }
+
+    const token = await this.getCdekToken();
+
+    const payload = {
+      currency: 'RUB',
+      from_location: { code: 137 },
+      to_location: { code: cityCode },
+      packages: [
+        {
+          weight: 0.5,
+          length: 20,
+          width: 10,
+          height: 10,
+        },
+      ],
+      tariff_codes: [136, 137],
+    };
+
+    try {
+      const response = await firstValueFrom(
+        this.http.post('https://api.cdek.ru/v2/calculator/tarifflist', payload, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
+        }),
+      );
+
+      const results: any[] = response.data?.tariff_codes || response.data?.result || [];
+
+      return results
+        .filter((item) => !item.errors || item.errors.length === 0)
+        .map((item) => ({
+          price: item.delivery_sum ?? item.total_sum ?? 0,
+          minDays: item.period_min ?? item.delivery_mode?.min_days ?? item.period ?? 0,
+          tariffId: item.tariff_code ?? item.tariff_id ?? 0,
+        })) as CdekCalculation[];
+    } catch (error) {
+      this.logger.error('Failed to calculate CDEK tariffs', error);
+      throw new InternalServerErrorException('Не удалось рассчитать стоимость доставки CDEK');
+    }
+  }
+
+  async proxyCdekWidget(
+    action: string,
+    method: string,
+    query: Record<string, any>,
+    body: any,
+  ): Promise<any> {
+    this.ensureCdekCredentials();
+    const token = await this.getCdekToken();
+
+    const headers: Record<string, string> = {
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/json',
+    };
+
+    if (action === 'offices') {
+      const params = { ...query };
+      delete params.action;
+
+      try {
+        const response = await firstValueFrom(
+          this.http.get('https://api.cdek.ru/v2/deliverypoints', {
+            headers,
+            params,
+          }),
+        );
+        return response.data;
+      } catch (error) {
+        this.logger.error('Failed to proxy CDEK widget offices request', error);
+        throw new InternalServerErrorException('Не удалось получить список пунктов выдачи CDEK');
+      }
+    }
+
+    if (action === 'calculate') {
+      const payload =
+        method === 'POST' && body && Object.keys(body).length
+          ? { ...body }
+          : { ...query };
+      delete payload.action;
+
+      try {
+        const response = await firstValueFrom(
+          this.http.post('https://api.cdek.ru/v2/calculator/tarifflist', payload, {
+            headers: {
+              ...headers,
+              'Content-Type': 'application/json',
+            },
+          }),
+        );
+        return response.data;
+      } catch (error) {
+        this.logger.error('Failed to proxy CDEK widget calculate request', error);
+        throw new InternalServerErrorException('Не удалось рассчитать доставку через CDEK');
+      }
+    }
+
+    throw new BadRequestException(`Unsupported CDEK widget action: ${action}`);
+  }
+
+  async searchStreets(query: string, cityName: string): Promise<any[]> {
+    if (!query || !query.trim()) {
+      return [];
+    }
+
+    this.ensureDadataCredentials();
+
+    try {
+      const response = await firstValueFrom(
+        this.http.post(
+          'https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address',
+          {
+            query: query.trim(),
+            count: 10,
+            from_bound: { value: 'street' },
+            to_bound: { value: 'street' },
+            locations: cityName ? [{ city: cityName }] : undefined,
+            restrict_value: true,
+          },
+          {
+            headers: {
+              Authorization: `Token ${this.dadataToken}`,
+              'X-Secret': this.dadataSecret,
+              'Content-Type': 'application/json',
+            },
+          },
+        ),
+      );
+
+      return response.data?.suggestions || [];
+    } catch (error) {
+      this.logger.error('Failed to fetch DaData street suggestions', error);
+      throw new InternalServerErrorException('Не удалось получить подсказки улиц');
+    }
+  }
+
+  async searchBuildings(streetFiasId: string, query: string): Promise<any[]> {
+    if (!streetFiasId || !query) {
+      return [];
+    }
+
+    this.ensureDadataCredentials();
+
+    try {
+      const response = await firstValueFrom(
+        this.http.post(
+          'https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address',
+          {
+            query: query.trim(),
+            count: 10,
+            from_bound: { value: 'house' },
+            to_bound: { value: 'house' },
+            locations: [{ street_fias_id: streetFiasId }],
+            restrict_value: true,
+          },
+          {
+            headers: {
+              Authorization: `Token ${this.dadataToken}`,
+              'X-Secret': this.dadataSecret,
+              'Content-Type': 'application/json',
+            },
+          },
+        ),
+      );
+
+      return response.data?.suggestions || [];
+    } catch (error) {
+      this.logger.error('Failed to fetch DaData building suggestions', error);
+      throw new InternalServerErrorException('Не удалось получить подсказки домов');
+    }
+  }
+}
+

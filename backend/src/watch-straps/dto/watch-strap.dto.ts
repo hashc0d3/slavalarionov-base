@@ -1,10 +1,36 @@
+export interface StrapColorImagesDto {
+  view1?: string | null;
+  view2?: string | null;
+  view3?: string | null;
+}
+
+export interface StrapColorDto {
+  color_title: string;
+  color_code?: string;
+  price?: number;
+  images?: StrapColorImagesDto;
+  view1?: string | null;
+  view2?: string | null;
+  view3?: string | null;
+}
+
+export interface StrapViewImagesDto {
+  view1?: string | null;
+  view2?: string | null;
+  view3?: string | null;
+  ultraView1?: string | null;
+  ultraView2?: string | null;
+  ultraView3?: string | null;
+}
+
 export interface StrapParamsDto {
-  leather_colors?: Array<{ color_title: string; color_code?: string }>;
-  stitching_colors?: Array<{ color_title: string; color_code?: string }>;
-  edge_colors?: Array<{ color_title: string; color_code?: string }>;
-  buckle_colors?: Array<{ color_title: string; color_code?: string }>;
-  adapter_colors?: Array<{ color_title: string; color_code?: string }>;
+  leather_colors?: StrapColorDto[];
+  stitching_colors?: StrapColorDto[];
+  edge_colors?: StrapColorDto[];
+  buckle_colors?: StrapColorDto[];
+  adapter_colors?: StrapColorDto[];
   has_buckle_butterfly?: boolean;
+  view_images?: StrapViewImagesDto;
 }
 
 export class CreateWatchStrapDto {
@@ -16,6 +42,8 @@ export class CreateWatchStrapDto {
   preview_image?: string;
   ultra_preview_image?: string;
   has_buckle_butterfly?: boolean;
+  buckle_butterfly_price?: number;
+  buckle_butterfly_image?: string;
   strap_params: StrapParamsDto;
 }
 
@@ -28,6 +56,8 @@ export class UpdateWatchStrapDto {
   preview_image?: string;
   ultra_preview_image?: string;
   has_buckle_butterfly?: boolean;
+  buckle_butterfly_price?: number;
+  buckle_butterfly_image?: string;
   strap_params?: StrapParamsDto;
 }
 

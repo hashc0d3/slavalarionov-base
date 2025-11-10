@@ -44,6 +44,8 @@ export class WatchStrapsService {
         preview_image: data.preview_image,
         ultra_preview_image: data.ultra_preview_image,
         has_buckle_butterfly: data.has_buckle_butterfly || false,
+        buckle_butterfly_price: data.buckle_butterfly_price ?? 0,
+        buckle_butterfly_image: data.buckle_butterfly_image,
         strap_params: JSON.stringify(data.strap_params),
       },
     }).then((strap) => ({
@@ -64,6 +66,8 @@ export class WatchStrapsService {
         preview_image: data.preview_image,
         ultra_preview_image: data.ultra_preview_image,
         has_buckle_butterfly: data.has_buckle_butterfly,
+        buckle_butterfly_price: data.buckle_butterfly_price ?? undefined,
+        buckle_butterfly_image: data.buckle_butterfly_image,
         strap_params: data.strap_params ? JSON.stringify(data.strap_params) : undefined,
       },
     }).then((strap) => ({
@@ -103,6 +107,8 @@ export class WatchStrapsService {
           preview_image: strapData.preview_image,
           ultra_preview_image: strapData.ultra_preview_image,
           has_buckle_butterfly: strapData.has_buckle_butterfly,
+          buckle_butterfly_price: strapData.buckle_butterfly_price ?? 0,
+          buckle_butterfly_image: strapData.buckle_butterfly_image,
           strap_params: JSON.stringify(strapData.strap_params),
         },
       });
