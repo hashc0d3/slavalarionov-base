@@ -15,7 +15,7 @@ import {
   Divider
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
-import { StrapColor } from '@/shared/store/configurator.store'
+import { StrapColor, StrapParams } from '@/shared/store/configurator.store'
 import { uploadStrapColorImage } from '@/shared/api/uploads.api'
 // import { IconPlus, IconTrash, IconEdit } from '@tabler/icons-react'
 
@@ -27,6 +27,7 @@ interface StrapParamsEditorProps {
     buckle_colors: StrapColor[]
     adapter_colors: StrapColor[]
     has_buckle_butterfly?: boolean
+    view_images?: StrapParams['view_images']
   }
   onUpdate: (updatedParams: any) => void
 }

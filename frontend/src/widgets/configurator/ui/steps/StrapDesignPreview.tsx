@@ -1,7 +1,7 @@
 "use client"
 
 import { observer } from 'mobx-react-lite'
-import { configuratorStore } from '@/shared/store/configurator.store'
+import { configuratorStore, StrapParams } from '@/shared/store/configurator.store'
 import { resolveMediaUrl } from '@/shared/lib/media'
 import styles from './StrapDesignPreview.module.css'
 
@@ -85,7 +85,7 @@ export const StrapDesignPreview = observer(function StrapDesignPreview({ classNa
 				'розовое золото': 'bb2fe92f54',
 				'роз. золото': 'bb2fe92f54',
 				'синий': 'a918feda5c',
-				'зелёный': '26a256f55a'
+				'зеленый': '26a256f55a'
 			}
 			
 			// Специальные хеши для разных видов и типов
@@ -164,7 +164,7 @@ export const StrapDesignPreview = observer(function StrapDesignPreview({ classNa
 			'розовое золото': 'rosegold',
 			'роз. золото': 'rosegold',
 			'синий': 'blue',
-			'зелёный': 'green'
+			'зеленый': 'green'
 		}
 		
 		const mappedColor = colorMapping[colorName] || colorName || 'white'
@@ -198,8 +198,11 @@ export const StrapDesignPreview = observer(function StrapDesignPreview({ classNa
 		return getLegacyImageUrl(type, view, color)
 	}
 
+	type ViewImageKey = keyof NonNullable<StrapParams['view_images']>
 	const getBaseViewImage = (view: number) => {
-		const dynamic = resolveMediaUrl(pickImagePath(strapData.strap_params?.view_images?.[`view${view}`]))
+		const viewKey = `view${view}` as ViewImageKey
+		const baseViews = strapData?.strap_params?.view_images
+		const dynamic = resolveMediaUrl(pickImagePath(baseViews?.[viewKey]))
 		if (dynamic) {
 			return dynamic
 		}

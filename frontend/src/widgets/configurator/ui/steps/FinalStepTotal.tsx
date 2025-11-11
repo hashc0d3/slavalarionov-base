@@ -79,7 +79,12 @@ export const FinalStepTotal = observer(function FinalStepTotal({
 				{configuratorStore.editingCartItemId ? (
 					<button 
 						className={styles.totalSaveBtn} 
-						onClick={() => configuratorStore.updateCartItem(configuratorStore.editingCartItemId)}
+						onClick={() => {
+							const id = configuratorStore.editingCartItemId
+							if (id) {
+								configuratorStore.updateCartItem(id)
+							}
+						}}
 					>
 						Сохранить изменения
 					</button>

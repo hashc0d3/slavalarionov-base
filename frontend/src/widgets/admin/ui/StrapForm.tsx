@@ -1,7 +1,7 @@
 'use client'
 
 import { observer } from 'mobx-react-lite'
-import { Strap, StrapColor } from '@/shared/store/configurator.store'
+import { Strap, StrapColor, StrapParams } from '@/shared/store/configurator.store'
 import styles from './AdminPanel.module.css'
 
 type StrapFormData = Partial<Omit<Strap, 'attributes'>> & {
@@ -20,6 +20,7 @@ interface StrapFormProps {
 
 export const StrapForm = observer(({ formData, onChange, onSave, onCancel, isAdding }: StrapFormProps) => {
   const watchStrap = formData.attributes?.watch_strap || {}
+  type StrapColorKey = keyof Pick<NonNullable<StrapParams>, 'leather_colors' | 'stitching_colors' | 'edge_colors' | 'buckle_colors' | 'adapter_colors'>
 
   const updateStrapField = (field: string, value: any) => {
     onChange({
@@ -33,11 +34,12 @@ export const StrapForm = observer(({ formData, onChange, onSave, onCancel, isAdd
     })
   }
 
-  const addColor = (colorType: 'leather_colors' | 'stitching_colors' | 'edge_colors' | 'buckle_colors' | 'adapter_colors') => {
+  const addColor = (colorType: StrapColorKey) => {
     const name = prompt('Название цвета:')
     const code = prompt('Код цвета (например, #000000):')
     if (name) {
-      const colors = [...(watchStrap.strap_params?.[colorType] || [])]
+      const current = watchStrap.strap_params?.[colorType] || []
+      const colors = [...current]
       colors.push({ color_title: name, color_code: code || '', choosen: false })
       
       updateStrapField('strap_params', {
@@ -47,8 +49,9 @@ export const StrapForm = observer(({ formData, onChange, onSave, onCancel, isAdd
     }
   }
 
-  const deleteColor = (colorType: string, index: number) => {
-    const colors = [...(watchStrap.strap_params?.[colorType] || [])]
+  const deleteColor = (colorType: StrapColorKey, index: number) => {
+    const current = watchStrap.strap_params?.[colorType] || []
+    const colors = [...current]
     colors.splice(index, 1)
     
     updateStrapField('strap_params', {

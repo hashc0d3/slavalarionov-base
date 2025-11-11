@@ -21,28 +21,28 @@ export const StrapDesignParams = observer(function StrapDesignParams({ params, s
 			id: 1,
 			title: 'Цвет кожи',
 			paramName: 'leather_color',
-			colors: params.leather_colors,
+			colors: params.leather_colors ?? [],
 			func: (title: string) => configuratorStore.chooseStrapLeatherColor(title)
 		},
 		{
 			id: 2,
 			title: 'Цвет строчки',
 			paramName: 'stitching_color',
-			colors: params.stitching_colors,
+			colors: params.stitching_colors ?? [],
 			func: (title: string) => configuratorStore.chooseStitchingColor(title)
 		},
 		{
 			id: 3,
 			title: 'Цвет края',
 			paramName: 'edge_color',
-			colors: params.edge_colors,
+			colors: params.edge_colors ?? [],
 			func: (title: string) => configuratorStore.chooseEdgeColor(title)
 		},
 		{
 			id: 4,
 			title: 'Цвет пряжки',
 			paramName: 'buckle_color',
-			colors: params.buckle_colors,
+			colors: params.buckle_colors ?? [],
 			func: (title: string) => configuratorStore.chooseBuckleColor(title),
 			hasButterflyBuckle: params.has_buckle_butterfly
 		},
@@ -50,7 +50,7 @@ export const StrapDesignParams = observer(function StrapDesignParams({ params, s
 			id: 5,
 			title: 'Цвет адаптеров',
 			paramName: 'adapter_color',
-			colors: params.adapter_colors,
+			colors: params.adapter_colors ?? [],
 			func: (title: string) => configuratorStore.chooseAdapterColor(title)
 		}
 	]

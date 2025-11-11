@@ -513,7 +513,8 @@ export const AdminStrapsMantine = observer(() => {
                 edge_colors: formData.attributes?.watch_strap.strap_params?.edge_colors ?? [],
                 buckle_colors: formData.attributes?.watch_strap.strap_params?.buckle_colors ?? [],
                 adapter_colors: formData.attributes?.watch_strap.strap_params?.adapter_colors ?? [],
-                has_buckle_butterfly: formData.attributes?.watch_strap.strap_params?.has_buckle_butterfly ?? false
+                has_buckle_butterfly: formData.attributes?.watch_strap.strap_params?.has_buckle_butterfly ?? false,
+                view_images: formData.attributes?.watch_strap.strap_params?.view_images
               }}
               onUpdate={(updatedParams) => setFormData({
                 attributes: {

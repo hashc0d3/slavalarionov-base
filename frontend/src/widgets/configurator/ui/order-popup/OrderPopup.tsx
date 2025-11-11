@@ -19,13 +19,11 @@ import deliveryStyles from './OrderPopupDelivery.module.css'
 import widgetStyles from './OrderPopupWidget.module.css'
 
 declare global {
-	interface Window {
-		CDEKWidget?: any
-	}
+	interface Window {}
 }
 
-const CDEK_WIDGET_SCRIPT_SRC = 'https://cdn.jsdelivr.net/gh/cdek-it/widget@latest/dist/cdek-widget.umd.js'
-const CDEK_WIDGET_SCRIPT_ID = 'cdek-widget-script'
+const CDEK_WIDGET_STYLE_ID = 'cdek-widget-style'
+const CDEK_WIDGET_STYLE_HREF = 'https://unpkg.com/cdek-widget@0.0.38/dist/style.css'
 const DEFAULT_WIDGET_API_KEY = '6f29a26c-6dd5-42b8-a755-83a4d6d75b6c'
 const CDEK_WIDGET_API_KEY = process.env.NEXT_PUBLIC_CDEK_WIDGET_API_KEY || DEFAULT_WIDGET_API_KEY
 const DEFAULT_CITY_NAME = 'Санкт-Петербург'
@@ -170,6 +168,7 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 	const [widgetError, setWidgetError] = useState<string | null>(null)
 	const widgetContainerRef = useRef<HTMLDivElement | null>(null)
 	const widgetInstanceRef = useRef<any>(null)
+	const widgetModulePromiseRef = useRef<Promise<any> | null>(null)
 	const defaultCityAppliedRef = useRef(false)
 	const autoWidgetTriggerRef = useRef(false)
 	const isSettingDefaultCityRef = useRef(false)
@@ -381,41 +380,62 @@ useEffect(() => {
 	useEffect(() => {
 		if (!isWidgetOpen) return
 
-		const ensureScript = () => {
-			return new Promise<void>((resolve, reject) => {
-				if (document.getElementById(CDEK_WIDGET_SCRIPT_ID)) {
-					resolve()
-					return
-				}
-				const script = document.createElement('script')
-				script.id = CDEK_WIDGET_SCRIPT_ID
-				script.src = CDEK_WIDGET_SCRIPT_SRC
-				script.async = true
-				script.onload = () => resolve()
-				script.onerror = () => reject(new Error('Failed to load CDEK widget script'))
-				document.body.appendChild(script)
+		const ensureWidgetStyle = () => {
+			if (document.getElementById(CDEK_WIDGET_STYLE_ID)) {
+				return Promise.resolve()
+			}
+			return new Promise<void>((resolve) => {
+				const link = document.createElement('link')
+				link.id = CDEK_WIDGET_STYLE_ID
+				link.rel = 'stylesheet'
+				link.href = CDEK_WIDGET_STYLE_HREF
+				link.onload = () => resolve()
+				link.onerror = () => resolve()
+				document.head.appendChild(link)
 			})
+		}
+
+		const loadWidgetModule = async () => {
+			if (!widgetModulePromiseRef.current) {
+				widgetModulePromiseRef.current = (async () => {
+					await ensureWidgetStyle()
+					const module = await import(
+						/* webpackIgnore: true */
+						'https://unpkg.com/cdek-widget@0.0.38/dist/index.js?module'
+					)
+					return module
+				})()
+			}
+			return widgetModulePromiseRef.current
 		}
 
 		let mounted = true
 		setWidgetError(null)
 		setIsWidgetReady(false)
 
-		ensureScript()
-			.then(() => {
+		loadWidgetModule()
+			.then((module) => {
 				if (!mounted) return
-				if (typeof window.CDEKWidget !== 'function') {
+				const widgetCtor =
+					module?.CdekWidget ??
+					module?.CDEKWidget ??
+					module?.default ??
+					null
+				if (typeof widgetCtor !== 'function') {
 					throw new Error('CDEK widget script loaded but constructor missing')
 				}
-				if (!widgetContainerRef.current) {
+				const container = widgetContainerRef.current
+				if (!container) {
 					throw new Error('Widget container not available')
 				}
 
-				widgetInstanceRef.current = new window.CDEKWidget({
+				container.innerHTML = ''
+
+				const props = {
 					from: form.city || '',
-					root: widgetContainerRef.current.id,
 					apiKey: CDEK_WIDGET_API_KEY,
 					servicePath: '/api/delivery/cdek/widget',
+					root: container.id || 'cdek-widget-container',
 					defaultLocation: form.city || '',
 					tariffs: { office: [136, 137] },
 					hideDeliveryOptions: { office: false, door: true },
@@ -462,6 +482,11 @@ useEffect(() => {
 							setIsWidgetReady(true)
 						}
 					}
+				}
+
+				widgetInstanceRef.current = new widgetCtor({
+					target: container,
+					props
 				})
 			})
 			.catch((error: any) => {
@@ -474,9 +499,14 @@ useEffect(() => {
 		return () => {
 			mounted = false
 			setIsWidgetReady(false)
-			if (widgetInstanceRef.current?.destroy) {
+			const instance = widgetInstanceRef.current as {
+				destroy?: () => void
+				$destroy?: () => void
+			} | null
+			if (instance?.destroy || instance?.$destroy) {
 				try {
-					widgetInstanceRef.current.destroy()
+					instance.destroy?.()
+					instance.$destroy?.()
 				} catch (err) {
 					console.warn('CDEK widget destroy error', err)
 				}

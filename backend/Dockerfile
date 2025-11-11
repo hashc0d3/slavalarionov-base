@@ -1,9 +1,9 @@
-FROM node:20-alpine AS build
+FROM node:20 AS build
 
 WORKDIR /app
 
 # Install system dependencies
-RUN apk add --no-cache libc6-compat openssl
+RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 
 # Install backend dependencies (with dev deps for build)
 COPY backend/package.json backend/package-lock.json ./backend/
@@ -29,7 +29,7 @@ RUN cd frontend && npm run build
 RUN cd backend && npm prune --omit=dev
 RUN cd frontend && npm prune --omit=dev
 
-FROM node:20-alpine AS runner
+FROM node:20 AS runner
 
 WORKDIR /app/backend
 
@@ -48,5 +48,5 @@ COPY --from=build /app/frontend /app/frontend
 
 EXPOSE 8081
 
-CMD ["sh", "-c", "npx prisma migrate deploy && npm run start:prod"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/src/main"]
 
