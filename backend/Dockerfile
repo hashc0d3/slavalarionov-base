@@ -5,15 +5,24 @@ WORKDIR /app
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-certificates && rm -rf /var/lib/apt/lists/*
 
+# Disable Next.js telemetry for faster builds
+ENV NEXT_TELEMETRY_DISABLED=1
+# Optimize npm install
+ENV NPM_CONFIG_PREFER_OFFLINE=true
+ENV NPM_CONFIG_AUDIT=false
+ENV NPM_CONFIG_FUND=false
+
 # Install backend dependencies (with dev deps for build)
 COPY backend/package.json backend/package-lock.json ./backend/
 # Prisma schema нужна уже на этапе установки (postinstall → prisma generate)
 COPY backend/prisma ./backend/prisma
-RUN cd backend && npm ci
+RUN --mount=type=cache,target=/root/.npm \
+    cd backend && npm ci --prefer-offline --no-audit
 
 # Install frontend dependencies (with dev deps for build)
 COPY frontend/package.json frontend/package-lock.json ./frontend/
-RUN cd frontend && npm ci
+RUN --mount=type=cache,target=/root/.npm \
+    cd frontend && npm ci --prefer-offline --no-audit
 
 # Copy source code
 COPY backend ./backend
