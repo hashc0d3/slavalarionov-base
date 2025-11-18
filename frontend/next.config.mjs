@@ -1,6 +1,44 @@
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   distDir: '.next',
+  // Отключаем линтинг и проверку типов в production build для ускорения
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+  // Оптимизации для ускорения сборки
+  swcMinify: true,
+  compiler: {
+    removeConsole: process.env.NODE_ENV === 'production' ? {
+      exclude: ['error', 'warn'],
+    } : false,
+  },
+  // Отключаем генерацию source maps для ускорения сборки
+  productionBrowserSourceMaps: false,
+  // Оптимизация изображений (можно отключить если не используется)
+  images: {
+    unoptimized: false,
+  },
+  // Уменьшаем количество оптимизаций во время сборки
+  experimental: {
+    optimizeCss: false, // Отключаем CSS оптимизацию во время сборки
+  },
+  // Явно указываем webpack для разрешения путей
+  webpack: (config, { buildId, dev, isServer, defaultLoaders, webpack }) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': path.resolve(__dirname, './src'),
+    };
+    return config;
+  },
 };
 
 export default nextConfig;

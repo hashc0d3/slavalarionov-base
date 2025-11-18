@@ -12,6 +12,22 @@
 
 ## Запуск
 
+### Быстрый запуск одной командой
+
+```bash
+./start.sh
+```
+
+Этот скрипт автоматически:
+- Проверит наличие Docker и Docker Compose
+- Установит зависимости и сгенерирует Prisma client (если нужно)
+- Соберет и запустит проект через Docker Compose
+- Покажет статус и логи
+
+Приложение будет доступно по адресу: http://localhost:8081
+
+### Локальная разработка
+
 1. Установить зависимости:
    ```bash
    npm install
@@ -29,6 +45,52 @@
    - [http://localhost:8081](http://localhost:8081) — главная страница
    - [http://localhost:8081/configurator](http://localhost:8081/configurator) — **основной конструктор**
    - [http://localhost:8081/api/greeting](http://localhost:8081/api/greeting) — пример API
+
+### Развертывание на сервере через Docker Compose
+
+1. Клонировать репозиторий:
+   ```bash
+   git clone <repository-url>
+   cd site-base
+   ```
+
+2. Установить зависимости и сгенерировать Prisma client:
+   ```bash
+   cd backend && npm install
+   npm run prisma:generate
+   cd ../frontend && npm install
+   cd ..
+   ```
+   
+   **Важно**: Prisma client должен быть сгенерирован локально перед сборкой Docker образа, чтобы избежать проблем с загрузкой бинарников.
+
+3. Запустить сборку и запуск через Docker Compose:
+   ```bash
+   docker compose up -d --build
+   ```
+
+4. Проверить статус:
+   ```bash
+   docker compose ps
+   docker compose logs -f backend
+   ```
+
+5. Открыть приложение:
+   - [http://localhost:8081](http://localhost:8081) — главная страница
+
+**Примечание**: Сборка оптимизирована для ускорения:
+- Используется SWC компилятор вместо TypeScript (быстрее в 5-20 раз)
+- Отключена проверка типов во время сборки
+- Кэширование промежуточных результатов
+- Отключены ненужные оптимизации
+- Если Prisma client сгенерирован локально, он будет использован (не нужно загружать бинарники)
+
+**Если возникают проблемы с Prisma generate**:
+- Dockerfile автоматически попытается сгенерировать Prisma client с повторными попытками
+- Если сервер Prisma недоступен, сгенерируйте Prisma client локально перед сборкой:
+  ```bash
+  cd backend && npm run prisma:generate
+  ```
 
 ## Основные команды
 

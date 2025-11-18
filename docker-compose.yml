@@ -11,7 +11,7 @@ services:
       - "8081:8081"
     working_dir: /app/backend
     volumes:
-      - backend_db:/app/backend/prisma/dev.db
+      - backend_db:/app/backend/prisma
       - backend_uploads:/app/backend/uploads
 
 volumes:
