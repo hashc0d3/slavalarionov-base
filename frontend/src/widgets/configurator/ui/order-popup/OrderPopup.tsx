@@ -657,11 +657,14 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 		const postalCode = dadataCity.data?.postal_code || ''
 		const isDefaultCity = cityName.toLowerCase().includes('санкт') || cityName.toLowerCase().includes('петербург')
 		
-		// Сначала устанавливаем город в форму, чтобы селектор ПВЗ мог отобразиться
+		// Сначала устанавливаем город в форму и очищаем cityCode, чтобы ПВЗ очистились
+		// Затем cityCode обновится асинхронно и загрузятся новые ПВЗ
 		updateForm(
 			(prev) => ({
 				...prev,
 				city: cityName,
+				cityCode: null, // Очищаем cityCode, чтобы ПВЗ очистились
+				cityUuid: null,
 				pickupPoint: '',
 				deliveryPointData: null,
 				street: '',
@@ -673,6 +676,10 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 			}),
 			['city', 'pickupPoint', 'street', 'building', 'courierAddress', 'mailAddress']
 		)
+		
+		// Очищаем список ПВЗ сразу при смене города
+		setPvzList([])
+		setTariffs([])
 		
 		// Ищем cityCode через CDEK API по postal_code (как в custom) или по названию города
 		// Делаем это асинхронно, чтобы не блокировать UI
