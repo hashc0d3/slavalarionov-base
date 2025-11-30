@@ -413,8 +413,19 @@ useEffect(() => {
 		setWidgetError(null)
 		setIsWidgetReady(false)
 
-		loadWidgetModule()
-			.then((module) => {
+		// Проверяем, что API работает перед инициализацией виджета
+		const checkApiHealth = async () => {
+			try {
+				// Пробуем получить список городов для проверки API
+				await deliveryApi.searchCities('Москва')
+			} catch (error: any) {
+				console.warn('CDEK API health check failed, but continuing with widget init', error)
+				// Не блокируем инициализацию виджета, но логируем предупреждение
+			}
+		}
+
+		Promise.all([loadWidgetModule(), checkApiHealth()])
+			.then(([module]) => {
 				if (!mounted) return
 				const widgetCtor =
 					module?.CdekWidget ??
@@ -427,6 +438,11 @@ useEffect(() => {
 				const container = widgetContainerRef.current
 				if (!container) {
 					throw new Error('Widget container not available')
+				}
+
+				// Проверяем, что container является DOM элементом
+				if (!(container instanceof HTMLElement)) {
+					throw new Error('Widget container is not a valid DOM element')
 				}
 
 				container.innerHTML = ''
@@ -481,13 +497,24 @@ useEffect(() => {
 						if (mounted) {
 							setIsWidgetReady(true)
 						}
+					},
+					onError: (error: any) => {
+						console.error('CDEK widget runtime error', error)
+						if (mounted) {
+							setWidgetError(error?.message || 'Ошибка при работе карты CDEK')
+						}
 					}
 				}
 
-				widgetInstanceRef.current = new widgetCtor({
-					target: container,
-					props
-				})
+				try {
+					widgetInstanceRef.current = new widgetCtor({
+						target: container,
+						props
+					})
+				} catch (initError: any) {
+					console.error('CDEK widget constructor error', initError)
+					throw new Error(`Не удалось инициализировать виджет CDEK: ${initError?.message || 'Unknown error'}`)
+				}
 			})
 			.catch((error: any) => {
 				console.error('CDEK widget init error', error)

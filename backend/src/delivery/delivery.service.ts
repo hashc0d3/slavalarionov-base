@@ -103,8 +103,15 @@ export class DeliveryService {
       const ttl = Number.isFinite(expires_in) ? (expires_in as number) : 3600;
       this.cdekTokenExpiresAt = now + (ttl - 60) * 1000; // refresh token 1 minute before expiration
       return this.cdekToken;
-    } catch (error) {
-      this.logger.error('Failed to obtain CDEK access token', error);
+    } catch (error: any) {
+      const errorMessage = error?.response?.data 
+        ? JSON.stringify(error.response.data)
+        : error?.message || 'Unknown error';
+      const statusCode = error?.response?.status || 'N/A';
+      this.logger.error(
+        `Failed to obtain CDEK access token. Status: ${statusCode}, Error: ${errorMessage}`,
+        error?.stack || error
+      );
       throw new InternalServerErrorException('Failed to authorize with CDEK API');
     }
   }
