@@ -118,9 +118,9 @@ const initialFormState: FormState = {
 	name: '',
 	phone: '',
 	email: '',
-	city: DEFAULT_CITY_NAME,
-	cityCode: DEFAULT_CITY_CODE,
-	cityUuid: DEFAULT_CITY_UUID,
+	city: '', // Будет установлен после загрузки через DaData
+	cityCode: null, // Будет установлен после загрузки через DaData
+	cityUuid: null,
 	courierAddress: '',
 	street: '',
 	streetFiasId: null,
@@ -326,21 +326,8 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 	// Загрузка дефолтного города при открытии модального окна (по аналогии с custom - через DaData)
 	useEffect(() => {
 		if (!visible) return
-		// Если уже есть города в списке и cityCode установлен, не загружаем повторно
-		if (citySuggestions.length > 0 && form.cityCode === DEFAULT_CITY_CODE && form.city === DEFAULT_CITY_NAME) return
-
-		// Сразу устанавливаем дефолтный город и cityCode, чтобы ПВЗ могли загрузиться
-		if (!form.cityCode || form.cityCode !== DEFAULT_CITY_CODE || !form.city || form.city !== DEFAULT_CITY_NAME) {
-			updateForm(
-				(prev) => ({
-					...prev,
-					city: DEFAULT_CITY_NAME,
-					cityCode: DEFAULT_CITY_CODE,
-					cityUuid: DEFAULT_CITY_UUID
-				}),
-				['city']
-			)
-		}
+		// Если уже есть города в списке и город выбран, не загружаем повторно
+		if (citySuggestions.length > 0 && form.city) return
 
 		// Загружаем только дефолтный город (Санкт-Петербург) через DaData
 		const loadDefaultCity = async () => {
@@ -362,17 +349,34 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 					// Устанавливаем дефолтный город в список
 					setCitySuggestions([spbCity])
 					
-					// Находим cityCode через CDEK API и обновляем форму (если найден более точный код)
+					// Выбираем Санкт-Петербург из списка (находим cityCode через CDEK API и устанавливаем в форму)
 					handleCitySelectFromDadata(spbCity)
 				} else {
-					// Если не удалось загрузить через DaData, оставляем дефолтные значения
-					// (уже установлены выше)
+					// Если не удалось загрузить через DaData, используем константы как fallback
 					setCitySuggestions([])
+					updateForm(
+						(prev) => ({
+							...prev,
+							city: DEFAULT_CITY_NAME,
+							cityCode: DEFAULT_CITY_CODE,
+							cityUuid: DEFAULT_CITY_UUID
+						}),
+						['city']
+					)
 				}
 			} catch (error: any) {
 				console.error('Failed to load default city', error)
-				// В случае ошибки оставляем дефолтные значения (уже установлены выше)
+				// В случае ошибки используем константы как fallback
 				setCitySuggestions([])
+				updateForm(
+					(prev) => ({
+						...prev,
+						city: DEFAULT_CITY_NAME,
+						cityCode: DEFAULT_CITY_CODE,
+						cityUuid: DEFAULT_CITY_UUID
+					}),
+					['city']
+				)
 			} finally {
 				setIsCityLoading(false)
 			}
@@ -695,28 +699,28 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 		const postalCode = dadataCity.data?.postal_code || ''
 		const isDefaultCity = cityName.toLowerCase().includes('санкт') || cityName.toLowerCase().includes('петербург')
 		
-		// Для дефолтного города (Санкт-Петербург) сразу устанавливаем DEFAULT_CITY_CODE
-		// Для других городов ищем cityCode через CDEK API
-		if (isDefaultCity) {
-			// Для дефолтного города сразу устанавливаем cityCode (как в custom)
-			updateForm(
-				(prev) => ({
-					...prev,
-					city: cityName,
-					cityCode: DEFAULT_CITY_CODE,
-					cityUuid: DEFAULT_CITY_UUID,
-					pickupPoint: '',
-					deliveryPointData: null,
-					street: '',
-					streetFiasId: null,
-					building: '',
-					courierAddress: '',
-					mailAddress: '',
-					deliveryValue: initialDeliveryOptions[0].value
-				}),
-				['city', 'pickupPoint', 'street', 'building', 'courierAddress', 'mailAddress']
-			)
-		} else {
+		// Сначала устанавливаем город в форму (для всех городов одинаково)
+		// Для дефолтного города (Санкт-Петербург) используем DEFAULT_CITY_CODE как временное значение
+		// Для других городов очищаем cityCode
+		updateForm(
+			(prev) => ({
+				...prev,
+				city: cityName,
+				cityCode: isDefaultCity ? DEFAULT_CITY_CODE : null, // Для СПб используем дефолтный код, для других - null
+				cityUuid: isDefaultCity ? DEFAULT_CITY_UUID : null,
+				pickupPoint: '',
+				deliveryPointData: null,
+				street: '',
+				streetFiasId: null,
+				building: '',
+				courierAddress: '',
+				mailAddress: '',
+				deliveryValue: initialDeliveryOptions[0].value
+			}),
+			['city', 'pickupPoint', 'street', 'building', 'courierAddress', 'mailAddress']
+		)
+		
+		if (!isDefaultCity) {
 			// Для других городов сначала очищаем cityCode, затем ищем через CDEK API
 			updateForm(
 				(prev) => ({
@@ -1659,7 +1663,8 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 							<div className={deliveryStyles.labelRow}>
 								<span>Город*</span>
 							</div>
-							{isCityLoading && citySuggestions.length === 0 ? (
+							{isCityLoading && citySuggestions.length <= 1 ? (
+								// Показываем скелетон, когда загружаются популярные города (когда только дефолтный город в списке)
 								<div className={`${deliveryStyles.skeleton} ${deliveryStyles.skeletonSelect}`} />
 							) : (
 								<select
@@ -1684,7 +1689,7 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 									disabled={isLoading}
 								>
 									{citySuggestions.length === 0 ? (
-										<option value={DEFAULT_CITY_NAME}>{DEFAULT_CITY_NAME}</option>
+										<option value="">Загрузка...</option>
 									) : (
 										citySuggestions.map((city, index) => {
 											const cityName = city.data?.city || city.data?.settlement || city.value || ''
@@ -1791,7 +1796,8 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 										<span>Пункт выдачи*</span>
 									</div>
 									{form.city ? (
-										isPvzLoading && pvzList.length === 0 ? (
+										// Показываем скелетон, когда загружаются ПВЗ или когда город выбран, но cityCode еще загружается
+										(isPvzLoading && pvzList.length === 0) || (!form.cityCode && form.city) ? (
 											<div className={`${deliveryStyles.skeleton} ${deliveryStyles.skeletonSelect}`} />
 										) : (
 											<select
@@ -1807,14 +1813,12 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 														handlePvzSelect(pvz)
 													}
 												}}
-												disabled={isLoading || (!form.cityCode && !isPvzLoading) || (pvzList.length === 0 && !!form.cityCode)}
+												disabled={isLoading || (pvzList.length === 0 && !!form.cityCode)}
 											>
 												<option value="">
-													{!form.cityCode 
-														? 'Загрузка пунктов выдачи...' 
-														: pvzList.length === 0 
-															? 'Пункты выдачи не найдены' 
-															: 'Выберите пункт выдачи'
+													{pvzList.length === 0 
+														? 'Пункты выдачи не найдены' 
+														: 'Выберите пункт выдачи'
 													}
 												</option>
 												{pvzList.map((pvz) => {
