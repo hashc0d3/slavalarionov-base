@@ -57,12 +57,16 @@ export class DeliveryService {
     this.cdekClientId = this.config.get<string>('CDEK_CLIENT_ID') || '';
     this.cdekClientSecret = this.config.get<string>('CDEK_CLIENT_SECRET') || '';
     
-    // Логируем наличие учетных данных (без самих значений)
-    this.logger.log('CDEK credentials check', {
+    // Логируем наличие учетных данных (с реальными значениями для отладки)
+    this.logger.log('CDEK credentials check - FULL DEBUG', {
       hasClientId: !!this.cdekClientId,
       hasClientSecret: !!this.cdekClientSecret,
       clientIdLength: this.cdekClientId?.length || 0,
       clientSecretLength: this.cdekClientSecret?.length || 0,
+      clientIdActual: this.cdekClientId,
+      clientSecretActual: this.cdekClientSecret,
+      clientIdStartsWith: this.cdekClientId?.substring(0, 10) || 'empty',
+      clientSecretStartsWith: this.cdekClientSecret?.substring(0, 10) || 'empty',
     });
   }
 
@@ -99,20 +103,25 @@ export class DeliveryService {
         client_secret: this.cdekClientSecret,
       });
 
-      // Логируем запрос (без секретного ключа)
+      // Логируем запрос с реальными значениями для отладки
       const requestBody = params.toString();
-      this.logger.log('CDEK OAuth token request', {
+      this.logger.log('CDEK OAuth token request - FULL DEBUG', {
         url: 'https://api.cdek.ru/v2/oauth/token',
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
           Accept: 'application/json',
         },
-        body: requestBody.replace(/client_secret=[^&]*/, 'client_secret=***HIDDEN***'),
-        client_id: this.cdekClientId,
+        body_full: requestBody,
+        body_masked: requestBody.replace(/client_secret=[^&]*/, 'client_secret=***HIDDEN***'),
+        client_id_actual: this.cdekClientId,
+        client_id_length: this.cdekClientId?.length || 0,
+        client_secret_actual: this.cdekClientSecret,
         client_secret_length: this.cdekClientSecret?.length || 0,
         has_client_id: !!this.cdekClientId,
         has_client_secret: !!this.cdekClientSecret,
+        client_id_starts_with: this.cdekClientId?.substring(0, 10) || 'empty',
+        client_secret_starts_with: this.cdekClientSecret?.substring(0, 10) || 'empty',
       });
 
       const response = await firstValueFrom(
