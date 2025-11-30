@@ -630,25 +630,61 @@ useEffect(() => {
 			return
 		}
 
-		const script = document.createElement('script')
-		script.src = 'https://widget.cdek.ru/widget/widjet.js'
-		script.async = true
-		script.charset = 'utf-8'
-		script.onload = () => {
-			console.log('[CDEK Map] Script loaded successfully, CDEKWidget available:', !!window.CDEKWidget)
-			setMapReady(true)
+		// Пробуем несколько вариантов URL для загрузки виджета
+		const scriptUrls = [
+			'https://widget.cdek.ru/widget/widjet.js',
+			'https://widget.cdek.ru/widget/scripts/widjet.js',
+			'https://widget.cdek.ru/widjet.js'
+		]
+
+		let currentUrlIndex = 0
+		const tryLoadScript = () => {
+			if (currentUrlIndex >= scriptUrls.length) {
+				console.error('[CDEK Map] All script URLs failed. Widget will not be available.')
+				// Виджет недоступен, но можно работать со списком ПВЗ
+				setMapReady(false)
+				return
+			}
+
+			const script = document.createElement('script')
+			script.id = 'ISDEKscript'
+			script.type = 'text/javascript'
+			script.src = scriptUrls[currentUrlIndex]
+			script.async = true
+			script.charset = 'utf-8'
+			
+			script.onload = () => {
+				console.log('[CDEK Map] Script loaded successfully from:', scriptUrls[currentUrlIndex])
+				console.log('[CDEK Map] CDEKWidget available:', !!window.CDEKWidget)
+				setMapReady(true)
+			}
+			
+			script.onerror = (error) => {
+				console.warn(`[CDEK Map] Failed to load from ${scriptUrls[currentUrlIndex]}, trying next...`)
+				currentUrlIndex++
+				// Удаляем неудачный скрипт
+				if (script.parentNode) {
+					script.parentNode.removeChild(script)
+				}
+				// Пробуем следующий URL
+				setTimeout(tryLoadScript, 100)
+			}
+			
+			document.body.appendChild(script)
+			console.log('[CDEK Map] Attempting to load script from:', scriptUrls[currentUrlIndex])
 		}
-		script.onerror = (error) => {
-			console.error('[CDEK Map] Failed to load CDEK Widget script:', error)
-		}
-		document.body.appendChild(script)
-		console.log('[CDEK Map] Script element added to DOM:', script.src)
+
+		tryLoadScript()
 
 		return () => {
-			if (script.parentNode) {
-				script.parentNode.removeChild(script)
-				console.log('[CDEK Map] Script removed from DOM')
-			}
+			// Удаляем все возможные скрипты виджета
+			scriptUrls.forEach(url => {
+				const existingScript = document.getElementById('ISDEKscript')
+				if (existingScript && existingScript.parentNode) {
+					existingScript.parentNode.removeChild(existingScript)
+					console.log('[CDEK Map] Script removed from DOM')
+				}
+			})
 		}
 	}, [visible, currentDeliveryOption.requiresPvz])
 
