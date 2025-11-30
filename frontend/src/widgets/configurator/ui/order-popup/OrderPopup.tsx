@@ -16,13 +16,9 @@ import {
 	type DadataSuggestion
 } from '@/shared/api/delivery.api'
 import deliveryStyles from './OrderPopupDelivery.module.css'
-import type { CDEKWidgetInstance, CDEKWidgetPoint } from '@/types/cdek-widget'
+import type { CDEKWidgetInstance, CDEKWidgetPoint, CDEKWidgetOptions } from '@/types/cdek-widget'
 
-declare global {
-	interface Window {
-		CDEKWidget?: new (options: any) => CDEKWidgetInstance
-	}
-}
+// Типы CDEK Widget импортируются из @/types/cdek-widget
 
 const DEFAULT_CITY_NAME = 'Санкт-Петербург'
 const DEFAULT_CITY_CODE = 137
@@ -84,14 +80,14 @@ const initialDeliveryOptions: DeliveryOption[] = [
 		value: 'post-office',
 		label: 'Почта России 1 класс',
 		time: '4–6 дней',
-		price: 250,
+		price: undefined,
 		priceFixed: true,
 		requiresMailAddress: true
 	},
 	{
 		value: 'city-courier-delivery',
 		label: 'Доставка курьером по Санкт-Петербургу',
-		price: 600,
+		price: undefined,
 		priceFixed: true,
 		note: 'Согласуем удобное место и время доставки и передадим заказ Яндекс.Доставкой.'
 	},
@@ -145,13 +141,11 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 	const [promoMessage, setPromoMessage] = useState<string | null>(null)
 	const [promoStatus, setPromoStatus] = useState<'success' | 'error' | null>(null)
 	const [promoLoading, setPromoLoading] = useState(false)
-	const [activePayment, setActivePayment] = useState<'card' | 'sbp'>('card')
 	const [deliveryOptions, setDeliveryOptions] = useState<DeliveryOption[]>(initialDeliveryOptions)
 	const [cityQuery, setCityQuery] = useState('')
 	const [citySuggestions, setCitySuggestions] = useState<CdekCity[]>([])
 	const [isCityLoading, setIsCityLoading] = useState(false)
 	const [pvzList, setPvzList] = useState<CdekPvz[]>([])
-	const [pvzQuery, setPvzQuery] = useState('')
 	const [isPvzLoading, setIsPvzLoading] = useState(false)
 	const [tariffs, setTariffs] = useState<CdekCalculation[]>([])
 	const [isTariffsLoading, setIsTariffsLoading] = useState(false)
@@ -283,11 +277,43 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 		}
 	}, [form.building, buildingQuery])
 
+	// Фильтруем опции доставки в зависимости от выбранного города
+	const filteredDeliveryOptions = useMemo(() => {
+		const isSpb = form.cityCode === DEFAULT_CITY_CODE
+		
+		// Если выбран не Санкт-Петербург, скрываем самовывоз и доставку курьером по СПб
+		if (!isSpb) {
+			return deliveryOptions.filter(
+				(option) => option.value !== 'self-pickup' && option.value !== 'city-courier-delivery'
+			)
+		}
+		
+		return deliveryOptions
+	}, [deliveryOptions, form.cityCode])
+
+	// Если текущая выбранная опция доставки недоступна для выбранного города, выбираем первую доступную
+	useEffect(() => {
+		const currentOption = filteredDeliveryOptions.find((item) => item.value === form.deliveryValue)
+		if (!currentOption && filteredDeliveryOptions.length > 0) {
+			updateForm(
+				(prev) => ({
+					deliveryValue: filteredDeliveryOptions[0].value,
+					pickupPoint: filteredDeliveryOptions[0].requiresPvz ? prev.pickupPoint : '',
+					street: filteredDeliveryOptions[0].requiresCourierAddress ? prev.street : '',
+					building: filteredDeliveryOptions[0].requiresCourierAddress ? prev.building : '',
+					courierAddress: filteredDeliveryOptions[0].requiresCourierAddress ? prev.courierAddress : '',
+					mailAddress: filteredDeliveryOptions[0].requiresMailAddress ? prev.mailAddress : ''
+				}),
+				['pickupPoint', 'street', 'building', 'courierAddress', 'mailAddress']
+			)
+		}
+	}, [filteredDeliveryOptions, form.deliveryValue])
+
 	// Актуализируем стоимость доставки
 	useEffect(() => {
-		const option = deliveryOptions.find((item) => item.value === form.deliveryValue)
+		const option = filteredDeliveryOptions.find((item) => item.value === form.deliveryValue)
 		configuratorStore.deliveryPrice = option?.price ?? 0
-	}, [deliveryOptions, form.deliveryValue])
+	}, [filteredDeliveryOptions, form.deliveryValue])
 
 	useEffect(() => {
 		if (!visible) return
@@ -365,29 +391,68 @@ useEffect(() => {
 	// eslint-disable-next-line react-hooks/exhaustive-deps
 }, [visible])
 
+	// Загрузка списка городов для селектора (по аналогии с custom - через API)
 	useEffect(() => {
 		if (!visible) return
-		if (!cityQuery || cityQuery.length < 2 || cityQuery === form.city) {
-			setCitySuggestions([])
-			setIsCityLoading(false)
-			return
-		}
+		if (citySuggestions.length > 0) return // Уже загружены
 
 		setIsCityLoading(true)
-		const handler = setTimeout(async () => {
+		const loadCities = async () => {
 			try {
-				const suggestions = await deliveryApi.searchCities(cityQuery)
-				setCitySuggestions(suggestions)
+				// Сначала загружаем Санкт-Петербург (дефолтный город) через API
+				const spbCities = await deliveryApi.searchCities(DEFAULT_CITY_NAME)
+				if (spbCities.length > 0) {
+					const spbCity = spbCities.find(c => 
+						c.cityCode === DEFAULT_CITY_CODE ||
+						c.cityName?.toLowerCase().includes('санкт') ||
+						c.cityName?.toLowerCase().includes('петербург')
+					) || spbCities[0]
+					
+					const allCities: CdekCity[] = [spbCity]
+					
+					// Загружаем другие популярные города через API (как в custom)
+					const popularCityQueries = ['Москва', 'Новосибирск', 'Екатеринбург', 'Казань', 'Нижний Новгород', 'Челябинск', 'Самара', 'Омск', 'Ростов-на-Дону']
+					
+					for (const cityQuery of popularCityQueries) {
+						try {
+							const cities = await deliveryApi.searchCities(cityQuery)
+							if (cities.length > 0) {
+								const city = cities.find(c => 
+									c.cityName?.toLowerCase().includes(cityQuery.toLowerCase()) ||
+									cityQuery.toLowerCase().includes(c.cityName?.toLowerCase() || '')
+								) || cities[0]
+								if (city && !allCities.find(c => c.cityCode === city.cityCode)) {
+									allCities.push(city)
+								}
+							}
+						} catch (error) {
+							console.error(`Failed to load city ${cityQuery}`, error)
+						}
+					}
+					
+					setCitySuggestions(allCities)
+					
+					// Устанавливаем Санкт-Петербург по умолчанию, если он еще не установлен
+					// Это загрузит ПВЗ для дефолтного города через handleCitySelect -> useEffect [form.cityCode]
+					if (spbCity && (!form.cityCode || form.cityCode === DEFAULT_CITY_CODE)) {
+						handleCitySelect(spbCity)
+					} else if (form.cityCode && form.cityCode === DEFAULT_CITY_CODE) {
+						// Если город уже установлен как дефолтный, но ПВЗ еще не загружены, загружаем их
+						// Это сработает через useEffect [form.cityCode], но убедимся что он сработает
+						if (pvzList.length === 0 && !isPvzLoading) {
+							// useEffect уже должен обработать это, но на всякий случай проверим
+						}
+					}
+				}
 			} catch (error) {
-				console.error('Failed to load CDEK cities', error)
-				setCitySuggestions([])
+				console.error('Failed to load cities', error)
 			} finally {
 				setIsCityLoading(false)
 			}
-		}, 300)
+		}
 
-		return () => clearTimeout(handler)
-	}, [cityQuery, form.city, visible])
+		loadCities()
+	}, [visible])
 
 	useEffect(() => {
 		if (!visible) return
@@ -445,6 +510,7 @@ useEffect(() => {
 		return () => clearTimeout(handler)
 	}, [buildingQuery, form.building, form.streetFiasId, visible])
 
+	// Загрузка ПВЗ и тарифов при изменении города (включая дефолтный)
 	useEffect(() => {
 		if (!form.cityCode) {
 			setPvzList([])
@@ -452,8 +518,10 @@ useEffect(() => {
 			return
 		}
 
+		// Загружаем ПВЗ только если модальное окно видимо
+		if (!visible) return
+
 		setIsPvzLoading(true)
-		setPvzQuery('')
 		setForm((prev) => ({ ...prev, deliveryPointData: null, pickupPoint: '' }))
 		setErrors((prev) => {
 			if (!prev.pickupPoint) return prev
@@ -485,7 +553,7 @@ useEffect(() => {
 			})
 			.finally(() => setIsTariffsLoading(false))
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [form.cityCode])
+	}, [form.cityCode, visible])
 
 	useEffect(() => {
 		if (!tariffs.length) {
@@ -511,10 +579,17 @@ useEffect(() => {
 			}
 
 			const days = matched.minDays && matched.minDays > 0 ? matched.minDays : 1
+			// Формат времени: "от 1 дня", "от 2 дней", "от 3 дней" и т.д.
+			let dayWord = 'дней'
+			if (days === 1) {
+				dayWord = 'дня'
+			} else if (days >= 2 && days <= 4) {
+				dayWord = 'дня'
+			}
 			return {
 				...option,
 				price: matched.price,
-				time: `от ${days} ${days === 1 ? 'дня' : 'дней'}`
+				time: `от ${days} ${dayWord}`
 			}
 		})
 
@@ -522,8 +597,8 @@ useEffect(() => {
 	}, [tariffs])
 
 	const currentDeliveryOption =
-		deliveryOptions.find((item) => item.value === form.deliveryValue) ??
-		deliveryOptions[0] ??
+		filteredDeliveryOptions.find((item) => item.value === form.deliveryValue) ??
+		filteredDeliveryOptions[0] ??
 		initialDeliveryOptions[0]
 
 	const productsPrice = configuratorStore.productsPrice || 0
@@ -552,16 +627,6 @@ useEffect(() => {
 		configuratorStore.steps.strapDesign.edgeColor?.name ||
 		'в тон'
 
-	const filteredPvzList = useMemo(() => {
-		if (!pvzQuery.trim()) return pvzList
-		const lower = pvzQuery.trim().toLowerCase()
-		return pvzList.filter((item) => {
-			const name = item.name?.toLowerCase() || ''
-			const address = item.address?.toLowerCase() || ''
-			const code = item.code?.toLowerCase() || ''
-			return name.includes(lower) || address.includes(lower) || code.includes(lower)
-		})
-	}, [pvzList, pvzQuery])
 
 	const handleFieldChange =
 		(key: keyof FormState) =>
@@ -619,43 +684,73 @@ useEffect(() => {
 	useEffect(() => {
 		if (!visible || !currentDeliveryOption.requiresPvz) {
 			console.log('[CDEK Map] Skipping script load:', { visible, requiresPvz: currentDeliveryOption.requiresPvz })
+			setMapReady(false)
 			return
 		}
 
 		console.log('[CDEK Map] Starting script load...')
 
 		// Используем тот же URL, что и в старом проекте (через jsdelivr CDN)
-		if (window.CDEKWidget) {
+		if (window.CDEKWidget && typeof window.CDEKWidget === 'function') {
 			console.log('[CDEK Map] Widget already loaded')
 			setMapReady(true)
 			return
 		}
 
-		const script = document.createElement('script')
-		script.id = 'ISDEKscript'
-		script.type = 'text/javascript'
-		script.src = 'https://cdn.jsdelivr.net/gh/cdek-it/widget@latest/dist/cdek-widget.umd.js'
-		script.async = true
-		
-		script.onload = () => {
-			console.log('[CDEK Map] Script loaded successfully, CDEKWidget available:', !!window.CDEKWidget)
-			setMapReady(true)
+		let script: HTMLScriptElement | null = null
+		let isMounted = true
+
+		const loadScript = () => {
+			const existingScript = document.getElementById('ISDEKscript') as HTMLScriptElement | null
+			if (existingScript) {
+				// Если скрипт уже есть, ждем его загрузки
+				if (window.CDEKWidget && typeof window.CDEKWidget === 'function') {
+					if (isMounted) setMapReady(true)
+					return
+				}
+				// Если скрипт есть, но виджет еще не готов, ждем
+				existingScript.addEventListener('load', () => {
+					if (isMounted && window.CDEKWidget && typeof window.CDEKWidget === 'function') {
+						setMapReady(true)
+					}
+				})
+				return
+			}
+
+			script = document.createElement('script')
+			script.id = 'ISDEKscript'
+			script.type = 'text/javascript'
+			script.src = 'https://cdn.jsdelivr.net/gh/cdek-it/widget@latest/dist/cdek-widget.umd.js'
+			script.async = true
+			
+			script.onload = () => {
+				if (!isMounted) return
+				console.log('[CDEK Map] Script loaded successfully, CDEKWidget available:', !!window.CDEKWidget)
+				// Небольшая задержка для гарантии, что виджет полностью инициализирован
+				setTimeout(() => {
+					if (isMounted && window.CDEKWidget && typeof window.CDEKWidget === 'function') {
+						setMapReady(true)
+					}
+				}, 100)
+			}
+			
+			script.onerror = (error) => {
+				if (!isMounted) return
+				console.error('[CDEK Map] Failed to load CDEK Widget script:', error)
+				setMapReady(false)
+			}
+			
+			document.body.appendChild(script)
+			console.log('[CDEK Map] Script element added to DOM:', script.src)
 		}
-		
-		script.onerror = (error) => {
-			console.error('[CDEK Map] Failed to load CDEK Widget script:', error)
-			setMapReady(false)
-		}
-		
-		document.body.appendChild(script)
-		console.log('[CDEK Map] Script element added to DOM:', script.src)
+
+		loadScript()
 
 		return () => {
-			const existingScript = document.getElementById('ISDEKscript')
-			if (existingScript && existingScript.parentNode) {
-				existingScript.parentNode.removeChild(existingScript)
-				console.log('[CDEK Map] Script removed from DOM')
-			}
+			isMounted = false
+			// Не удаляем скрипт, так как он может использоваться повторно
+			// Просто сбрасываем готовность
+			setMapReady(false)
 		}
 	}, [visible, currentDeliveryOption.requiresPvz])
 
@@ -687,70 +782,182 @@ useEffect(() => {
 			mapInstanceRef.current.destroy()
 		}
 
-		try {
-			const widgetOptions = {
-				from: form.city || DEFAULT_CITY_NAME,
-				root: 'cdek-delivery-map',
-				apiKey: cdekWidgetApiKey,
-				postal_code: 190000,
-				servicePath: '/api/delivery/cdek',
-				defaultLocation: form.city || DEFAULT_CITY_NAME,
-				tariffs: {
-					office: [137]
-				},
-				hideDeliveryOptions: {
-					office: false,
-					door: true
-				},
-				hideFilters: {
-					type: true
-				},
-				onChoose: (_mode: any, _tarif: any, address: CDEKWidgetPoint) => {
-					console.log('[CDEK Map] Point chosen:', address)
-					if (address && address.code) {
-						// Находим пункт выдачи по коду
-						const pvz = pvzList.find((p) => p.code === address.code)
-						if (pvz) {
-							console.log('[CDEK Map] Found PVZ in list:', pvz)
-							handlePvzSelect(pvz)
-						} else {
-							console.log('[CDEK Map] PVZ not in list, creating from widget data')
-							// Если пункт не найден в списке, создаем объект из данных виджета
-							const widgetPvz: CdekPvz = {
-								code: address.code || '',
-								name: address.name || '',
-								address: address.address || '',
-								workTime: address.work_time || '',
-								city: address.city || form.city,
-								cityCode: form.cityCode || DEFAULT_CITY_CODE,
-								coordX: address.coordX,
-								coordY: address.coordY
+		// Проверяем, что виджет действительно доступен и является функцией
+		if (typeof window.CDEKWidget !== 'function') {
+			console.error('[CDEK Map] CDEKWidget is not a function:', typeof window.CDEKWidget)
+			return
+		}
+
+		let isMounted = true
+		let widgetInstance: CDEKWidgetInstance | null = null
+		let initTimeout: NodeJS.Timeout | null = null
+
+		// Инициализируем виджет асинхронно, чтобы избежать проблем с отменой запросов
+		const initWidget = async () => {
+			try {
+				// Проверяем, что контейнер все еще существует
+				if (!mapContainerRef.current || !document.getElementById('cdek-delivery-map')) {
+					console.warn('[CDEK Map] Container not found, skipping initialization')
+					return
+				}
+
+				// Проверяем, что компонент все еще смонтирован
+				if (!isMounted) {
+					return
+				}
+
+				const widgetOptions = {
+					from: form.city || DEFAULT_CITY_NAME,
+					root: 'cdek-delivery-map',
+					apiKey: cdekWidgetApiKey,
+					postal_code: 190000,
+					servicePath: '/api/delivery/cdek',
+					defaultLocation: form.city || DEFAULT_CITY_NAME,
+					tariffs: {
+						office: [137]
+					},
+					hideDeliveryOptions: {
+						office: false,
+						door: true
+					},
+					hideFilters: {
+						type: true
+					},
+					onChoose: (_mode: any, _tarif: any, address: CDEKWidgetPoint) => {
+						if (!isMounted) return
+						console.log('[CDEK Map] Point chosen:', address)
+						if (address && address.code) {
+							// Находим пункт выдачи по коду
+							const pvz = pvzList.find((p) => p.code === address.code)
+							if (pvz) {
+								console.log('[CDEK Map] Found PVZ in list:', pvz)
+								handlePvzSelect(pvz)
+							} else {
+								console.log('[CDEK Map] PVZ not in list, creating from widget data')
+								// Если пункт не найден в списке, создаем объект из данных виджета
+								const widgetPvz: CdekPvz = {
+									code: address.code || '',
+									name: address.name || '',
+									address: address.address || '',
+									type: 'PVZ',
+									workTime: address.work_time || '',
+									city: address.city || form.city,
+									cityCode: form.cityCode || DEFAULT_CITY_CODE,
+									coordX: address.coordX,
+									coordY: address.coordY
+								}
+								updateForm(
+									() => ({
+										pickupPoint: `${widgetPvz.name}, ${widgetPvz.address}`,
+										deliveryPointData: widgetPvz
+									}),
+									['pickupPoint']
+								)
 							}
-							updateForm(
-								() => ({
-									pickupPoint: `${widgetPvz.name}, ${widgetPvz.address}`,
-									deliveryPointData: widgetPvz
-								}),
-								['pickupPoint']
-							)
+						}
+					},
+					onReady: () => {
+						if (!isMounted) return
+						console.log('[CDEK Map] Widget ready callback fired')
+					}
+				}
+
+				console.log('[CDEK Map] Initializing widget with options:', {
+					...widgetOptions,
+					apiKey: widgetOptions.apiKey ? `${widgetOptions.apiKey.substring(0, 10)}...` : 'missing'
+				})
+
+				// Создаем виджет с обработкой ошибок
+				// Используем setTimeout для выполнения в следующем тике event loop,
+				// чтобы ошибки обрабатывались асинхронно
+				await new Promise<void>((resolve, reject) => {
+					setTimeout(() => {
+						if (!isMounted) {
+							resolve()
+							return
+						}
+						
+						try {
+							widgetInstance = new window.CDEKWidget(widgetOptions)
+							resolve()
+						} catch (initError: any) {
+							// Обрабатываем ошибки при создании экземпляра
+							if (initError?.name === 'CanceledError' || initError?.message?.includes('canceled')) {
+								console.warn('[CDEK Map] Widget initialization was canceled')
+								resolve() // Разрешаем промис, чтобы не прерывать выполнение
+								return
+							}
+							reject(initError)
+						}
+					}, 0)
+				}).catch((error: any) => {
+					// Обрабатываем другие ошибки
+					if (error?.name === 'CanceledError' || error?.message?.includes('canceled')) {
+						console.warn('[CDEK Map] Widget initialization was canceled')
+						return
+					}
+					console.error('[CDEK Map] Error creating widget:', error)
+					throw error
+				})
+				
+				// Проверяем, что виджет был создан
+				if (!widgetInstance) {
+					console.warn('[CDEK Map] Widget instance was not created')
+					return
+				}
+				
+				// Проверяем, что компонент все еще смонтирован после создания виджета
+				if (!isMounted) {
+					// Если компонент размонтировался, уничтожаем виджет
+					if (widgetInstance && typeof widgetInstance.destroy === 'function') {
+						try {
+							widgetInstance.destroy()
+						} catch (destroyError) {
+							console.warn('[CDEK Map] Error destroying widget after unmount:', destroyError)
 						}
 					}
-				},
-				onReady: () => {
-					console.log('[CDEK Map] Widget ready callback fired')
+					return
+				}
+
+				mapInstanceRef.current = widgetInstance
+				console.log('[CDEK Map] Widget instance created:', widgetInstance)
+			} catch (error: any) {
+				// Обрабатываем CanceledError и другие ошибки
+				if (error?.name === 'CanceledError' || error?.message?.includes('canceled')) {
+					console.warn('[CDEK Map] Widget initialization was canceled (component unmounted or request aborted)')
+				} else {
+					console.error('[CDEK Map] Failed to initialize CDEK Widget:', error)
 				}
 			}
+		}
 
-			console.log('[CDEK Map] Initializing widget with options:', {
-				...widgetOptions,
-				apiKey: widgetOptions.apiKey ? `${widgetOptions.apiKey.substring(0, 10)}...` : 'missing'
-			})
+		// Запускаем инициализацию с небольшой задержкой для гарантии готовности DOM
+		initTimeout = setTimeout(() => {
+			initWidget()
+		}, 100)
 
-			const widgetInstance = new window.CDEKWidget(widgetOptions)
-			mapInstanceRef.current = widgetInstance
-			console.log('[CDEK Map] Widget instance created:', widgetInstance)
-		} catch (error) {
-			console.error('[CDEK Map] Failed to initialize CDEK Widget:', error)
+		return () => {
+			isMounted = false
+			if (initTimeout) {
+				clearTimeout(initTimeout)
+			}
+			if (mapInstanceRef.current && typeof mapInstanceRef.current.destroy === 'function') {
+				console.log('[CDEK Map] Cleaning up map instance')
+				try {
+					mapInstanceRef.current.destroy()
+				} catch (cleanupError) {
+					console.warn('[CDEK Map] Error during cleanup:', cleanupError)
+				}
+				mapInstanceRef.current = null
+			}
+			// Также уничтожаем виджет, если он был создан, но еще не присвоен в ref
+			if (widgetInstance && typeof widgetInstance.destroy === 'function') {
+				try {
+					widgetInstance.destroy()
+				} catch (destroyError) {
+					console.warn('[CDEK Map] Error destroying widget instance:', destroyError)
+				}
+			}
 		}
 
 		return () => {
@@ -835,7 +1042,7 @@ useEffect(() => {
 		}
 
 		const selectedOption =
-			deliveryOptions.find((item) => item.value === form.deliveryValue) ?? currentDeliveryOption
+			filteredDeliveryOptions.find((item) => item.value === form.deliveryValue) ?? currentDeliveryOption
 
 		if (selectedOption.requiresPvz) {
 			if (!form.deliveryPointData) {
@@ -969,7 +1176,7 @@ useEffect(() => {
 		}
 	}
 
-	const submitOrder = async (payment: 'card' | 'sbp') => {
+	const submitOrder = async () => {
 		if (!validateForm()) return
 
 		setIsLoading(true)
@@ -1037,7 +1244,8 @@ useEffect(() => {
 			}
 
 			const delivery = buildDeliveryPayload()
-			const paymentType = payment === 'card' ? 'Банковской картой' : 'Оплата через СБП'
+			// Способ оплаты будет выбран на странице оплаты
+			const paymentType = 'Будет выбран на странице оплаты'
 
 			const retailCrmOrderData = {
 				orderNumber,
@@ -1079,7 +1287,8 @@ useEffect(() => {
 
 			const totalItems = allItems.reduce<number>((acc, item) => acc + (Number(item.quantity) || 1), 0)
 			const purpose = `Заказ ${totalItems} ${getRemeshokWord(totalItems)}`
-			const paymentMode = payment === 'sbp' ? ['sbp'] : ['card']
+			// Передаем оба способа оплаты, чтобы пользователь выбрал на странице оплаты
+			const paymentMode = ['card', 'sbp']
 			const redirectUrl = 'https://slavalarionov.com/success'
 
 			try {
@@ -1211,15 +1420,16 @@ useEffect(() => {
 					<h4 className={s.sectionTitle}>Контактные данные</h4>
 					<div className={s.inputsGrid}>
 						<div className={s.field}>
-							<label className={s.label}>ФИО*</label>
+							<label className={s.label}>Email*</label>
 							<input
-								className={`${s.input} ${errors.name ? s.inputError : ''}`}
-								placeholder="Иванов Иван Иванович"
-								value={form.name}
-								onChange={handleFieldChange('name')}
+								className={`${s.input} ${errors.email ? s.inputError : ''}`}
+								type="email"
+								placeholder="example@site.com"
+								value={form.email}
+								onChange={handleFieldChange('email')}
 								disabled={isLoading}
 							/>
-							{errors.name && <p className={s.errorText}>{errors.name}</p>}
+							{errors.email && <p className={s.errorText}>{errors.email}</p>}
 						</div>
 						<div className={s.field}>
 							<label className={s.label}>Телефон*</label>
@@ -1232,18 +1442,6 @@ useEffect(() => {
 							/>
 							{errors.phone && <p className={s.errorText}>{errors.phone}</p>}
 						</div>
-						<div className={s.field}>
-							<label className={s.label}>Email*</label>
-							<input
-								className={`${s.input} ${errors.email ? s.inputError : ''}`}
-								type="email"
-								placeholder="example@site.com"
-								value={form.email}
-								onChange={handleFieldChange('email')}
-								disabled={isLoading}
-							/>
-							{errors.email && <p className={s.errorText}>{errors.email}</p>}
-						</div>
 					</div>
 				</section>
 
@@ -1255,53 +1453,27 @@ useEffect(() => {
 								<span>Город*</span>
 								{isCityLoading && <span className={deliveryStyles.loader}>Загрузка...</span>}
 							</div>
-							<div className={deliveryStyles.suggestions}>
-								<input
-									className={[
-										deliveryStyles.input,
-										errors.city ? deliveryStyles.inputError : ''
-									].join(' ')}
-									placeholder="Начните вводить город"
-									value={cityQuery}
-									onChange={(event) => {
-										const value = event.target.value
-										setCityQuery(value)
-										setCitySuggestions([])
-										updateForm(
-											() => ({
-												city: value,
-												cityCode: null,
-												cityUuid: null
-											}),
-											['city']
-										)
-									}}
-									disabled={isLoading}
-								/>
-								{citySuggestions.length > 0 && (
-									<div className={deliveryStyles.suggestionsList}>
-										{citySuggestions.map((city) => (
-											<button
-												type="button"
-												key={`${city.cityCode}-${city.cityName}`}
-												className={deliveryStyles.suggestionsItem}
-												onClick={() => handleCitySelect(city)}
-											>
-												<span>{city.cityName}</span>
-												{city.region && (
-													<span className={deliveryStyles.helper}>{city.region}</span>
-												)}
-											</button>
-										))}
-									</div>
-								)}
-							</div>
-							{!isCityLoading &&
-								cityQuery.length >= 2 &&
-								citySuggestions.length === 0 &&
-								cityQuery !== form.city && (
-									<p className={deliveryStyles.helper}>Выберите город из списка CDEK.</p>
-								)}
+							<select
+								className={[
+									deliveryStyles.select,
+									errors.city ? deliveryStyles.inputError : ''
+								].join(' ')}
+								value={form.cityCode || DEFAULT_CITY_CODE}
+								onChange={(event) => {
+									const cityCode = Number(event.target.value)
+									const city = citySuggestions.find((c) => c.cityCode === cityCode)
+									if (city) {
+										handleCitySelect(city)
+									}
+								}}
+								disabled={isLoading || isCityLoading || citySuggestions.length === 0}
+							>
+								{citySuggestions.map((city) => (
+									<option key={city.cityCode} value={city.cityCode}>
+										{city.cityName} {city.region ? `(${city.region})` : ''}
+									</option>
+								))}
+							</select>
 							{errors.city && <p className={deliveryStyles.errorText}>{errors.city}</p>}
 						</div>
 
@@ -1315,12 +1487,22 @@ useEffect(() => {
 								)}
 							</div>
 							<div className={deliveryStyles.section}>
-								{deliveryOptions.map((option) => {
+								{filteredDeliveryOptions.map((option) => {
 									const isActive = form.deliveryValue === option.value
-									const priceLabel =
-										typeof option.price === 'number'
-											? `${option.priceFixed ? '' : 'от '}${formatCurrency(option.price)} ₽`
-											: '—'
+									
+									// Формируем строку с временем и ценой по аналогии с custom (вместе через запятую)
+									let timeAndPrice = ''
+									if (option.time && typeof option.price === 'number') {
+										const priceText = `${option.priceFixed ? '' : 'от '}${formatCurrency(option.price)} ₽`
+										timeAndPrice = `${option.time}, ${priceText}`
+									} else if (option.time) {
+										timeAndPrice = option.time
+									} else if (typeof option.price === 'number') {
+										timeAndPrice = `${option.priceFixed ? '' : 'от '}${formatCurrency(option.price)} ₽`
+									} else {
+										timeAndPrice = '—'
+									}
+									
 									return (
 										<label
 											key={option.value}
@@ -1361,8 +1543,7 @@ useEffect(() => {
 											<div className={deliveryStyles.deliveryOptionContent}>
 												<span className={deliveryStyles.deliveryOptionTitle}>{option.label}</span>
 												<div className={deliveryStyles.deliveryOptionMeta}>
-													{option.time && <span>{option.time}</span>}
-													<span>{priceLabel}</span>
+													<span>{timeAndPrice}</span>
 												</div>
 												{option.note && (
 													<p className={deliveryStyles.deliveryOptionNote}>{option.note}</p>
@@ -1385,103 +1566,65 @@ useEffect(() => {
 										)}
 									</div>
 									{form.cityCode && form.city ? (
-										<>
-											{/* Карта CDEK (если виджет загрузился) */}
-											{mapReady && window.CDEKWidget && (
-												<div
-													id="cdek-delivery-map"
-													ref={mapContainerRef}
-													className={deliveryStyles.deliveryMap}
-													style={{
-														display: 'block',
-														width: '100%',
-														height: '500px',
-														marginTop: '20px',
-														background: '#f0f0f0'
-													}}
-												/>
-											)}
-											
-											{/* Список ПВЗ (всегда показываем, даже если карта доступна) */}
-											{pvzList.length > 0 ? (
-												<>
-													<input
-														className={deliveryStyles.input}
-														placeholder="Поиск по адресу или коду"
-														value={pvzQuery}
-														onChange={(event) => setPvzQuery(event.target.value)}
-														disabled={isLoading}
-														style={{ marginTop: mapReady && window.CDEKWidget ? '20px' : '0' }}
-													/>
-													<div className={deliveryStyles.pvzList}>
-														{filteredPvzList.map((pvz) => {
-															const isActive = form.deliveryPointData?.code === pvz.code
-															return (
-																<button
-																	type="button"
-																	key={pvz.code}
-																	className={[
-																		deliveryStyles.pvzItem,
-																		isActive ? deliveryStyles.pvzItemActive : ''
-																	].join(' ')}
-																	onClick={() => handlePvzSelect(pvz)}
-																	disabled={isLoading}
-																>
-																	<span className={deliveryStyles.pvzTitle}>{pvz.name}</span>
-																	<span className={deliveryStyles.pvzAddress}>{pvz.address}</span>
-																	<div className={deliveryStyles.pvzMeta}>
-																		{pvz.workTime && <span>Время работы: {pvz.workTime}</span>}
-																		{pvz.phone && <span>Телефон: {pvz.phone}</span>}
-																		{pvz.code && <span>Код: {pvz.code}</span>}
-																	</div>
-																</button>
-															)
-														})}
-													</div>
-												</>
-											) : (
-												<p className={deliveryStyles.helper}>
-													Пункты выдачи не найдены. Попробуйте другой город.
-												</p>
-											)}
-											
-											{/* Информация о выбранном пункте */}
-											{form.deliveryPointData && (
-												<div className={deliveryStyles.selectedPoint}>
-													<p className={deliveryStyles.selectedPointTitle}>Выбранный пункт:</p>
-													<p className={deliveryStyles.selectedPointName}>
-														{form.deliveryPointData.name}
-													</p>
-													<p className={deliveryStyles.selectedPointAddress}>
-														{form.deliveryPointData.address}
-													</p>
-													{form.deliveryPointData.workTime && (
-														<p className={deliveryStyles.selectedPointWorktime}>
-															Время работы: {form.deliveryPointData.workTime}
-														</p>
-													)}
-													{form.deliveryPointData.phone && (
-														<p className={deliveryStyles.selectedPointPhone}>
-															Телефон: {form.deliveryPointData.phone}
-														</p>
-													)}
-													{form.deliveryPointData.code && (
-														<p className={deliveryStyles.selectedPointCode}>
-															Код: {form.deliveryPointData.code}
-														</p>
-													)}
-												</div>
-											)}
-										</>
+										<select
+											className={[
+												deliveryStyles.select,
+												errors.pickupPoint ? deliveryStyles.inputError : ''
+											].join(' ')}
+											value={form.deliveryPointData?.code || ''}
+											onChange={(event) => {
+												const pvzCode = event.target.value
+												const pvz = pvzList.find((p) => p.code === pvzCode)
+												if (pvz) {
+													handlePvzSelect(pvz)
+												}
+											}}
+											disabled={isLoading || isPvzLoading || pvzList.length === 0}
+										>
+											<option value="">Выберите пункт выдачи</option>
+											{pvzList.map((pvz) => (
+												<option key={pvz.code} value={pvz.code}>
+													{pvz.name}, {pvz.address}
+												</option>
+											))}
+										</select>
 									) : (
 										<p className={deliveryStyles.helper}>Сначала выберите город.</p>
 									)}
 									{errors.pickupPoint && (
 										<p className={deliveryStyles.errorText}>{errors.pickupPoint}</p>
 									)}
+									{/* Карта с пунктами выдачи */}
+									{form.cityCode && currentDeliveryOption.requiresPvz && (
+										<div
+											id="cdek-delivery-map"
+											ref={mapContainerRef}
+											className={deliveryStyles.mapContainer}
+											style={{ width: '100%', height: '400px', marginTop: '16px' }}
+										/>
+									)}
 								</div>
 							</>
 						)}
+
+						{/* ФИО получателя внутри секции доставки */}
+						<div className={deliveryStyles.sectionDivider} />
+						<div className={deliveryStyles.field}>
+							<div className={deliveryStyles.labelRow}>
+								<span>Получатель (ФИО полностью)*</span>
+							</div>
+							<input
+								className={[
+									deliveryStyles.input,
+									errors.name ? deliveryStyles.inputError : ''
+								].join(' ')}
+								placeholder="Иванов Иван Иванович"
+								value={form.name}
+								onChange={handleFieldChange('name')}
+								disabled={isLoading}
+							/>
+							{errors.name && <p className={deliveryStyles.errorText}>{errors.name}</p>}
+						</div>
 
 						{currentDeliveryOption.requiresCourierAddress && (
 							<>
@@ -1710,24 +1853,11 @@ useEffect(() => {
 
 				<section className={s.actions}>
 					<button
-						className={`${s.button} ${s.buttonPrimary} ${activePayment === 'card' ? s.buttonActive : ''}`}
-						onClick={() => {
-							setActivePayment('card')
-							submitOrder('card')
-						}}
+						className={`${s.button} ${s.buttonPrimary}`}
+						onClick={submitOrder}
 						disabled={isLoading}
 					>
-						{isLoading && activePayment === 'card' ? 'Отправляем...' : 'Оплатить заказ'}
-					</button>
-					<button
-						className={`${s.button} ${s.buttonSecondary} ${activePayment === 'sbp' ? s.buttonActive : ''}`}
-						onClick={() => {
-							setActivePayment('sbp')
-							submitOrder('sbp')
-						}}
-						disabled={isLoading}
-					>
-						{isLoading && activePayment === 'sbp' ? 'Отправляем...' : 'Оплатить через СБП'}
+						{isLoading ? 'Отправляем...' : 'Оплатить заказ'}
 					</button>
 				</section>
 
