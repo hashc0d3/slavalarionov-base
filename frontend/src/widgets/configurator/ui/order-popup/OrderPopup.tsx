@@ -323,83 +323,36 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 	}, [form.remember, visible])
 
 
-	// Загрузка дефолтного города при открытии модального окна (по аналогии с custom - через DaData)
+	// Загрузка городов при открытии модального окна (по аналогии с custom - через DaData)
 	useEffect(() => {
 		if (!visible) return
-		// Если уже есть города в списке и город выбран, не загружаем повторно
-		if (citySuggestions.length > 0 && form.city) return
+		// Если уже загружены города (больше одного), не загружаем повторно
+		if (citySuggestions.length > 1) return
 
-		// Загружаем только дефолтный город (Санкт-Петербург) через DaData
-		const loadDefaultCity = async () => {
-			// Если уже загружен, не загружаем повторно
-			if (citySuggestions.length > 0) return
-			
+		// Загружаем дефолтный город (Санкт-Петербург) и популярные города
+		const loadCities = async () => {
 			setIsCityLoading(true)
 			try {
+				// Сначала загружаем дефолтный город (Санкт-Петербург)
 				const dadataCities = await deliveryApi.searchCities(DEFAULT_CITY_NAME)
+				let loadedCities: DadataSuggestion[] = []
+				let spbCity: DadataSuggestion | null = null
+				
 				if (dadataCities && dadataCities.length > 0) {
 					// Ищем Санкт-Петербург в результатах DaData
-					const spbCity = dadataCities.find(c => 
+					spbCity = dadataCities.find(c => 
 						c.data?.city?.toLowerCase().includes('санкт') ||
 						c.data?.city?.toLowerCase().includes('петербург') ||
 						c.value?.toLowerCase().includes('санкт') ||
 						c.value?.toLowerCase().includes('петербург')
 					) || dadataCities[0]
 					
-					// Устанавливаем дефолтный город в список
-					setCitySuggestions([spbCity])
-					
-					// Выбираем Санкт-Петербург из списка (находим cityCode через CDEK API и устанавливаем в форму)
-					handleCitySelectFromDadata(spbCity)
-				} else {
-					// Если не удалось загрузить через DaData, используем константы как fallback
-					setCitySuggestions([])
-					updateForm(
-						(prev) => ({
-							...prev,
-							city: DEFAULT_CITY_NAME,
-							cityCode: DEFAULT_CITY_CODE,
-							cityUuid: DEFAULT_CITY_UUID
-						}),
-						['city']
-					)
+					if (spbCity) {
+						loadedCities.push(spbCity)
+					}
 				}
-			} catch (error: any) {
-				console.error('Failed to load default city', error)
-				// В случае ошибки используем константы как fallback
-				setCitySuggestions([])
-				updateForm(
-					(prev) => ({
-						...prev,
-						city: DEFAULT_CITY_NAME,
-						cityCode: DEFAULT_CITY_CODE,
-						cityUuid: DEFAULT_CITY_UUID
-					}),
-					['city']
-				)
-			} finally {
-				setIsCityLoading(false)
-			}
-		}
 
-		loadDefaultCity()
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [visible])
-
-	// Загрузка популярных городов при открытии селектора (по аналогии с custom - через DaData)
-	// В custom селектор не блокируется при загрузке городов
-	const handleCitySelectFocus = () => {
-		// Если уже загружены города (кроме дефолтного), не загружаем повторно
-		if (citySuggestions.length > 1) return
-
-		// Загружаем города асинхронно без блокировки селектора (как в custom)
-		// Показываем индикатор загрузки, но не блокируем селектор
-		setIsCityLoading(true)
-		
-		// Загружаем города в фоне, не блокируя UI
-		const loadPopularCities = async () => {
-			try {
-				// Список популярных городов для загрузки
+				// Затем загружаем популярные города
 				const popularCities = [
 					'Москва',
 					'Новосибирск',
@@ -412,17 +365,15 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 					'Ростов-на-Дону'
 				]
 
-				// Загружаем города последовательно через DaData, чтобы избежать проблем с отменой запросов
-				const loadedCities: DadataSuggestion[] = [...citySuggestions] // Начинаем с уже загруженных
-
+				// Загружаем города последовательно через DaData
 				for (const cityQuery of popularCities) {
 					try {
-						const dadataCities = await deliveryApi.searchCities(cityQuery)
-						if (dadataCities && dadataCities.length > 0) {
-							const city = dadataCities.find(c => 
+						const cities = await deliveryApi.searchCities(cityQuery)
+						if (cities && cities.length > 0) {
+							const city = cities.find(c => 
 								c.data?.city?.toLowerCase().includes(cityQuery.toLowerCase()) ||
 								c.value?.toLowerCase().includes(cityQuery.toLowerCase())
-							) || dadataCities[0]
+							) || cities[0]
 							
 							// Добавляем город, если его еще нет в списке (проверяем по value)
 							if (city && !loadedCities.find(c => c.value === city.value)) {
@@ -435,16 +386,46 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 					}
 				}
 
+				// Устанавливаем загруженные города в список
 				setCitySuggestions(loadedCities)
+				
+				// Автоматически выбираем Санкт-Петербург из списка при первой загрузке
+				// (находим cityCode через CDEK API и устанавливаем в форму)
+				if (spbCity) {
+					// Выбираем Санкт-Петербург, если город еще не выбран или если выбран дефолтный
+					const currentCityName = form.city || ''
+					const isDefaultCitySelected = !currentCityName || 
+						currentCityName.toLowerCase().includes('санкт') || 
+						currentCityName.toLowerCase().includes('петербург') ||
+						currentCityName === DEFAULT_CITY_NAME
+					
+					if (isDefaultCitySelected) {
+						handleCitySelectFromDadata(spbCity)
+					}
+				}
 			} catch (error: any) {
-				console.error('Failed to load popular cities', error)
+				console.error('Failed to load cities', error)
+				// В случае ошибки используем константы как fallback
+				if (!form.city) {
+					updateForm(
+						(prev) => ({
+							...prev,
+							city: DEFAULT_CITY_NAME,
+							cityCode: DEFAULT_CITY_CODE,
+							cityUuid: DEFAULT_CITY_UUID
+						}),
+						['city']
+					)
+				}
 			} finally {
 				setIsCityLoading(false)
 			}
 		}
-		
-		loadPopularCities()
-	}
+
+		loadCities()
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [visible])
+
 
 	useEffect(() => {
 		if (!visible) return
@@ -1686,10 +1667,11 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 										errors.city ? deliveryStyles.inputError : ''
 									].join(' ')}
 									value={citySuggestions.length > 0 && form.city 
-										? citySuggestions.find(c => 
-											(c.data?.city || c.data?.settlement || c.value) === form.city
-										)?.value || form.city || DEFAULT_CITY_NAME
-										: form.city || DEFAULT_CITY_NAME
+										? citySuggestions.find(c => {
+											const cityName = c.data?.city || c.data?.settlement || c.value || ''
+											return cityName === form.city || c.value === form.city
+										})?.value || (citySuggestions.length > 0 ? citySuggestions[0].value : '')
+										: (citySuggestions.length > 0 ? citySuggestions[0].value : '')
 									}
 									onChange={(event) => {
 										const selectedValue = event.target.value
@@ -1698,7 +1680,6 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 											handleCitySelectFromDadata(city)
 										}
 									}}
-									onFocus={handleCitySelectFocus}
 									disabled={isLoading}
 								>
 									{citySuggestions.length === 0 ? (
