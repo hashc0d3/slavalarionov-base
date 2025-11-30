@@ -363,7 +363,7 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 					setCitySuggestions([spbCity])
 					
 					// Находим cityCode через CDEK API и обновляем форму (если найден более точный код)
-					await handleCitySelectFromDadata(spbCity)
+					handleCitySelectFromDadata(spbCity)
 				} else {
 					// Если не удалось загрузить через DaData, оставляем дефолтные значения
 					// (уже установлены выше)
@@ -650,108 +650,123 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 	}
 
 	// Обработчик выбора города из DaData (по аналогии с custom - используем postal_code)
-	const handleCitySelectFromDadata = async (dadataCity: DadataSuggestion) => {
+	const handleCitySelectFromDadata = (dadataCity: DadataSuggestion) => {
 		const cityName = dadataCity.data?.city || dadataCity.data?.settlement || dadataCity.value || ''
 		const cityLat = dadataCity.data?.geo_lat ? parseFloat(dadataCity.data.geo_lat) : null
 		const cityLon = dadataCity.data?.geo_lon ? parseFloat(dadataCity.data.geo_lon) : null
 		const postalCode = dadataCity.data?.postal_code || ''
 		const isDefaultCity = cityName.toLowerCase().includes('санкт') || cityName.toLowerCase().includes('петербург')
 		
+		// Сначала устанавливаем город в форму, чтобы селектор ПВЗ мог отобразиться
+		updateForm(
+			(prev) => ({
+				...prev,
+				city: cityName,
+				pickupPoint: '',
+				deliveryPointData: null,
+				street: '',
+				streetFiasId: null,
+				building: '',
+				courierAddress: '',
+				mailAddress: '',
+				deliveryValue: initialDeliveryOptions[0].value
+			}),
+			['city', 'pickupPoint', 'street', 'building', 'courierAddress', 'mailAddress']
+		)
+		
 		// Ищем cityCode через CDEK API по postal_code (как в custom) или по названию города
-		try {
-			const cdekCities = await deliveryApi.searchCdekCities(cityName, postalCode)
-			if (cdekCities && cdekCities.length > 0) {
-				// Ищем город в результатах CDEK
-				const cdekCity = cdekCities.find(c => 
-					c.cityName?.toLowerCase().includes(cityName.toLowerCase()) ||
-					cityName.toLowerCase().includes(c.cityName?.toLowerCase() || '')
-				) || cdekCities[0]
-				
-				updateForm(
-					(prev) => ({
-						city: cityName,
-						cityCode: cdekCity.cityCode ?? (isDefaultCity ? DEFAULT_CITY_CODE : null),
-						cityUuid: cdekCity.cityUuid || null,
-						pickupPoint: '',
-						deliveryPointData: null,
-						street: '',
-						streetFiasId: null,
-						building: '',
-						courierAddress: '',
-						mailAddress: '',
-						deliveryValue: initialDeliveryOptions[0].value
-					}),
-					['city', 'pickupPoint', 'street', 'building', 'courierAddress', 'mailAddress']
-				)
+		// Делаем это асинхронно, чтобы не блокировать UI
+		const searchCityCode = async () => {
+			try {
+				const cdekCities = await deliveryApi.searchCdekCities(cityName, postalCode)
+				if (cdekCities && cdekCities.length > 0) {
+					// Ищем город в результатах CDEK
+					const cdekCity = cdekCities.find(c => 
+						c.cityName?.toLowerCase().includes(cityName.toLowerCase()) ||
+						cityName.toLowerCase().includes(c.cityName?.toLowerCase() || '')
+					) || cdekCities[0]
+					
+					// Обновляем cityCode, если найден
+					if (cdekCity.cityCode) {
+						updateForm(
+							(prev) => ({
+								...prev,
+								cityCode: cdekCity.cityCode,
+								cityUuid: cdekCity.cityUuid || null
+							}),
+							[]
+						)
+					} else if (isDefaultCity) {
+						// Для дефолтного города используем DEFAULT_CITY_CODE, если не найден
+						updateForm(
+							(prev) => ({
+								...prev,
+								cityCode: DEFAULT_CITY_CODE,
+								cityUuid: DEFAULT_CITY_UUID
+							}),
+							[]
+						)
+					}
 
-				// Обновляем локацию карты, если она уже инициализирована (по аналогии с custom)
-				if (mapInstanceRef.current && cityLat && cityLon && !isNaN(cityLat) && !isNaN(cityLon)) {
-					console.log('[CDEK Map] Updating location after city select:', [cityLon, cityLat])
-					try {
-						mapInstanceRef.current.updateLocation([cityLon, cityLat])
-					} catch (error) {
-						console.warn('[CDEK Map] Error updating location:', error)
+					// Обновляем локацию карты, если она уже инициализирована (по аналогии с custom)
+					if (mapInstanceRef.current && cityLat && cityLon && !isNaN(cityLat) && !isNaN(cityLon)) {
+						console.log('[CDEK Map] Updating location after city select:', [cityLon, cityLat])
+						try {
+							mapInstanceRef.current.updateLocation([cityLon, cityLat])
+						} catch (error) {
+							console.warn('[CDEK Map] Error updating location:', error)
+						}
+					}
+				} else {
+					// Если не нашли в CDEK, для дефолтного города используем DEFAULT_CITY_CODE
+					if (isDefaultCity) {
+						updateForm(
+							(prev) => ({
+								...prev,
+								cityCode: DEFAULT_CITY_CODE,
+								cityUuid: DEFAULT_CITY_UUID
+							}),
+							[]
+						)
+					}
+
+					// Обновляем локацию карты, если она уже инициализирована
+					if (mapInstanceRef.current && cityLat && cityLon && !isNaN(cityLat) && !isNaN(cityLon)) {
+						console.log('[CDEK Map] Updating location after city select (no CDEK code):', [cityLon, cityLat])
+						try {
+							mapInstanceRef.current.updateLocation([cityLon, cityLat])
+						} catch (error) {
+							console.warn('[CDEK Map] Error updating location:', error)
+						}
 					}
 				}
-			} else {
-				// Если не нашли в CDEK, для дефолтного города используем DEFAULT_CITY_CODE
-				updateForm(
-					(prev) => ({
-						city: cityName,
-						cityCode: isDefaultCity ? DEFAULT_CITY_CODE : null,
-						cityUuid: isDefaultCity ? DEFAULT_CITY_UUID : null,
-						pickupPoint: '',
-						deliveryPointData: null,
-						street: '',
-						streetFiasId: null,
-						building: '',
-						courierAddress: '',
-						mailAddress: '',
-						deliveryValue: initialDeliveryOptions[0].value
-					}),
-					['city', 'pickupPoint', 'street', 'building', 'courierAddress', 'mailAddress']
-				)
+			} catch (error) {
+				console.error('Failed to find cityCode for city:', cityName, error)
+				// В случае ошибки для дефолтного города используем DEFAULT_CITY_CODE
+				if (isDefaultCity) {
+					updateForm(
+						(prev) => ({
+							...prev,
+							cityCode: DEFAULT_CITY_CODE,
+							cityUuid: DEFAULT_CITY_UUID
+						}),
+						[]
+					)
+				}
 
 				// Обновляем локацию карты, если она уже инициализирована
 				if (mapInstanceRef.current && cityLat && cityLon && !isNaN(cityLat) && !isNaN(cityLon)) {
-					console.log('[CDEK Map] Updating location after city select (no CDEK code):', [cityLon, cityLat])
+					console.log('[CDEK Map] Updating location after city select (error):', [cityLon, cityLat])
 					try {
 						mapInstanceRef.current.updateLocation([cityLon, cityLat])
-					} catch (error) {
-						console.warn('[CDEK Map] Error updating location:', error)
+					} catch (updateError) {
+						console.warn('[CDEK Map] Error updating location:', updateError)
 					}
 				}
 			}
-		} catch (error) {
-			console.error('Failed to find cityCode for city:', cityName, error)
-			// В случае ошибки для дефолтного города используем DEFAULT_CITY_CODE
-			updateForm(
-				(prev) => ({
-					city: cityName,
-					cityCode: isDefaultCity ? DEFAULT_CITY_CODE : null,
-					cityUuid: isDefaultCity ? DEFAULT_CITY_UUID : null,
-					pickupPoint: '',
-					deliveryPointData: null,
-					street: '',
-					streetFiasId: null,
-					building: '',
-					courierAddress: '',
-					mailAddress: '',
-					deliveryValue: initialDeliveryOptions[0].value
-				}),
-				['city', 'pickupPoint', 'street', 'building', 'courierAddress', 'mailAddress']
-			)
-
-			// Обновляем локацию карты, если она уже инициализирована
-			if (mapInstanceRef.current && cityLat && cityLon && !isNaN(cityLat) && !isNaN(cityLon)) {
-				console.log('[CDEK Map] Updating location after city select (error):', [cityLon, cityLat])
-				try {
-					mapInstanceRef.current.updateLocation([cityLon, cityLat])
-				} catch (updateError) {
-					console.warn('[CDEK Map] Error updating location:', updateError)
-				}
-			}
 		}
+		
+		searchCityCode()
 		
 		setCityQuery(cityName)
 		setStreetQuery('')
@@ -1613,11 +1628,11 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 									)?.value || form.city || DEFAULT_CITY_NAME
 									: form.city || DEFAULT_CITY_NAME
 								}
-								onChange={async (event) => {
+								onChange={(event) => {
 									const selectedValue = event.target.value
 									const city = citySuggestions.find((c) => c.value === selectedValue)
 									if (city) {
-										await handleCitySelectFromDadata(city)
+										handleCitySelectFromDadata(city)
 									}
 								}}
 								onFocus={handleCitySelectFocus}
@@ -1728,7 +1743,7 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 											<span className={deliveryStyles.loader}>Загрузка пунктов...</span>
 										)}
 									</div>
-									{form.cityCode && form.city ? (
+									{form.city ? (
 										<select
 															className={[
 												deliveryStyles.select,
@@ -1742,9 +1757,16 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 													handlePvzSelect(pvz)
 												}
 											}}
-											disabled={isLoading || isPvzLoading || pvzList.length === 0}
+											disabled={isLoading || isPvzLoading || pvzList.length === 0 || !form.cityCode}
 										>
-											<option value="">Выберите пункт выдачи</option>
+											<option value="">
+												{!form.cityCode 
+													? 'Загрузка пунктов выдачи...' 
+													: pvzList.length === 0 
+														? 'Пункты выдачи не найдены' 
+														: 'Выберите пункт выдачи'
+												}
+											</option>
 											{pvzList.map((pvz) => {
 												const displayText = `${pvz.name}, ${pvz.address}`
 												return (
