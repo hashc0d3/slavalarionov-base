@@ -3,18 +3,21 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
+    container_name: slavalarionov-backend
     environment:
       NODE_ENV: production
       PORT: 8081
       DATABASE_URL: "file:./prisma/dev.db"
+    env_file:
+      - backend/.env
     ports:
       - "8081:8081"
     working_dir: /app/backend
     volumes:
       - backend_db:/app/backend/prisma
       - backend_uploads:/app/backend/uploads
+    restart: unless-stopped
 
 volumes:
   backend_db:
   backend_uploads:
-

@@ -8,10 +8,14 @@ import * as fs from 'fs';
 export class NextMiddleware implements NestMiddleware {
   private getFrontendPath(): string {
     // Пробуем разные варианты пути
+    // В Docker: working_dir = /app/backend, frontend = /app/frontend
+    // В локальной разработке: backend/ и frontend/ в корне проекта
     const paths = [
-      path.join(process.cwd(), '..', 'frontend'),
-      path.join(__dirname, '../../frontend'),
-      path.join(process.cwd(), 'frontend'),
+      path.join(process.cwd(), '..', 'frontend'), // Docker: /app/backend -> /app/frontend
+      path.join(process.cwd(), 'frontend'), // Локально: backend/ -> backend/frontend (не сработает, но попробуем)
+      path.join(__dirname, '../../frontend'), // Из dist: dist/src -> ../../frontend
+      path.join(__dirname, '../../../frontend'), // Из dist: dist/src -> ../../../frontend (для Docker)
+      '/app/frontend', // Прямой путь для Docker
     ];
     
     for (const p of paths) {
@@ -21,7 +25,8 @@ export class NextMiddleware implements NestMiddleware {
       }
     }
     
-    throw new Error('Frontend directory not found');
+    console.error('Frontend directory not found. Tried paths:', paths);
+    throw new Error(`Frontend directory not found. Current working directory: ${process.cwd()}, __dirname: ${__dirname}`);
   }
   
   private nextApp = next({
