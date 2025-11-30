@@ -119,9 +119,9 @@ const initialFormState: FormState = {
 	name: '',
 	phone: '',
 	email: '',
-	city: '',
-	cityCode: null,
-	cityUuid: null,
+	city: DEFAULT_CITY_NAME,
+	cityCode: DEFAULT_CITY_CODE,
+	cityUuid: DEFAULT_CITY_UUID,
 	courierAddress: '',
 	street: '',
 	streetFiasId: null,
@@ -159,7 +159,6 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 	const [buildingSuggestions, setBuildingSuggestions] = useState<DadataSuggestion[]>([])
 	const [isBuildingLoading, setIsBuildingLoading] = useState(false)
 	const defaultCityAppliedRef = useRef(false)
-	const autoWidgetTriggerRef = useRef(false)
 	const isSettingDefaultCityRef = useRef(false)
 
 	const updateForm = (
@@ -198,7 +197,6 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 			setPromoStatus(null)
 			setIsLoading(false)
 		defaultCityAppliedRef.current = false
-		autoWidgetTriggerRef.current = false
 			setCitySuggestions([])
 			setStreetSuggestions([])
 			setBuildingSuggestions([])
@@ -293,11 +291,27 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 useEffect(() => {
 	if (!visible) return
 	if (defaultCityAppliedRef.current) return
-	if (form.cityCode || form.city.trim()) {
+	
+	// Если город уже установлен и это не дефолтный, просто помечаем как примененный
+	if (form.cityCode && form.city.trim() && form.city !== DEFAULT_CITY_NAME) {
 		defaultCityAppliedRef.current = true
 		return
 	}
+	
+	// Устанавливаем город по умолчанию сразу
+	setCityQuery(DEFAULT_CITY_NAME)
+	if (!form.cityCode || form.city !== DEFAULT_CITY_NAME) {
+		updateForm(
+			() => ({
+				city: DEFAULT_CITY_NAME,
+				cityCode: DEFAULT_CITY_CODE,
+				cityUuid: DEFAULT_CITY_UUID
+			}),
+			['city']
+		)
+	}
 
+	// Пытаемся получить актуальные данные из API (но не блокируем работу)
 	let cancelled = false
 	setIsCityLoading(true)
 	isSettingDefaultCityRef.current = true
@@ -313,48 +327,27 @@ useEffect(() => {
 						city.cityName?.toLowerCase().includes('spb'),
 				) || cities[0]
 
-			if (!target) {
-				target = {
-					cityName: DEFAULT_CITY_NAME,
-					cityCode: DEFAULT_CITY_CODE,
-					cityUuid: DEFAULT_CITY_UUID,
-					country: 'Россия',
-					countryCode: 'RU',
-					region: 'Санкт-Петербург',
-					subRegion: 'Санкт-Петербург'
-				} as CdekCity
+			if (target) {
+				setCityQuery(target.cityName)
+				updateForm(
+					() => ({
+						city: target.cityName,
+						cityCode: target.cityCode ?? DEFAULT_CITY_CODE,
+						cityUuid: target.cityUuid || DEFAULT_CITY_UUID
+					}),
+					['city']
+				)
 			}
-
-			defaultCityAppliedRef.current = true
-			autoWidgetTriggerRef.current = true
-			setCityQuery(target.cityName)
-			updateForm(
-				() => ({
-					city: target.cityName,
-					cityCode: target.cityCode ?? DEFAULT_CITY_CODE,
-					cityUuid: target.cityUuid || DEFAULT_CITY_UUID
-				}),
-				['city']
-			)
 		})
 		.catch((error) => {
 			console.error('Failed to preload default city', error)
-			defaultCityAppliedRef.current = true
-			autoWidgetTriggerRef.current = true
-			setCityQuery(DEFAULT_CITY_NAME)
-			updateForm(
-				() => ({
-					city: DEFAULT_CITY_NAME,
-					cityCode: DEFAULT_CITY_CODE,
-					cityUuid: DEFAULT_CITY_UUID
-				}),
-				['city']
-			)
+			// Город уже установлен по умолчанию, просто игнорируем ошибку
 		})
 		.finally(() => {
 			if (!cancelled) {
 				setIsCityLoading(false)
 				isSettingDefaultCityRef.current = false
+				defaultCityAppliedRef.current = true
 			}
 		})
 
@@ -524,15 +517,6 @@ useEffect(() => {
 		deliveryOptions.find((item) => item.value === form.deliveryValue) ??
 		deliveryOptions[0] ??
 		initialDeliveryOptions[0]
-
-	useEffect(() => {
-		if (!visible) return
-		if (!autoWidgetTriggerRef.current) return
-		if (!form.cityCode) return
-		if (!currentDeliveryOption.requiresPvz) return
-		autoWidgetTriggerRef.current = false
-		setIsWidgetOpen(true)
-	}, [visible, form.cityCode, currentDeliveryOption.requiresPvz])
 
 	const productsPrice = configuratorStore.productsPrice || 0
 	const productsPriceWithDiscount = configuratorStore.productsPriceWithDiscount || productsPrice
