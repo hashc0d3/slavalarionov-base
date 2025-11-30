@@ -16,16 +16,11 @@ import {
 	type DadataSuggestion
 } from '@/shared/api/delivery.api'
 import deliveryStyles from './OrderPopupDelivery.module.css'
-import widgetStyles from './OrderPopupWidget.module.css'
 
 declare global {
 	interface Window {}
 }
 
-const CDEK_WIDGET_STYLE_ID = 'cdek-widget-style'
-const CDEK_WIDGET_STYLE_HREF = 'https://unpkg.com/cdek-widget@0.0.38/dist/style.css'
-const DEFAULT_WIDGET_API_KEY = '6f29a26c-6dd5-42b8-a755-83a4d6d75b6c'
-const CDEK_WIDGET_API_KEY = process.env.NEXT_PUBLIC_CDEK_WIDGET_API_KEY || DEFAULT_WIDGET_API_KEY
 const DEFAULT_CITY_NAME = 'Санкт-Петербург'
 const DEFAULT_CITY_CODE = 137
 const DEFAULT_CITY_UUID = ''
@@ -163,12 +158,6 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 	const [buildingQuery, setBuildingQuery] = useState('')
 	const [buildingSuggestions, setBuildingSuggestions] = useState<DadataSuggestion[]>([])
 	const [isBuildingLoading, setIsBuildingLoading] = useState(false)
-	const [isWidgetOpen, setIsWidgetOpen] = useState(false)
-	const [isWidgetReady, setIsWidgetReady] = useState(false)
-	const [widgetError, setWidgetError] = useState<string | null>(null)
-	const widgetContainerRef = useRef<HTMLDivElement | null>(null)
-	const widgetInstanceRef = useRef<any>(null)
-	const widgetModulePromiseRef = useRef<Promise<any> | null>(null)
 	const defaultCityAppliedRef = useRef(false)
 	const autoWidgetTriggerRef = useRef(false)
 	const isSettingDefaultCityRef = useRef(false)
@@ -208,10 +197,8 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 			setPromoMessage(null)
 			setPromoStatus(null)
 			setIsLoading(false)
-			defaultCityAppliedRef.current = false
-			autoWidgetTriggerRef.current = false
-			setIsWidgetOpen(false)
-			setWidgetError(null)
+		defaultCityAppliedRef.current = false
+		autoWidgetTriggerRef.current = false
 			setCitySuggestions([])
 			setStreetSuggestions([])
 			setBuildingSuggestions([])
@@ -376,172 +363,6 @@ useEffect(() => {
 	}
 	// eslint-disable-next-line react-hooks/exhaustive-deps
 }, [visible])
-
-	useEffect(() => {
-		if (!isWidgetOpen) return
-
-		const ensureWidgetStyle = () => {
-			if (document.getElementById(CDEK_WIDGET_STYLE_ID)) {
-				return Promise.resolve()
-			}
-			return new Promise<void>((resolve) => {
-				const link = document.createElement('link')
-				link.id = CDEK_WIDGET_STYLE_ID
-				link.rel = 'stylesheet'
-				link.href = CDEK_WIDGET_STYLE_HREF
-				link.onload = () => resolve()
-				link.onerror = () => resolve()
-				document.head.appendChild(link)
-			})
-		}
-
-		const loadWidgetModule = async () => {
-			if (!widgetModulePromiseRef.current) {
-				widgetModulePromiseRef.current = (async () => {
-					await ensureWidgetStyle()
-					const module = await import(
-						/* webpackIgnore: true */
-						'https://unpkg.com/cdek-widget@0.0.38/dist/index.js?module'
-					)
-					return module
-				})()
-			}
-			return widgetModulePromiseRef.current
-		}
-
-		let mounted = true
-		setWidgetError(null)
-		setIsWidgetReady(false)
-
-		// Проверяем, что API работает перед инициализацией виджета
-		const checkApiHealth = async () => {
-			try {
-				// Пробуем получить список городов для проверки API
-				await deliveryApi.searchCities('Москва')
-			} catch (error: any) {
-				console.warn('CDEK API health check failed, but continuing with widget init', error)
-				// Не блокируем инициализацию виджета, но логируем предупреждение
-			}
-		}
-
-		Promise.all([loadWidgetModule(), checkApiHealth()])
-			.then(([module]) => {
-				if (!mounted) return
-				const widgetCtor =
-					module?.CdekWidget ??
-					module?.CDEKWidget ??
-					module?.default ??
-					null
-				if (typeof widgetCtor !== 'function') {
-					throw new Error('CDEK widget script loaded but constructor missing')
-				}
-				const container = widgetContainerRef.current
-				if (!container) {
-					throw new Error('Widget container not available')
-				}
-
-				// Проверяем, что container является DOM элементом
-				if (!(container instanceof HTMLElement)) {
-					throw new Error('Widget container is not a valid DOM element')
-				}
-
-				container.innerHTML = ''
-
-				const props = {
-					from: form.city || '',
-					apiKey: CDEK_WIDGET_API_KEY,
-					servicePath: '/api/delivery/cdek/widget',
-					root: container.id || 'cdek-widget-container',
-					defaultLocation: form.city || '',
-					tariffs: { office: [136, 137] },
-					hideDeliveryOptions: { office: false, door: true },
-					hideFilters: { type: true },
-					onChoose: (
-						_mode: any,
-						_tariff: any,
-						address: {
-							code: string
-							name: string
-							address: string
-							work_time?: string
-							phone?: string
-							city?: string
-						}
-					) => {
-						if (!address) return
-						if (
-							address.city &&
-							form.city &&
-							address.city.toLowerCase() !== form.city.toLowerCase()
-						) {
-							setWidgetError('Выберите пункт в выбранном городе')
-							return
-						}
-						setWidgetError(null)
-						updateForm(
-							() => ({
-								pickupPoint: `${address.name}, ${address.address}`,
-								deliveryPointData: {
-									code: address.code,
-									name: address.name,
-									address: address.address,
-									workTime: address.work_time,
-									city: form.city || ''
-								} as CdekPvz
-							}),
-							['pickupPoint']
-						)
-						setIsWidgetOpen(false)
-					},
-					onReady: () => {
-						if (mounted) {
-							setIsWidgetReady(true)
-						}
-					},
-					onError: (error: any) => {
-						console.error('CDEK widget runtime error', error)
-						if (mounted) {
-							setWidgetError(error?.message || 'Ошибка при работе карты CDEK')
-						}
-					}
-				}
-
-				try {
-					widgetInstanceRef.current = new widgetCtor({
-						target: container,
-						props
-					})
-				} catch (initError: any) {
-					console.error('CDEK widget constructor error', initError)
-					throw new Error(`Не удалось инициализировать виджет CDEK: ${initError?.message || 'Unknown error'}`)
-				}
-			})
-			.catch((error: any) => {
-				console.error('CDEK widget init error', error)
-				if (mounted) {
-					setWidgetError(error?.message || 'Не удалось загрузить карту CDEK')
-				}
-			})
-
-		return () => {
-			mounted = false
-			setIsWidgetReady(false)
-			const instance = widgetInstanceRef.current as {
-				destroy?: () => void
-				$destroy?: () => void
-			} | null
-			if (instance?.destroy || instance?.$destroy) {
-				try {
-					instance.destroy?.()
-					instance.$destroy?.()
-				} catch (err) {
-					console.warn('CDEK widget destroy error', err)
-				}
-			}
-			widgetInstanceRef.current = null
-		}
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [isWidgetOpen])
 
 	useEffect(() => {
 		if (!visible) return
@@ -1229,43 +1050,6 @@ useEffect(() => {
 					</div>
 				</section>
 
-				{isWidgetOpen && (
-					<div className={widgetStyles.overlay} role="dialog" aria-modal="true">
-						<div className={widgetStyles.modal}>
-							<header className={widgetStyles.header}>
-								<h4 className={widgetStyles.title}>Выберите пункт выдачи на карте</h4>
-								<button className={widgetStyles.close} onClick={() => setIsWidgetOpen(false)}>
-									×
-								</button>
-							</header>
-							<div className={widgetStyles.body}>
-								{widgetError ? (
-									<p className={widgetStyles.errorMessage}>{widgetError}</p>
-								) : (
-									<>
-										{!isWidgetReady && (
-											<p className={widgetStyles.message}>Загружаем карту CDEK...</p>
-										)}
-										<div
-											ref={widgetContainerRef}
-											id="cdek-widget-container"
-											className={widgetStyles.mapContainer}
-										/>
-									</>
-								)}
-							</div>
-							<footer className={widgetStyles.footer}>
-								<span>
-									Карта предоставляет сервис CDEK. После выбора точка появится в списке пунктов выдачи.
-								</span>
-								<button className={deliveryStyles.mapButton} onClick={() => setIsWidgetOpen(false)}>
-									Закрыть
-								</button>
-							</footer>
-						</div>
-					</div>
-				)}
-
 				<section className={s.section}>
 					<h4 className={s.sectionTitle}>Контактные данные</h4>
 					<div className={s.inputsGrid}>
@@ -1487,19 +1271,6 @@ useEffect(() => {
 									)}
 									{errors.pickupPoint && (
 										<p className={deliveryStyles.errorText}>{errors.pickupPoint}</p>
-									)}
-									<button
-										type="button"
-										className={deliveryStyles.mapButton}
-										onClick={() => setIsWidgetOpen(true)}
-										disabled={!form.cityCode || isLoading}
-									>
-										Выбрать на карте CDEK
-									</button>
-									{!form.cityCode && (
-										<p className={deliveryStyles.helper}>
-											Укажите город, чтобы открыть карту CDEK.
-										</p>
 									)}
 								</div>
 							</>
