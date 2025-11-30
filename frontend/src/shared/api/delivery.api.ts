@@ -72,21 +72,29 @@ async function handleResponse<T>(response: Response): Promise<T> {
 }
 
 export const deliveryApi = {
-	async searchCities(query: string): Promise<CdekCity[]> {
+	async searchCities(query: string, signal?: AbortSignal): Promise<CdekCity[]> {
 		if (!query?.trim()) return []
 		try {
 			const response = await fetch(`${BASE_URL}/cdek/cities`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ query })
+				body: JSON.stringify({ query }),
+				signal
 			})
 			return handleResponse<CdekCity[]>(response)
 		} catch (error: any) {
-			// Обрабатываем CanceledError
-			if (error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED' || error?.message?.includes('canceled')) {
-				console.warn('[Delivery API] Request was canceled:', query)
+			// Обрабатываем CanceledError и AbortError
+			if (
+				error?.name === 'CanceledError' || 
+				error?.name === 'AbortError' ||
+				error?.code === 'ERR_CANCELED' || 
+				error?.message?.includes('canceled') ||
+				error?.message?.includes('aborted')
+			) {
+				console.warn('[Delivery API] Request was canceled/aborted:', query)
 				return []
 			}
+			console.error('[Delivery API] Error loading cities:', query, error)
 			throw error
 		}
 	},

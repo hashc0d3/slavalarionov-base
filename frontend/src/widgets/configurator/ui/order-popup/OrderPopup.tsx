@@ -399,57 +399,65 @@ useEffect(() => {
 		setIsCityLoading(true)
 		const loadCities = async () => {
 			try {
-				// Сначала загружаем Санкт-Петербург (дефолтный город) через API
-				let spbCities: CdekCity[] = []
-				try {
-					spbCities = await deliveryApi.searchCities(DEFAULT_CITY_NAME)
-				} catch (error: any) {
-					// Обрабатываем CanceledError и другие ошибки
-					if (error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED' || error?.message?.includes('canceled')) {
-						console.warn('[Cities] Request was canceled, using default city')
-					} else {
-						console.error('[Cities] Failed to load SPB cities:', error)
-					}
-				}
+				// Загружаем все города параллельно через Promise.allSettled
+				// Это гарантирует, что даже если некоторые запросы отменятся, другие загрузятся
+				const cityQueries = [
+					DEFAULT_CITY_NAME,
+					'Москва',
+					'Новосибирск',
+					'Екатеринбург',
+					'Казань',
+					'Нижний Новгород',
+					'Челябинск',
+					'Самара',
+					'Омск',
+					'Ростов-на-Дону'
+				]
 				
+				// Загружаем все города параллельно
+				const cityPromises = cityQueries.map(query => 
+					deliveryApi.searchCities(query).catch((error: any) => {
+						// Обрабатываем CanceledError и другие ошибки
+						if (error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED' || error?.message?.includes('canceled')) {
+							console.warn(`[Cities] Request for ${query} was canceled`)
+						} else {
+							console.error(`[Cities] Failed to load city ${query}:`, error)
+						}
+						return [] // Возвращаем пустой массив при ошибке
+					})
+				)
+				
+				const results = await Promise.allSettled(cityPromises)
 				let allCities: CdekCity[] = []
 				
-				if (spbCities.length > 0) {
-					const spbCity = spbCities.find(c => 
-						c.cityCode === DEFAULT_CITY_CODE ||
-						c.cityName?.toLowerCase().includes('санкт') ||
-						c.cityName?.toLowerCase().includes('петербург')
-					) || spbCities[0]
-					
-					if (spbCity) {
-						allCities.push(spbCity)
-					}
-					
-					// Загружаем другие популярные города через API (как в custom)
-					const popularCityQueries = ['Москва', 'Новосибирск', 'Екатеринбург', 'Казань', 'Нижний Новгород', 'Челябинск', 'Самара', 'Омск', 'Ростов-на-Дону']
-					
-					for (const cityQuery of popularCityQueries) {
-						try {
-							const cities = await deliveryApi.searchCities(cityQuery)
-							if (cities.length > 0) {
-								const city = cities.find(c => 
-									c.cityName?.toLowerCase().includes(cityQuery.toLowerCase()) ||
-									cityQuery.toLowerCase().includes(c.cityName?.toLowerCase() || '')
-								) || cities[0]
-								if (city && !allCities.find(c => c.cityCode === city.cityCode)) {
-									allCities.push(city)
-								}
+				// Обрабатываем результаты
+				results.forEach((result, index) => {
+					if (result.status === 'fulfilled' && result.value.length > 0) {
+						const query = cityQueries[index]
+						const cities = result.value
+						
+						// Для Санкт-Петербурга ищем точное совпадение
+						if (query === DEFAULT_CITY_NAME) {
+							const spbCity = cities.find(c => 
+								c.cityCode === DEFAULT_CITY_CODE ||
+								c.cityName?.toLowerCase().includes('санкт') ||
+								c.cityName?.toLowerCase().includes('петербург')
+							) || cities[0]
+							if (spbCity && !allCities.find(c => c.cityCode === spbCity.cityCode)) {
+								allCities.push(spbCity)
 							}
-						} catch (error: any) {
-							// Обрабатываем CanceledError и другие ошибки
-							if (error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED' || error?.message?.includes('canceled')) {
-								console.warn(`[Cities] Request for ${cityQuery} was canceled`)
-							} else {
-								console.error(`Failed to load city ${cityQuery}`, error)
+						} else {
+							// Для других городов ищем по названию
+							const city = cities.find(c => 
+								c.cityName?.toLowerCase().includes(query.toLowerCase()) ||
+								query.toLowerCase().includes(c.cityName?.toLowerCase() || '')
+							) || cities[0]
+							if (city && !allCities.find(c => c.cityCode === city.cityCode)) {
+								allCities.push(city)
 							}
 						}
 					}
-				}
+				})
 				
 				// Убеждаемся, что Санкт-Петербург всегда в списке
 				const hasSpb = allCities.some(c => c.cityCode === DEFAULT_CITY_CODE)
@@ -476,6 +484,7 @@ useEffect(() => {
 					} as CdekCity]
 				}
 				
+				console.log('[Cities] Loaded cities:', allCities.length, allCities.map(c => c.cityName))
 				setCitySuggestions(allCities)
 				
 				// Устанавливаем Санкт-Петербург по умолчанию, если он еще не установлен
