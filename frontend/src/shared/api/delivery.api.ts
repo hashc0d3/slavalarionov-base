@@ -45,12 +45,24 @@ export interface DadataSuggestion {
 async function handleResponse<T>(response: Response): Promise<T> {
 	if (!response.ok) {
 		let message = 'Network request failed'
+		let errorDetails: any = null
 		try {
 			const error = await response.json()
 			if (error?.message) message = error.message
+			errorDetails = error
 		} catch {
 			// ignore
 		}
+		
+		// Логируем ошибку в консоль для отладки
+		console.error(`API Error [${response.status}]:`, {
+			url: response.url,
+			status: response.status,
+			statusText: response.statusText,
+			message,
+			errorDetails,
+		})
+		
 		throw new Error(message)
 	}
 	return response.json() as Promise<T>

@@ -1,27 +1,65 @@
-import { All, Body, Controller, HttpCode, HttpStatus, Post, Req, Res, BadRequestException } from '@nestjs/common';
+import { All, Body, Controller, HttpCode, HttpStatus, Post, Req, Res, BadRequestException, Logger } from '@nestjs/common';
 import { DeliveryService } from './delivery.service';
 import { Request, Response } from 'express';
 
 @Controller('api/delivery')
 export class DeliveryController {
+  private readonly logger = new Logger(DeliveryController.name);
+
   constructor(private readonly deliveryService: DeliveryService) {}
 
   @Post('cdek/cities')
   @HttpCode(HttpStatus.OK)
   async getCdekCities(@Body('query') query: string) {
-    return this.deliveryService.searchCdekCities(query);
+    this.logger.log(`[CDEK Cities] Request received: query="${query}"`);
+    try {
+      const result = await this.deliveryService.searchCdekCities(query);
+      this.logger.log(`[CDEK Cities] Success: found ${result.length} cities`);
+      return result;
+    } catch (error: any) {
+      this.logger.error(`[CDEK Cities] Failed: query="${query}"`, {
+        error: error?.message,
+        stack: error?.stack,
+        status: error?.status,
+      });
+      throw error;
+    }
   }
 
   @Post('cdek/pvz')
   @HttpCode(HttpStatus.OK)
   async getCdekPvz(@Body('cityCode') cityCode: number) {
-    return this.deliveryService.getCdekPvzList(cityCode);
+    this.logger.log(`[CDEK PVZ] Request received: cityCode=${cityCode}`);
+    try {
+      const result = await this.deliveryService.getCdekPvzList(cityCode);
+      this.logger.log(`[CDEK PVZ] Success: found ${result.length} points`);
+      return result;
+    } catch (error: any) {
+      this.logger.error(`[CDEK PVZ] Failed: cityCode=${cityCode}`, {
+        error: error?.message,
+        stack: error?.stack,
+        status: error?.status,
+      });
+      throw error;
+    }
   }
 
   @Post('cdek/calc')
   @HttpCode(HttpStatus.OK)
   async calculateCdek(@Body('cityCode') cityCode: number) {
-    return this.deliveryService.calculateCdekTariffs(cityCode);
+    this.logger.log(`[CDEK Calc] Request received: cityCode=${cityCode}`);
+    try {
+      const result = await this.deliveryService.calculateCdekTariffs(cityCode);
+      this.logger.log(`[CDEK Calc] Success: found ${result.length} tariffs`);
+      return result;
+    } catch (error: any) {
+      this.logger.error(`[CDEK Calc] Failed: cityCode=${cityCode}`, {
+        error: error?.message,
+        stack: error?.stack,
+        status: error?.status,
+      });
+      throw error;
+    }
   }
 
   @All('cdek/widget')

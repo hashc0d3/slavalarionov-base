@@ -56,6 +56,14 @@ export class DeliveryService {
     this.dadataSecret = this.config.get<string>('DADATA_SECRET') || '';
     this.cdekClientId = this.config.get<string>('CDEK_CLIENT_ID') || '';
     this.cdekClientSecret = this.config.get<string>('CDEK_CLIENT_SECRET') || '';
+    
+    // Логируем наличие учетных данных (без самих значений)
+    this.logger.log('CDEK credentials check', {
+      hasClientId: !!this.cdekClientId,
+      hasClientSecret: !!this.cdekClientSecret,
+      clientIdLength: this.cdekClientId?.length || 0,
+      clientSecretLength: this.cdekClientSecret?.length || 0,
+    });
   }
 
   private ensureDadataCredentials() {
@@ -66,6 +74,12 @@ export class DeliveryService {
 
   private ensureCdekCredentials() {
     if (!this.cdekClientId || !this.cdekClientSecret) {
+      this.logger.error('CDEK credentials are missing', {
+        hasClientId: !!this.cdekClientId,
+        hasClientSecret: !!this.cdekClientSecret,
+        clientIdLength: this.cdekClientId?.length || 0,
+        clientSecretLength: this.cdekClientSecret?.length || 0,
+      });
       throw new InternalServerErrorException('CDEK credentials are not configured');
     }
   }
@@ -108,10 +122,30 @@ export class DeliveryService {
         ? JSON.stringify(error.response.data)
         : error?.message || 'Unknown error';
       const statusCode = error?.response?.status || 'N/A';
+      const errorDetails = error?.response?.data || {};
+      
       this.logger.error(
         `Failed to obtain CDEK access token. Status: ${statusCode}, Error: ${errorMessage}`,
-        error?.stack || error
+        {
+          statusCode,
+          errorMessage,
+          errorDetails,
+          hasClientId: !!this.cdekClientId,
+          clientIdLength: this.cdekClientId?.length || 0,
+          hasClientSecret: !!this.cdekClientSecret,
+          clientSecretLength: this.cdekClientSecret?.length || 0,
+          url: 'https://api.cdek.ru/v2/oauth/token',
+          stack: error?.stack,
+        }
       );
+      
+      // Если это ошибка авторизации от CDEK, возвращаем более информативное сообщение
+      if (statusCode === 401 || statusCode === 403) {
+        throw new InternalServerErrorException(
+          `CDEK API authorization failed: ${errorDetails?.error_description || errorDetails?.error || errorMessage}. Check CDEK_CLIENT_ID and CDEK_CLIENT_SECRET in backend/.env`
+        );
+      }
+      
       throw new InternalServerErrorException('Failed to authorize with CDEK API');
     }
   }
@@ -153,8 +187,21 @@ export class DeliveryService {
         longitude: item.longitude,
         kladr: item.kladr,
       })) as CdekCity[];
-    } catch (error) {
-      this.logger.error('Failed to fetch CDEK cities', error);
+    } catch (error: any) {
+      const errorMessage = error?.response?.data 
+        ? JSON.stringify(error.response.data)
+        : error?.message || 'Unknown error';
+      const statusCode = error?.response?.status || 'N/A';
+      
+      this.logger.error(`Failed to fetch CDEK cities: query="${query}"`, {
+        query,
+        statusCode,
+        errorMessage,
+        errorDetails: error?.response?.data,
+        url: 'https://api.cdek.ru/v2/location/cities',
+        hasToken: !!token,
+        stack: error?.stack,
+      });
       throw new InternalServerErrorException('Не удалось получить список городов CDEK');
     }
   }
@@ -196,8 +243,21 @@ export class DeliveryService {
         coordX: item.location?.longitude ?? item.longitude,
         coordY: item.location?.latitude ?? item.latitude,
       })) as CdekPvz[];
-    } catch (error) {
-      this.logger.error('Failed to fetch CDEK delivery points', error);
+    } catch (error: any) {
+      const errorMessage = error?.response?.data 
+        ? JSON.stringify(error.response.data)
+        : error?.message || 'Unknown error';
+      const statusCode = error?.response?.status || 'N/A';
+      
+      this.logger.error(`Failed to fetch CDEK delivery points: cityCode=${cityCode}`, {
+        cityCode,
+        statusCode,
+        errorMessage,
+        errorDetails: error?.response?.data,
+        url: 'https://api.cdek.ru/v2/deliverypoints',
+        hasToken: !!token,
+        stack: error?.stack,
+      });
       throw new InternalServerErrorException('Не удалось получить список пунктов выдачи CDEK');
     }
   }
@@ -244,8 +304,22 @@ export class DeliveryService {
           minDays: item.period_min ?? item.delivery_mode?.min_days ?? item.period ?? 0,
           tariffId: item.tariff_code ?? item.tariff_id ?? 0,
         })) as CdekCalculation[];
-    } catch (error) {
-      this.logger.error('Failed to calculate CDEK tariffs', error);
+    } catch (error: any) {
+      const errorMessage = error?.response?.data 
+        ? JSON.stringify(error.response.data)
+        : error?.message || 'Unknown error';
+      const statusCode = error?.response?.status || 'N/A';
+      
+      this.logger.error(`Failed to calculate CDEK tariffs: cityCode=${cityCode}`, {
+        cityCode,
+        statusCode,
+        errorMessage,
+        errorDetails: error?.response?.data,
+        url: 'https://api.cdek.ru/v2/calculator/tarifflist',
+        hasToken: !!token,
+        payload: JSON.stringify(payload),
+        stack: error?.stack,
+      });
       throw new InternalServerErrorException('Не удалось рассчитать стоимость доставки CDEK');
     }
   }
