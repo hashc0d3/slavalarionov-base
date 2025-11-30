@@ -99,6 +99,22 @@ export class DeliveryService {
         client_secret: this.cdekClientSecret,
       });
 
+      // Логируем запрос (без секретного ключа)
+      const requestBody = params.toString();
+      this.logger.log('CDEK OAuth token request', {
+        url: 'https://api.cdek.ru/v2/oauth/token',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          Accept: 'application/json',
+        },
+        body: requestBody.replace(/client_secret=[^&]*/, 'client_secret=***HIDDEN***'),
+        client_id: this.cdekClientId,
+        client_secret_length: this.cdekClientSecret?.length || 0,
+        has_client_id: !!this.cdekClientId,
+        has_client_secret: !!this.cdekClientSecret,
+      });
+
       const response = await firstValueFrom(
         this.http.post('https://api.cdek.ru/v2/oauth/token', params.toString(), {
           headers: {
@@ -107,6 +123,14 @@ export class DeliveryService {
           },
         }),
       );
+
+      // Логируем успешный ответ
+      this.logger.log('CDEK OAuth token response', {
+        status: response.status,
+        has_token: !!response.data?.access_token,
+        token_length: response.data?.access_token?.length || 0,
+        expires_in: response.data?.expires_in,
+      });
 
       const { access_token, expires_in } = response.data as { access_token: string; expires_in: number };
       if (!access_token) {
@@ -158,19 +182,38 @@ export class DeliveryService {
     const token = await this.getCdekToken();
 
     try {
+      const requestParams = {
+        city: query.trim(),
+        country_codes: 'RU',
+        size: 10,
+      };
+
+      // Логируем запрос
+      this.logger.log('CDEK API request: searchCdekCities', {
+        url: 'https://api.cdek.ru/v2/location/cities',
+        method: 'GET',
+        params: requestParams,
+        has_token: !!token,
+        token_preview: token ? `${token.substring(0, 20)}...` : 'no token',
+      });
+
       const response = await firstValueFrom(
         this.http.get('https://api.cdek.ru/v2/location/cities', {
           headers: {
             Authorization: `Bearer ${token}`,
             Accept: 'application/json',
           },
-          params: {
-            city: query.trim(),
-            country_codes: 'RU',
-            size: 10,
-          },
+          params: requestParams,
         }),
       );
+
+      // Логируем ответ
+      this.logger.log('CDEK API response: searchCdekCities', {
+        status: response.status,
+        statusText: response.statusText,
+        entities_count: response.data?.entity?.length || 0,
+        data_preview: response.data ? JSON.stringify(response.data).substring(0, 200) : 'no data',
+      });
 
       const entities: any[] = response.data?.entity || [];
 
@@ -213,18 +256,37 @@ export class DeliveryService {
     const token = await this.getCdekToken();
 
     try {
+      const requestParams = {
+        city_code: cityCode,
+        type: 'ALL',
+      };
+
+      // Логируем запрос
+      this.logger.log('CDEK API request: getCdekPvzList', {
+        url: 'https://api.cdek.ru/v2/deliverypoints',
+        method: 'GET',
+        params: requestParams,
+        has_token: !!token,
+        token_preview: token ? `${token.substring(0, 20)}...` : 'no token',
+      });
+
       const response = await firstValueFrom(
         this.http.get('https://api.cdek.ru/v2/deliverypoints', {
           headers: {
             Authorization: `Bearer ${token}`,
             Accept: 'application/json',
           },
-          params: {
-            city_code: cityCode,
-            type: 'ALL',
-          },
+          params: requestParams,
         }),
       );
+
+      // Логируем ответ
+      this.logger.log('CDEK API response: getCdekPvzList', {
+        status: response.status,
+        statusText: response.statusText,
+        points_count: Array.isArray(response.data) ? response.data.length : 0,
+        data_preview: response.data ? JSON.stringify(response.data).substring(0, 200) : 'no data',
+      });
 
       const entities: any[] = response.data || [];
 
@@ -285,6 +347,15 @@ export class DeliveryService {
     };
 
     try {
+      // Логируем запрос
+      this.logger.log('CDEK API request: calculateCdekTariffs', {
+        url: 'https://api.cdek.ru/v2/calculator/tarifflist',
+        method: 'POST',
+        payload: payload,
+        has_token: !!token,
+        token_preview: token ? `${token.substring(0, 20)}...` : 'no token',
+      });
+
       const response = await firstValueFrom(
         this.http.post('https://api.cdek.ru/v2/calculator/tarifflist', payload, {
           headers: {
@@ -294,6 +365,13 @@ export class DeliveryService {
           },
         }),
       );
+
+      // Логируем ответ
+      this.logger.log('CDEK API response: calculateCdekTariffs', {
+        status: response.status,
+        statusText: response.statusText,
+        data_preview: response.data ? JSON.stringify(response.data).substring(0, 300) : 'no data',
+      });
 
       const results: any[] = response.data?.tariff_codes || response.data?.result || [];
 
