@@ -6,4 +6,15 @@ node_modules/
 dist/
 **/dist/
 
+# Security - SSH keys and sensitive data
+ssh-keys/
+**/ssh-keys/
+*.pem
+*.key
+*.pub
+id_rsa*
+authorized_keys*
+*.env
+.env.*
+
 custom/
