@@ -535,23 +535,36 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 			.getPvzList(form.cityCode)
 			.then((points) => {
 				// Проверяем, что cityCode не изменился во время загрузки
-				if (currentCityCode === form.cityCode) {
-					console.log('[PVZ Load] PVZ loaded successfully:', points.length, 'points')
-					setPvzList(points)
-				} else {
-					console.log('[PVZ Load] CityCode changed during load, ignoring results')
-				}
+				setForm((currentForm) => {
+					if (currentForm.cityCode === currentCityCode) {
+						console.log('[PVZ Load] PVZ loaded successfully:', points.length, 'points')
+						setPvzList(points)
+					} else {
+						console.log('[PVZ Load] CityCode changed during load, ignoring results')
+					}
+					return currentForm
+				})
 			})
 			.catch((error) => {
 				console.error('[PVZ Load] Failed to load CDEK PVZ list', error)
-				if (currentCityCode === form.cityCode) {
-					setPvzList([])
-				}
+				setForm((currentForm) => {
+					if (currentForm.cityCode === currentCityCode) {
+						setPvzList([])
+					}
+					return currentForm
+				})
 			})
 			.finally(() => {
-				if (currentCityCode === form.cityCode) {
-					setIsPvzLoading(false)
-				}
+				// Сбрасываем isPvzLoading, проверяя актуальность через setForm
+				setForm((currentForm) => {
+					if (currentForm.cityCode === currentCityCode) {
+						setIsPvzLoading(false)
+					} else {
+						// Если cityCode изменился, все равно сбрасываем загрузку для старого запроса
+						setIsPvzLoading(false)
+					}
+					return currentForm
+				})
 			})
 
 		setIsTariffsLoading(true)
@@ -1796,7 +1809,9 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 										<span>Пункт выдачи*</span>
 									</div>
 									{form.city ? (
-										// Показываем скелетон, когда загружаются ПВЗ или когда город выбран, но cityCode еще загружается
+										// Показываем скелетон когда:
+										// 1. Загружаются ПВЗ (isPvzLoading) и список пуст
+										// 2. Или город выбран, но cityCode еще не загружен
 										(isPvzLoading && pvzList.length === 0) || (!form.cityCode && form.city) ? (
 											<div className={`${deliveryStyles.skeleton} ${deliveryStyles.skeletonSelect}`} />
 										) : (
