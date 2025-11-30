@@ -617,46 +617,71 @@ useEffect(() => {
 
 	// Загрузка скрипта CDEK Widget
 	useEffect(() => {
-		if (!visible || !currentDeliveryOption.requiresPvz) return
+		if (!visible || !currentDeliveryOption.requiresPvz) {
+			console.log('[CDEK Map] Skipping script load:', { visible, requiresPvz: currentDeliveryOption.requiresPvz })
+			return
+		}
+
+		console.log('[CDEK Map] Starting script load...')
 
 		if (window.CDEKWidget) {
+			console.log('[CDEK Map] Widget already loaded')
 			setMapReady(true)
 			return
 		}
 
 		const script = document.createElement('script')
-		script.src = 'https://widget.cdek.ru/widget/scripts/widget.js'
+		script.src = 'https://widget.cdek.ru/widget/widjet.js'
 		script.async = true
+		script.charset = 'utf-8'
 		script.onload = () => {
+			console.log('[CDEK Map] Script loaded successfully, CDEKWidget available:', !!window.CDEKWidget)
 			setMapReady(true)
 		}
-		script.onerror = () => {
-			console.error('Failed to load CDEK Widget script')
+		script.onerror = (error) => {
+			console.error('[CDEK Map] Failed to load CDEK Widget script:', error)
 		}
 		document.body.appendChild(script)
+		console.log('[CDEK Map] Script element added to DOM:', script.src)
 
 		return () => {
 			if (script.parentNode) {
 				script.parentNode.removeChild(script)
+				console.log('[CDEK Map] Script removed from DOM')
 			}
 		}
 	}, [visible, currentDeliveryOption.requiresPvz])
 
 	// Инициализация карты
 	useEffect(() => {
+		console.log('[CDEK Map] Init effect triggered:', {
+			visible,
+			mapReady,
+			hasWidget: !!window.CDEKWidget,
+			city: form.city,
+			cityCode: form.cityCode,
+			requiresPvz: currentDeliveryOption.requiresPvz,
+			hasContainer: !!mapContainerRef.current
+		})
+
 		if (!visible || !mapReady || !window.CDEKWidget || !form.city || !currentDeliveryOption.requiresPvz) {
+			console.log('[CDEK Map] Skipping map init - conditions not met')
 			return
 		}
 
-		if (!mapContainerRef.current) return
+		if (!mapContainerRef.current) {
+			console.log('[CDEK Map] Container ref not available')
+			return
+		}
 
 		// Уничтожаем предыдущий экземпляр карты
 		if (mapInstanceRef.current && typeof mapInstanceRef.current.destroy === 'function') {
+			console.log('[CDEK Map] Destroying previous map instance')
 			mapInstanceRef.current.destroy()
 		}
 
 		try {
-			const widgetInstance = new window.CDEKWidget({
+			const widgetOptions = {
 				from: form.city || DEFAULT_CITY_NAME,
 				root: 'cdek-delivery-map',
 				apiKey: cdekWidgetApiKey,
@@ -674,12 +699,15 @@ useEffect(() => {
 					type: true
 				},
 				onChoose: (_mode: any, _tarif: any, address: CDEKWidgetPoint) => {
+					console.log('[CDEK Map] Point chosen:', address)
 					if (address && address.code) {
 						// Находим пункт выдачи по коду
 						const pvz = pvzList.find((p) => p.code === address.code)
 						if (pvz) {
+							console.log('[CDEK Map] Found PVZ in list:', pvz)
 							handlePvzSelect(pvz)
 						} else {
+							console.log('[CDEK Map] PVZ not in list, creating from widget data')
 							// Если пункт не найден в списке, создаем объект из данных виджета
 							const widgetPvz: CdekPvz = {
 								code: address.code || '',
@@ -702,17 +730,25 @@ useEffect(() => {
 					}
 				},
 				onReady: () => {
-					console.log('CDEK Widget ready')
+					console.log('[CDEK Map] Widget ready callback fired')
 				}
+			}
+
+			console.log('[CDEK Map] Initializing widget with options:', {
+				...widgetOptions,
+				apiKey: widgetOptions.apiKey ? `${widgetOptions.apiKey.substring(0, 10)}...` : 'missing'
 			})
 
+			const widgetInstance = new window.CDEKWidget(widgetOptions)
 			mapInstanceRef.current = widgetInstance
+			console.log('[CDEK Map] Widget instance created:', widgetInstance)
 		} catch (error) {
-			console.error('Failed to initialize CDEK Widget:', error)
+			console.error('[CDEK Map] Failed to initialize CDEK Widget:', error)
 		}
 
 		return () => {
 			if (mapInstanceRef.current && typeof mapInstanceRef.current.destroy === 'function') {
+				console.log('[CDEK Map] Cleaning up map instance')
 				mapInstanceRef.current.destroy()
 				mapInstanceRef.current = null
 			}
@@ -722,12 +758,17 @@ useEffect(() => {
 	// Обновление локации карты при изменении города
 	useEffect(() => {
 		if (mapInstanceRef.current && form.cityCode && form.city) {
+			console.log('[CDEK Map] Updating location:', { cityCode: form.cityCode, city: form.city })
 			// Находим координаты города из списка городов или используем координаты первого ПВЗ
 			const cityCoords = citySuggestions.find((c) => c.cityCode === form.cityCode)
 			if (cityCoords && cityCoords.latitude && cityCoords.longitude) {
+				console.log('[CDEK Map] Using city coordinates:', [cityCoords.longitude, cityCoords.latitude])
 				mapInstanceRef.current.updateLocation([cityCoords.longitude, cityCoords.latitude])
 			} else if (pvzList.length > 0 && pvzList[0].coordX && pvzList[0].coordY) {
+				console.log('[CDEK Map] Using PVZ coordinates:', [pvzList[0].coordX, pvzList[0].coordY])
 				mapInstanceRef.current.updateLocation([pvzList[0].coordX, pvzList[0].coordY])
+			} else {
+				console.log('[CDEK Map] No coordinates available for update')
 			}
 		}
 	}, [form.cityCode, form.city, citySuggestions, pvzList])
