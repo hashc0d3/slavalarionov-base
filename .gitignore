@@ -9,6 +9,9 @@ dist/
 # Security - SSH keys and sensitive data
 ssh-keys/
 **/ssh-keys/
+SSH_KEYS.md
+add-ssh-key.ps1
+add-ssh-key.sh
 *.pem
 *.key
 *.pub
