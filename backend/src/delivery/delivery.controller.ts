@@ -89,5 +89,33 @@ export class DeliveryController {
   async searchBuildings(@Body('streetFiasId') streetFiasId: string, @Body('query') query: string) {
     return this.deliveryService.searchBuildings(streetFiasId, query);
   }
+
+  // Endpoint для виджета CDEK (обрабатывает запросы к /api/delivery/cdek?action=...)
+  // Должен быть в конце, чтобы не конфликтовать с другими маршрутами
+  @All('cdek')
+  async proxyCdekWidgetDirect(@Req() req: Request, @Res() res: Response) {
+    // Проверяем, что это запрос от виджета (есть параметр action)
+    const action = (req.query?.action || (req.body && (req.body as any).action)) as string | undefined;
+    
+    // Если нет action, значит это не запрос от виджета, пропускаем дальше
+    // (но в NestJS это не сработает, поэтому просто проверяем наличие action)
+    if (!action) {
+      throw new BadRequestException('Action is required');
+    }
+
+    this.logger.log(`[CDEK Widget] Request received: action="${action}"`);
+    try {
+      const result = await this.deliveryService.proxyCdekWidget(action, req.method, req.query, req.body);
+      res.status(HttpStatus.OK).json(result);
+    } catch (error: any) {
+      this.logger.error(`[CDEK Widget] Failed: action="${action}"`, {
+        error: error?.message,
+        stack: error?.stack,
+        status: error?.status,
+      });
+      const status = error?.status || HttpStatus.INTERNAL_SERVER_ERROR;
+      res.status(status).json({ message: error?.message || 'Failed to proxy CDEK widget request' });
+    }
+  }
 }
 
