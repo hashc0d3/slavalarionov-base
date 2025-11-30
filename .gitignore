@@ -20,4 +20,8 @@ authorized_keys*
 *.env
 .env.*
 
+# IDE settings
+.cursor/
+**/.cursor/
+
 custom/
