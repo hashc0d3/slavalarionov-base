@@ -400,7 +400,18 @@ useEffect(() => {
 		const loadCities = async () => {
 			try {
 				// Сначала загружаем Санкт-Петербург (дефолтный город) через API
-				const spbCities = await deliveryApi.searchCities(DEFAULT_CITY_NAME)
+				let spbCities: CdekCity[] = []
+				try {
+					spbCities = await deliveryApi.searchCities(DEFAULT_CITY_NAME)
+				} catch (error: any) {
+					// Обрабатываем CanceledError и другие ошибки
+					if (error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED' || error?.message?.includes('canceled')) {
+						console.warn('[Cities] Request was canceled, using default city')
+					} else {
+						console.error('[Cities] Failed to load SPB cities:', error)
+					}
+				}
+				
 				let allCities: CdekCity[] = []
 				
 				if (spbCities.length > 0) {
@@ -429,10 +440,28 @@ useEffect(() => {
 									allCities.push(city)
 								}
 							}
-						} catch (error) {
-							console.error(`Failed to load city ${cityQuery}`, error)
+						} catch (error: any) {
+							// Обрабатываем CanceledError и другие ошибки
+							if (error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED' || error?.message?.includes('canceled')) {
+								console.warn(`[Cities] Request for ${cityQuery} was canceled`)
+							} else {
+								console.error(`Failed to load city ${cityQuery}`, error)
+							}
 						}
 					}
+				}
+				
+				// Убеждаемся, что Санкт-Петербург всегда в списке
+				const hasSpb = allCities.some(c => c.cityCode === DEFAULT_CITY_CODE)
+				if (!hasSpb) {
+					allCities.unshift({
+						cityName: DEFAULT_CITY_NAME,
+						cityCode: DEFAULT_CITY_CODE,
+						cityUuid: DEFAULT_CITY_UUID,
+						country: 'Россия',
+						countryCode: 'RU',
+						region: 'Ленинградская область'
+					} as CdekCity)
 				}
 				
 				// Если не удалось загрузить города, создаем дефолтный город
@@ -454,17 +483,27 @@ useEffect(() => {
 				if (spbCity && (!form.cityCode || form.cityCode === DEFAULT_CITY_CODE)) {
 					handleCitySelect(spbCity)
 				}
-			} catch (error) {
-				console.error('Failed to load cities', error)
+			} catch (error: any) {
+				// Обрабатываем CanceledError и другие ошибки
+				if (error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED' || error?.message?.includes('canceled')) {
+					console.warn('[Cities] Request was canceled, using default city')
+				} else {
+					console.error('Failed to load cities', error)
+				}
 				// В случае ошибки создаем дефолтный город
-				setCitySuggestions([{
+				const defaultCity: CdekCity = {
 					cityName: DEFAULT_CITY_NAME,
 					cityCode: DEFAULT_CITY_CODE,
 					cityUuid: DEFAULT_CITY_UUID,
 					country: 'Россия',
 					countryCode: 'RU',
 					region: 'Ленинградская область'
-				} as CdekCity])
+				}
+				setCitySuggestions([defaultCity])
+				// Устанавливаем дефолтный город, если он еще не установлен
+				if (!form.cityCode || form.cityCode === DEFAULT_CITY_CODE) {
+					handleCitySelect(defaultCity)
+				}
 			} finally {
 				setIsCityLoading(false)
 			}
@@ -1606,11 +1645,14 @@ useEffect(() => {
 											disabled={isLoading || isPvzLoading || pvzList.length === 0}
 										>
 											<option value="">Выберите пункт выдачи</option>
-											{pvzList.map((pvz) => (
-												<option key={pvz.code} value={pvz.code}>
-													{pvz.name}, {pvz.address}
-												</option>
-											))}
+											{pvzList.map((pvz) => {
+												const displayText = `${pvz.name}, ${pvz.address}`
+												return (
+													<option key={pvz.code} value={pvz.code} title={displayText}>
+														{displayText}
+													</option>
+												)
+											})}
 										</select>
 									) : (
 										<p className={deliveryStyles.helper}>Сначала выберите город.</p>

@@ -63,7 +63,10 @@ async function handleResponse<T>(response: Response): Promise<T> {
 			errorDetails,
 		})
 		
-		throw new Error(message)
+		const error = new Error(message) as any
+		error.status = response.status
+		error.response = response
+		throw error
 	}
 	return response.json() as Promise<T>
 }
@@ -71,12 +74,21 @@ async function handleResponse<T>(response: Response): Promise<T> {
 export const deliveryApi = {
 	async searchCities(query: string): Promise<CdekCity[]> {
 		if (!query?.trim()) return []
-		const response = await fetch(`${BASE_URL}/cdek/cities`, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ query })
-		})
-		return handleResponse<CdekCity[]>(response)
+		try {
+			const response = await fetch(`${BASE_URL}/cdek/cities`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ query })
+			})
+			return handleResponse<CdekCity[]>(response)
+		} catch (error: any) {
+			// Обрабатываем CanceledError
+			if (error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED' || error?.message?.includes('canceled')) {
+				console.warn('[Delivery API] Request was canceled:', query)
+				return []
+			}
+			throw error
+		}
 	},
 
 	async getPvzList(cityCode: number): Promise<CdekPvz[]> {
