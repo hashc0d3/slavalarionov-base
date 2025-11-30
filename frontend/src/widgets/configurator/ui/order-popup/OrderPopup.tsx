@@ -624,67 +624,38 @@ useEffect(() => {
 
 		console.log('[CDEK Map] Starting script load...')
 
+		// Используем тот же URL, что и в старом проекте (через jsdelivr CDN)
 		if (window.CDEKWidget) {
 			console.log('[CDEK Map] Widget already loaded')
 			setMapReady(true)
 			return
 		}
 
-		// Пробуем несколько вариантов URL для загрузки виджета
-		const scriptUrls = [
-			'https://widget.cdek.ru/widget/widjet.js',
-			'https://widget.cdek.ru/widget/scripts/widjet.js',
-			'https://widget.cdek.ru/widjet.js'
-		]
-
-		let currentUrlIndex = 0
-		const tryLoadScript = () => {
-			if (currentUrlIndex >= scriptUrls.length) {
-				console.error('[CDEK Map] All script URLs failed. Widget will not be available.')
-				// Виджет недоступен, но можно работать со списком ПВЗ
-				setMapReady(false)
-				return
-			}
-
-			const script = document.createElement('script')
-			script.id = 'ISDEKscript'
-			script.type = 'text/javascript'
-			script.src = scriptUrls[currentUrlIndex]
-			script.async = true
-			script.charset = 'utf-8'
-			
-			script.onload = () => {
-				console.log('[CDEK Map] Script loaded successfully from:', scriptUrls[currentUrlIndex])
-				console.log('[CDEK Map] CDEKWidget available:', !!window.CDEKWidget)
-				setMapReady(true)
-			}
-			
-			script.onerror = (error) => {
-				console.warn(`[CDEK Map] Failed to load from ${scriptUrls[currentUrlIndex]}, trying next...`)
-				currentUrlIndex++
-				// Удаляем неудачный скрипт
-				if (script.parentNode) {
-					script.parentNode.removeChild(script)
-				}
-				// Пробуем следующий URL
-				setTimeout(tryLoadScript, 100)
-			}
-			
-			document.body.appendChild(script)
-			console.log('[CDEK Map] Attempting to load script from:', scriptUrls[currentUrlIndex])
+		const script = document.createElement('script')
+		script.id = 'ISDEKscript'
+		script.type = 'text/javascript'
+		script.src = 'https://cdn.jsdelivr.net/gh/cdek-it/widget@latest/dist/cdek-widget.umd.js'
+		script.async = true
+		
+		script.onload = () => {
+			console.log('[CDEK Map] Script loaded successfully, CDEKWidget available:', !!window.CDEKWidget)
+			setMapReady(true)
 		}
-
-		tryLoadScript()
+		
+		script.onerror = (error) => {
+			console.error('[CDEK Map] Failed to load CDEK Widget script:', error)
+			setMapReady(false)
+		}
+		
+		document.body.appendChild(script)
+		console.log('[CDEK Map] Script element added to DOM:', script.src)
 
 		return () => {
-			// Удаляем все возможные скрипты виджета
-			scriptUrls.forEach(url => {
-				const existingScript = document.getElementById('ISDEKscript')
-				if (existingScript && existingScript.parentNode) {
-					existingScript.parentNode.removeChild(existingScript)
-					console.log('[CDEK Map] Script removed from DOM')
-				}
-			})
+			const existingScript = document.getElementById('ISDEKscript')
+			if (existingScript && existingScript.parentNode) {
+				existingScript.parentNode.removeChild(existingScript)
+				console.log('[CDEK Map] Script removed from DOM')
+			}
 		}
 	}, [visible, currentDeliveryOption.requiresPvz])
 
@@ -1415,21 +1386,66 @@ useEffect(() => {
 									</div>
 									{form.cityCode && form.city ? (
 										<>
-											{!mapReady && (
-												<p className={deliveryStyles.helper}>Загрузка карты...</p>
+											{/* Карта CDEK (если виджет загрузился) */}
+											{mapReady && window.CDEKWidget && (
+												<div
+													id="cdek-delivery-map"
+													ref={mapContainerRef}
+													className={deliveryStyles.deliveryMap}
+													style={{
+														display: 'block',
+														width: '100%',
+														height: '500px',
+														marginTop: '20px',
+														background: '#f0f0f0'
+													}}
+												/>
 											)}
-											<div
-												id="cdek-delivery-map"
-												ref={mapContainerRef}
-												className={deliveryStyles.deliveryMap}
-												style={{
-													display: mapReady ? 'block' : 'none',
-													width: '100%',
-													height: '500px',
-													marginTop: '20px',
-													background: '#f0f0f0'
-												}}
-											/>
+											
+											{/* Список ПВЗ (всегда показываем, даже если карта доступна) */}
+											{pvzList.length > 0 ? (
+												<>
+													<input
+														className={deliveryStyles.input}
+														placeholder="Поиск по адресу или коду"
+														value={pvzQuery}
+														onChange={(event) => setPvzQuery(event.target.value)}
+														disabled={isLoading}
+														style={{ marginTop: mapReady && window.CDEKWidget ? '20px' : '0' }}
+													/>
+													<div className={deliveryStyles.pvzList}>
+														{filteredPvzList.map((pvz) => {
+															const isActive = form.deliveryPointData?.code === pvz.code
+															return (
+																<button
+																	type="button"
+																	key={pvz.code}
+																	className={[
+																		deliveryStyles.pvzItem,
+																		isActive ? deliveryStyles.pvzItemActive : ''
+																	].join(' ')}
+																	onClick={() => handlePvzSelect(pvz)}
+																	disabled={isLoading}
+																>
+																	<span className={deliveryStyles.pvzTitle}>{pvz.name}</span>
+																	<span className={deliveryStyles.pvzAddress}>{pvz.address}</span>
+																	<div className={deliveryStyles.pvzMeta}>
+																		{pvz.workTime && <span>Время работы: {pvz.workTime}</span>}
+																		{pvz.phone && <span>Телефон: {pvz.phone}</span>}
+																		{pvz.code && <span>Код: {pvz.code}</span>}
+																	</div>
+																</button>
+															)
+														})}
+													</div>
+												</>
+											) : (
+												<p className={deliveryStyles.helper}>
+													Пункты выдачи не найдены. Попробуйте другой город.
+												</p>
+											)}
+											
+											{/* Информация о выбранном пункте */}
 											{form.deliveryPointData && (
 												<div className={deliveryStyles.selectedPoint}>
 													<p className={deliveryStyles.selectedPointTitle}>Выбранный пункт:</p>
