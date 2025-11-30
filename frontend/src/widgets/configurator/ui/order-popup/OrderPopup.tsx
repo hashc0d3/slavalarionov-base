@@ -383,54 +383,63 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 	}, [visible])
 
 	// Загрузка популярных городов при открытии селектора (по аналогии с custom - через DaData)
-	const handleCitySelectFocus = async () => {
+	// В custom селектор не блокируется при загрузке городов
+	const handleCitySelectFocus = () => {
 		// Если уже загружены города (кроме дефолтного), не загружаем повторно
 		if (citySuggestions.length > 1) return
 
+		// Загружаем города асинхронно без блокировки селектора (как в custom)
+		// Показываем индикатор загрузки, но не блокируем селектор
 		setIsCityLoading(true)
-		try {
-			// Список популярных городов для загрузки
-			const popularCities = [
-				'Москва',
-				'Новосибирск',
-				'Екатеринбург',
-				'Казань',
-				'Нижний Новгород',
-				'Челябинск',
-				'Самара',
-				'Омск',
-				'Ростов-на-Дону'
-			]
+		
+		// Загружаем города в фоне, не блокируя UI
+		const loadPopularCities = async () => {
+			try {
+				// Список популярных городов для загрузки
+				const popularCities = [
+					'Москва',
+					'Новосибирск',
+					'Екатеринбург',
+					'Казань',
+					'Нижний Новгород',
+					'Челябинск',
+					'Самара',
+					'Омск',
+					'Ростов-на-Дону'
+				]
 
-			// Загружаем города последовательно через DaData, чтобы избежать проблем с отменой запросов
-			const loadedCities: DadataSuggestion[] = [...citySuggestions] // Начинаем с уже загруженных
+				// Загружаем города последовательно через DaData, чтобы избежать проблем с отменой запросов
+				const loadedCities: DadataSuggestion[] = [...citySuggestions] // Начинаем с уже загруженных
 
-			for (const cityQuery of popularCities) {
-				try {
-					const dadataCities = await deliveryApi.searchCities(cityQuery)
-					if (dadataCities && dadataCities.length > 0) {
-						const city = dadataCities.find(c => 
-							c.data?.city?.toLowerCase().includes(cityQuery.toLowerCase()) ||
-							c.value?.toLowerCase().includes(cityQuery.toLowerCase())
-						) || dadataCities[0]
-						
-						// Добавляем город, если его еще нет в списке (проверяем по value)
-						if (city && !loadedCities.find(c => c.value === city.value)) {
-							loadedCities.push(city)
+				for (const cityQuery of popularCities) {
+					try {
+						const dadataCities = await deliveryApi.searchCities(cityQuery)
+						if (dadataCities && dadataCities.length > 0) {
+							const city = dadataCities.find(c => 
+								c.data?.city?.toLowerCase().includes(cityQuery.toLowerCase()) ||
+								c.value?.toLowerCase().includes(cityQuery.toLowerCase())
+							) || dadataCities[0]
+							
+							// Добавляем город, если его еще нет в списке (проверяем по value)
+							if (city && !loadedCities.find(c => c.value === city.value)) {
+								loadedCities.push(city)
+							}
 						}
+					} catch (error: any) {
+						// Игнорируем ошибки для отдельных городов
+						console.warn(`Failed to load city ${cityQuery}:`, error)
 					}
-				} catch (error: any) {
-					// Игнорируем ошибки для отдельных городов
-					console.warn(`Failed to load city ${cityQuery}:`, error)
 				}
-			}
 
-			setCitySuggestions(loadedCities)
-		} catch (error: any) {
-			console.error('Failed to load popular cities', error)
+				setCitySuggestions(loadedCities)
+			} catch (error: any) {
+				console.error('Failed to load popular cities', error)
 			} finally {
 				setIsCityLoading(false)
 			}
+		}
+		
+		loadPopularCities()
 	}
 
 	useEffect(() => {
@@ -657,31 +666,54 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 		const postalCode = dadataCity.data?.postal_code || ''
 		const isDefaultCity = cityName.toLowerCase().includes('санкт') || cityName.toLowerCase().includes('петербург')
 		
-		// Сначала устанавливаем город в форму и очищаем cityCode, чтобы ПВЗ очистились
-		// Затем cityCode обновится асинхронно и загрузятся новые ПВЗ
-		updateForm(
-			(prev) => ({
-				...prev,
-				city: cityName,
-				cityCode: null, // Очищаем cityCode, чтобы ПВЗ очистились
-				cityUuid: null,
-				pickupPoint: '',
-				deliveryPointData: null,
-				street: '',
-				streetFiasId: null,
-				building: '',
-				courierAddress: '',
-				mailAddress: '',
-				deliveryValue: initialDeliveryOptions[0].value
-			}),
-			['city', 'pickupPoint', 'street', 'building', 'courierAddress', 'mailAddress']
-		)
-		
-		// Очищаем список ПВЗ сразу при смене города
-		setPvzList([])
-		setTariffs([])
+		// Для дефолтного города (Санкт-Петербург) сразу устанавливаем DEFAULT_CITY_CODE
+		// Для других городов ищем cityCode через CDEK API
+		if (isDefaultCity) {
+			// Для дефолтного города сразу устанавливаем cityCode (как в custom)
+			updateForm(
+				(prev) => ({
+					...prev,
+					city: cityName,
+					cityCode: DEFAULT_CITY_CODE,
+					cityUuid: DEFAULT_CITY_UUID,
+					pickupPoint: '',
+					deliveryPointData: null,
+					street: '',
+					streetFiasId: null,
+					building: '',
+					courierAddress: '',
+					mailAddress: '',
+					deliveryValue: initialDeliveryOptions[0].value
+				}),
+				['city', 'pickupPoint', 'street', 'building', 'courierAddress', 'mailAddress']
+			)
+		} else {
+			// Для других городов сначала очищаем cityCode, затем ищем через CDEK API
+			updateForm(
+				(prev) => ({
+					...prev,
+					city: cityName,
+					cityCode: null, // Очищаем cityCode, чтобы ПВЗ очистились
+					cityUuid: null,
+					pickupPoint: '',
+					deliveryPointData: null,
+					street: '',
+					streetFiasId: null,
+					building: '',
+					courierAddress: '',
+					mailAddress: '',
+					deliveryValue: initialDeliveryOptions[0].value
+				}),
+				['city', 'pickupPoint', 'street', 'building', 'courierAddress', 'mailAddress']
+			)
+			
+			// Очищаем список ПВЗ сразу при смене города
+			setPvzList([])
+			setTariffs([])
+		}
 		
 		// Ищем cityCode через CDEK API по postal_code (как в custom) или по названию города
+		// Для дефолтного города это необязательно, но можно обновить, если найден более точный код
 		// Делаем это асинхронно, чтобы не блокировать UI
 		const searchCityCode = async () => {
 			try {
@@ -703,16 +735,9 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 							}),
 							[]
 						)
-					} else if (isDefaultCity) {
-						// Для дефолтного города используем DEFAULT_CITY_CODE, если не найден
-						updateForm(
-							(prev) => ({
-								...prev,
-								cityCode: DEFAULT_CITY_CODE,
-								cityUuid: DEFAULT_CITY_UUID
-							}),
-							[]
-						)
+					} else if (!isDefaultCity) {
+						// Если не найден cityCode для не-дефолтного города, оставляем null
+						// ПВЗ не загрузятся, но это нормально - пользователь увидит сообщение
 					}
 
 					// Обновляем локацию карты, если она уже инициализирована (по аналогии с custom)
@@ -725,17 +750,8 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 						}
 					}
 				} else {
-					// Если не нашли в CDEK, для дефолтного города используем DEFAULT_CITY_CODE
-					if (isDefaultCity) {
-						updateForm(
-							(prev) => ({
-								...prev,
-								cityCode: DEFAULT_CITY_CODE,
-								cityUuid: DEFAULT_CITY_UUID
-							}),
-							[]
-						)
-					}
+					// Если не нашли в CDEK, для не-дефолтного города оставляем cityCode = null
+					// Для дефолтного города cityCode уже установлен выше
 
 					// Обновляем локацию карты, если она уже инициализирована
 					if (mapInstanceRef.current && cityLat && cityLon && !isNaN(cityLat) && !isNaN(cityLon)) {
@@ -749,17 +765,8 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 				}
 			} catch (error) {
 				console.error('Failed to find cityCode for city:', cityName, error)
-				// В случае ошибки для дефолтного города используем DEFAULT_CITY_CODE
-				if (isDefaultCity) {
-					updateForm(
-						(prev) => ({
-							...prev,
-							cityCode: DEFAULT_CITY_CODE,
-							cityUuid: DEFAULT_CITY_UUID
-						}),
-						[]
-					)
-				}
+				// В случае ошибки для дефолтного города cityCode уже установлен выше
+				// Для не-дефолтного города оставляем cityCode = null
 
 				// Обновляем локацию карты, если она уже инициализирована
 				if (mapInstanceRef.current && cityLat && cityLon && !isNaN(cityLat) && !isNaN(cityLon)) {
@@ -1643,7 +1650,7 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 									}
 								}}
 								onFocus={handleCitySelectFocus}
-								disabled={isLoading || isCityLoading}
+								disabled={isLoading}
 							>
 								{citySuggestions.length === 0 ? (
 									<option value={DEFAULT_CITY_NAME}>{DEFAULT_CITY_NAME}</option>
