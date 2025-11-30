@@ -324,14 +324,30 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 
 
 	// Загрузка дефолтного города при открытии модального окна (по аналогии с custom - через DaData)
-useEffect(() => {
-	if (!visible) return
-		// Если уже есть города в списке, не загружаем повторно
-		if (citySuggestions.length > 0) return
+	useEffect(() => {
+		if (!visible) return
+		// Если уже есть города в списке и cityCode установлен, не загружаем повторно
+		if (citySuggestions.length > 0 && form.cityCode === DEFAULT_CITY_CODE && form.city === DEFAULT_CITY_NAME) return
+
+		// Сразу устанавливаем дефолтный город и cityCode, чтобы ПВЗ могли загрузиться
+		if (!form.cityCode || form.cityCode !== DEFAULT_CITY_CODE || !form.city || form.city !== DEFAULT_CITY_NAME) {
+			updateForm(
+				(prev) => ({
+					...prev,
+					city: DEFAULT_CITY_NAME,
+					cityCode: DEFAULT_CITY_CODE,
+					cityUuid: DEFAULT_CITY_UUID
+				}),
+				['city']
+			)
+		}
 
 		// Загружаем только дефолтный город (Санкт-Петербург) через DaData
 		const loadDefaultCity = async () => {
-	setIsCityLoading(true)
+			// Если уже загружен, не загружаем повторно
+			if (citySuggestions.length > 0) return
+			
+			setIsCityLoading(true)
 			try {
 				const dadataCities = await deliveryApi.searchCities(DEFAULT_CITY_NAME)
 				if (dadataCities && dadataCities.length > 0) {
@@ -346,40 +362,25 @@ useEffect(() => {
 					// Устанавливаем дефолтный город в список
 					setCitySuggestions([spbCity])
 					
-					// Находим cityCode через CDEK API и устанавливаем в форму
-					if (!form.cityCode || form.cityCode === DEFAULT_CITY_CODE) {
-						await handleCitySelectFromDadata(spbCity)
-					}
+					// Находим cityCode через CDEK API и обновляем форму (если найден более точный код)
+					await handleCitySelectFromDadata(spbCity)
 				} else {
-					// Если не удалось загрузить через DaData, используем дефолтные значения
-			updateForm(
-				() => ({
-							city: DEFAULT_CITY_NAME,
-							cityCode: DEFAULT_CITY_CODE,
-							cityUuid: DEFAULT_CITY_UUID
-				}),
-				['city']
-			)
+					// Если не удалось загрузить через DaData, оставляем дефолтные значения
+					// (уже установлены выше)
+					setCitySuggestions([])
 				}
 			} catch (error: any) {
 				console.error('Failed to load default city', error)
-				// В случае ошибки используем дефолтные значения
-			updateForm(
-				() => ({
-					city: DEFAULT_CITY_NAME,
-					cityCode: DEFAULT_CITY_CODE,
-					cityUuid: DEFAULT_CITY_UUID
-				}),
-				['city']
-			)
+				// В случае ошибки оставляем дефолтные значения (уже установлены выше)
+				setCitySuggestions([])
 			} finally {
 				setIsCityLoading(false)
 			}
-	}
+		}
 
 		loadDefaultCity()
-	// eslint-disable-next-line react-hooks/exhaustive-deps
-}, [visible])
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [visible])
 
 	// Загрузка популярных городов при открытии селектора (по аналогии с custom - через DaData)
 	const handleCitySelectFocus = async () => {
@@ -654,6 +655,7 @@ useEffect(() => {
 		const cityLat = dadataCity.data?.geo_lat ? parseFloat(dadataCity.data.geo_lat) : null
 		const cityLon = dadataCity.data?.geo_lon ? parseFloat(dadataCity.data.geo_lon) : null
 		const postalCode = dadataCity.data?.postal_code || ''
+		const isDefaultCity = cityName.toLowerCase().includes('санкт') || cityName.toLowerCase().includes('петербург')
 		
 		// Ищем cityCode через CDEK API по postal_code (как в custom) или по названию города
 		try {
@@ -668,7 +670,7 @@ useEffect(() => {
 				updateForm(
 					(prev) => ({
 						city: cityName,
-						cityCode: cdekCity.cityCode ?? null,
+						cityCode: cdekCity.cityCode ?? (isDefaultCity ? DEFAULT_CITY_CODE : null),
 						cityUuid: cdekCity.cityUuid || null,
 						pickupPoint: '',
 						deliveryPointData: null,
@@ -692,12 +694,12 @@ useEffect(() => {
 					}
 				}
 			} else {
-				// Если не нашли в CDEK, используем только название города
+				// Если не нашли в CDEK, для дефолтного города используем DEFAULT_CITY_CODE
 				updateForm(
 					(prev) => ({
 						city: cityName,
-						cityCode: null,
-						cityUuid: null,
+						cityCode: isDefaultCity ? DEFAULT_CITY_CODE : null,
+						cityUuid: isDefaultCity ? DEFAULT_CITY_UUID : null,
 						pickupPoint: '',
 						deliveryPointData: null,
 						street: '',
@@ -722,12 +724,12 @@ useEffect(() => {
 			}
 		} catch (error) {
 			console.error('Failed to find cityCode for city:', cityName, error)
-			// В случае ошибки используем только название города
+			// В случае ошибки для дефолтного города используем DEFAULT_CITY_CODE
 			updateForm(
 				(prev) => ({
 					city: cityName,
-					cityCode: null,
-					cityUuid: null,
+					cityCode: isDefaultCity ? DEFAULT_CITY_CODE : null,
+					cityUuid: isDefaultCity ? DEFAULT_CITY_UUID : null,
 					pickupPoint: '',
 					deliveryPointData: null,
 					street: '',
@@ -1605,12 +1607,15 @@ useEffect(() => {
 									deliveryStyles.select,
 										errors.city ? deliveryStyles.inputError : ''
 									].join(' ')}
-								value={form.city || DEFAULT_CITY_NAME}
+								value={citySuggestions.length > 0 && form.city 
+									? citySuggestions.find(c => 
+										(c.data?.city || c.data?.settlement || c.value) === form.city
+									)?.value || form.city || DEFAULT_CITY_NAME
+									: form.city || DEFAULT_CITY_NAME
+								}
 								onChange={async (event) => {
-									const cityName = event.target.value
-									const city = citySuggestions.find((c) => 
-										(c.data?.city || c.data?.settlement || c.value) === cityName
-									)
+									const selectedValue = event.target.value
+									const city = citySuggestions.find((c) => c.value === selectedValue)
 									if (city) {
 										await handleCitySelectFromDadata(city)
 									}
@@ -1625,7 +1630,7 @@ useEffect(() => {
 										const cityName = city.data?.city || city.data?.settlement || city.value || ''
 										const region = city.data?.region_with_type || city.data?.region || ''
 										return (
-											<option key={index} value={cityName}>
+											<option key={index} value={city.value}>
 												{cityName} {region ? `(${region})` : ''}
 											</option>
 										)
