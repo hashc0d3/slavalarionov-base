@@ -410,7 +410,6 @@ export class DeliveryService {
     const token = await this.getCdekToken();
 
     const payload = {
-      currency: 'RUB',
       from_location: { code: 137 },
       to_location: { code: cityCode },
       packages: [
