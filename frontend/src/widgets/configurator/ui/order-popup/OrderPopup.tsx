@@ -16,9 +16,12 @@ import {
 	type DadataSuggestion
 } from '@/shared/api/delivery.api'
 import deliveryStyles from './OrderPopupDelivery.module.css'
+import type { CDEKWidgetInstance, CDEKWidgetPoint } from '@/types/cdek-widget'
 
 declare global {
-	interface Window {}
+	interface Window {
+		CDEKWidget?: new (options: any) => CDEKWidgetInstance
+	}
 }
 
 const DEFAULT_CITY_NAME = 'Санкт-Петербург'
@@ -160,6 +163,11 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 	const [isBuildingLoading, setIsBuildingLoading] = useState(false)
 	const defaultCityAppliedRef = useRef(false)
 	const isSettingDefaultCityRef = useRef(false)
+	const mapInstanceRef = useRef<CDEKWidgetInstance | null>(null)
+	const mapContainerRef = useRef<HTMLDivElement>(null)
+	const [mapReady, setMapReady] = useState(false)
+	// Используем YANDEX_API_KEY из .env.local (для CDEK Widget используется Yandex Maps)
+	const cdekWidgetApiKey = process.env.NEXT_PUBLIC_YANDEX_API_KEY || process.env.NEXT_PUBLIC_CDEK_WIDGET_API_KEY || '6f29a26c-6dd5-42b8-a755-83a4d6d75b6c'
 
 	const updateForm = (
 		updater: Partial<FormState> | ((prev: FormState) => Partial<FormState>),
@@ -606,6 +614,123 @@ useEffect(() => {
 			['pickupPoint']
 		)
 	}
+
+	// Загрузка скрипта CDEK Widget
+	useEffect(() => {
+		if (!visible || !currentDeliveryOption.requiresPvz) return
+
+		if (window.CDEKWidget) {
+			setMapReady(true)
+			return
+		}
+
+		const script = document.createElement('script')
+		script.src = 'https://widget.cdek.ru/widget/scripts/widget.js'
+		script.async = true
+		script.onload = () => {
+			setMapReady(true)
+		}
+		script.onerror = () => {
+			console.error('Failed to load CDEK Widget script')
+		}
+		document.body.appendChild(script)
+
+		return () => {
+			if (script.parentNode) {
+				script.parentNode.removeChild(script)
+			}
+		}
+	}, [visible, currentDeliveryOption.requiresPvz])
+
+	// Инициализация карты
+	useEffect(() => {
+		if (!visible || !mapReady || !window.CDEKWidget || !form.city || !currentDeliveryOption.requiresPvz) {
+			return
+		}
+
+		if (!mapContainerRef.current) return
+
+		// Уничтожаем предыдущий экземпляр карты
+		if (mapInstanceRef.current && typeof mapInstanceRef.current.destroy === 'function') {
+			mapInstanceRef.current.destroy()
+		}
+
+		try {
+			const widgetInstance = new window.CDEKWidget({
+				from: form.city || DEFAULT_CITY_NAME,
+				root: 'cdek-delivery-map',
+				apiKey: cdekWidgetApiKey,
+				postal_code: 190000,
+				servicePath: '/api/delivery/cdek',
+				defaultLocation: form.city || DEFAULT_CITY_NAME,
+				tariffs: {
+					office: [137]
+				},
+				hideDeliveryOptions: {
+					office: false,
+					door: true
+				},
+				hideFilters: {
+					type: true
+				},
+				onChoose: (_mode: any, _tarif: any, address: CDEKWidgetPoint) => {
+					if (address && address.code) {
+						// Находим пункт выдачи по коду
+						const pvz = pvzList.find((p) => p.code === address.code)
+						if (pvz) {
+							handlePvzSelect(pvz)
+						} else {
+							// Если пункт не найден в списке, создаем объект из данных виджета
+							const widgetPvz: CdekPvz = {
+								code: address.code || '',
+								name: address.name || '',
+								address: address.address || '',
+								workTime: address.work_time || '',
+								city: address.city || form.city,
+								cityCode: form.cityCode || DEFAULT_CITY_CODE,
+								coordX: address.coordX,
+								coordY: address.coordY
+							}
+							updateForm(
+								() => ({
+									pickupPoint: `${widgetPvz.name}, ${widgetPvz.address}`,
+									deliveryPointData: widgetPvz
+								}),
+								['pickupPoint']
+							)
+						}
+					}
+				},
+				onReady: () => {
+					console.log('CDEK Widget ready')
+				}
+			})
+
+			mapInstanceRef.current = widgetInstance
+		} catch (error) {
+			console.error('Failed to initialize CDEK Widget:', error)
+		}
+
+		return () => {
+			if (mapInstanceRef.current && typeof mapInstanceRef.current.destroy === 'function') {
+				mapInstanceRef.current.destroy()
+				mapInstanceRef.current = null
+			}
+		}
+	}, [visible, mapReady, form.city, form.cityCode, currentDeliveryOption.requiresPvz, cdekWidgetApiKey, pvzList])
+
+	// Обновление локации карты при изменении города
+	useEffect(() => {
+		if (mapInstanceRef.current && form.cityCode && form.city) {
+			// Находим координаты города из списка городов или используем координаты первого ПВЗ
+			const cityCoords = citySuggestions.find((c) => c.cityCode === form.cityCode)
+			if (cityCoords && cityCoords.latitude && cityCoords.longitude) {
+				mapInstanceRef.current.updateLocation([cityCoords.longitude, cityCoords.latitude])
+			} else if (pvzList.length > 0 && pvzList[0].coordX && pvzList[0].coordY) {
+				mapInstanceRef.current.updateLocation([pvzList[0].coordX, pvzList[0].coordY])
+			}
+		}
+	}, [form.cityCode, form.city, citySuggestions, pvzList])
 
 	const handleStreetSelect = (suggestion: DadataSuggestion) => {
 		const streetName = suggestion.value || suggestion.unrestricted_value || ''
@@ -1211,47 +1336,52 @@ useEffect(() => {
 											<span className={deliveryStyles.loader}>Загрузка пунктов...</span>
 										)}
 									</div>
-									{pvzList.length > 0 ? (
+									{form.cityCode && form.city ? (
 										<>
-											<input
-												className={deliveryStyles.input}
-												placeholder="Поиск по адресу или коду"
-												value={pvzQuery}
-												onChange={(event) => setPvzQuery(event.target.value)}
-												disabled={isLoading}
+											{!mapReady && (
+												<p className={deliveryStyles.helper}>Загрузка карты...</p>
+											)}
+											<div
+												id="cdek-delivery-map"
+												ref={mapContainerRef}
+												className={deliveryStyles.deliveryMap}
+												style={{
+													display: mapReady ? 'block' : 'none',
+													width: '100%',
+													height: '500px',
+													marginTop: '20px',
+													background: '#f0f0f0'
+												}}
 											/>
-											<div className={deliveryStyles.pvzList}>
-												{filteredPvzList.map((pvz) => {
-													const isActive = form.deliveryPointData?.code === pvz.code
-													return (
-														<button
-															type="button"
-															key={pvz.code}
-															className={[
-																deliveryStyles.pvzItem,
-																isActive ? deliveryStyles.pvzItemActive : ''
-															].join(' ')}
-															onClick={() => handlePvzSelect(pvz)}
-															disabled={isLoading}
-														>
-															<span className={deliveryStyles.pvzTitle}>{pvz.name}</span>
-															<span className={deliveryStyles.pvzAddress}>{pvz.address}</span>
-															<div className={deliveryStyles.pvzMeta}>
-																{pvz.workTime && <span>Время работы: {pvz.workTime}</span>}
-																{pvz.phone && <span>Телефон: {pvz.phone}</span>}
-																{pvz.code && <span>Код: {pvz.code}</span>}
-															</div>
-														</button>
-													)
-												})}
-											</div>
+											{form.deliveryPointData && (
+												<div className={deliveryStyles.selectedPoint}>
+													<p className={deliveryStyles.selectedPointTitle}>Выбранный пункт:</p>
+													<p className={deliveryStyles.selectedPointName}>
+														{form.deliveryPointData.name}
+													</p>
+													<p className={deliveryStyles.selectedPointAddress}>
+														{form.deliveryPointData.address}
+													</p>
+													{form.deliveryPointData.workTime && (
+														<p className={deliveryStyles.selectedPointWorktime}>
+															Время работы: {form.deliveryPointData.workTime}
+														</p>
+													)}
+													{form.deliveryPointData.phone && (
+														<p className={deliveryStyles.selectedPointPhone}>
+															Телефон: {form.deliveryPointData.phone}
+														</p>
+													)}
+													{form.deliveryPointData.code && (
+														<p className={deliveryStyles.selectedPointCode}>
+															Код: {form.deliveryPointData.code}
+														</p>
+													)}
+												</div>
+											)}
 										</>
 									) : (
-										<p className={deliveryStyles.helper}>
-											{form.cityCode
-												? 'Пункты выдачи не найдены. Попробуйте другой город.'
-												: 'Сначала выберите город.'}
-										</p>
+										<p className={deliveryStyles.helper}>Сначала выберите город.</p>
 									)}
 									{errors.pickupPoint && (
 										<p className={deliveryStyles.errorText}>{errors.pickupPoint}</p>

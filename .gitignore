@@ -25,3 +25,4 @@ authorized_keys*
 **/.cursor/
 
 custom/
+backend/custom/
