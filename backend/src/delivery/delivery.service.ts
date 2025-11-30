@@ -133,9 +133,13 @@ export class DeliveryService {
         }),
       );
 
-      // Логируем успешный ответ
-      this.logger.log('CDEK OAuth token response', {
+      // Логируем успешный ответ (полный для поддержки CDEK)
+      this.logger.log('CDEK OAuth token response - FULL', {
+        url: 'https://api.cdek.ru/v2/oauth/token',
         status: response.status,
+        statusText: response.statusText,
+        headers: response.headers,
+        response_body_full: JSON.stringify(response.data),
         has_token: !!response.data?.access_token,
         token_length: response.data?.access_token?.length || 0,
         expires_in: response.data?.expires_in,
@@ -157,17 +161,40 @@ export class DeliveryService {
       const statusCode = error?.response?.status || 'N/A';
       const errorDetails = error?.response?.data || {};
       
+      // Полное логирование ошибки для поддержки CDEK
+      const requestBody = new URLSearchParams({
+        grant_type: 'client_credentials',
+        client_id: this.cdekClientId,
+        client_secret: this.cdekClientSecret,
+      }).toString();
+      
       this.logger.error(
         `Failed to obtain CDEK access token. Status: ${statusCode}, Error: ${errorMessage}`,
         {
-          statusCode,
+          // Запрос
+          request_url: 'https://api.cdek.ru/v2/oauth/token',
+          request_method: 'POST',
+          request_headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            Accept: 'application/json',
+          },
+          request_body_full: requestBody,
+          request_body_masked: requestBody.replace(/client_secret=[^&]*/, 'client_secret=***HIDDEN***'),
+          
+          // Ответ
+          response_status: statusCode,
+          response_statusText: error?.response?.statusText,
+          response_headers: error?.response?.headers,
+          response_body_full: JSON.stringify(error?.response?.data || {}),
+          
+          // Детали
           errorMessage,
           errorDetails,
           hasClientId: !!this.cdekClientId,
           clientIdLength: this.cdekClientId?.length || 0,
+          clientIdActual: this.cdekClientId,
           hasClientSecret: !!this.cdekClientSecret,
           clientSecretLength: this.cdekClientSecret?.length || 0,
-          url: 'https://api.cdek.ru/v2/oauth/token',
           stack: error?.stack,
         }
       );
@@ -189,21 +216,25 @@ export class DeliveryService {
     }
 
     const token = await this.getCdekToken();
+    
+    const requestParams = {
+      city: query.trim(),
+      country_codes: 'RU',
+      size: 10,
+    };
 
     try {
-      const requestParams = {
-        city: query.trim(),
-        country_codes: 'RU',
-        size: 10,
-      };
 
-      // Логируем запрос
-      this.logger.log('CDEK API request: searchCdekCities', {
+      // Логируем запрос (полный для поддержки CDEK)
+      this.logger.log('CDEK API request: searchCdekCities - FULL', {
         url: 'https://api.cdek.ru/v2/location/cities',
         method: 'GET',
-        params: requestParams,
+        request_headers: {
+          Authorization: `Bearer ${token ? token.substring(0, 20) + '...' : 'no token'}`,
+          Accept: 'application/json',
+        },
+        request_params_full: JSON.stringify(requestParams),
         has_token: !!token,
-        token_preview: token ? `${token.substring(0, 20)}...` : 'no token',
       });
 
       const response = await firstValueFrom(
@@ -216,12 +247,14 @@ export class DeliveryService {
         }),
       );
 
-      // Логируем ответ
-      this.logger.log('CDEK API response: searchCdekCities', {
+      // Логируем ответ (полный для поддержки CDEK)
+      this.logger.log('CDEK API response: searchCdekCities - FULL', {
+        url: 'https://api.cdek.ru/v2/location/cities',
         status: response.status,
         statusText: response.statusText,
+        headers: response.headers,
+        response_body_full: JSON.stringify(response.data),
         entities_count: response.data?.entity?.length || 0,
-        data_preview: response.data ? JSON.stringify(response.data).substring(0, 200) : 'no data',
       });
 
       const entities: any[] = response.data?.entity || [];
@@ -245,12 +278,27 @@ export class DeliveryService {
         : error?.message || 'Unknown error';
       const statusCode = error?.response?.status || 'N/A';
       
+      // Полное логирование ошибки для поддержки CDEK
       this.logger.error(`Failed to fetch CDEK cities: query="${query}"`, {
+        // Запрос
+        request_url: 'https://api.cdek.ru/v2/location/cities',
+        request_method: 'GET',
+        request_headers: {
+          Authorization: `Bearer ${token ? token.substring(0, 20) + '...' : 'no token'}`,
+          Accept: 'application/json',
+        },
+        request_params_full: JSON.stringify(requestParams),
+        
+        // Ответ
+        response_status: statusCode,
+        response_statusText: error?.response?.statusText,
+        response_headers: error?.response?.headers,
+        response_body_full: JSON.stringify(error?.response?.data || {}),
+        
+        // Детали
         query,
-        statusCode,
         errorMessage,
         errorDetails: error?.response?.data,
-        url: 'https://api.cdek.ru/v2/location/cities',
         hasToken: !!token,
         stack: error?.stack,
       });
@@ -263,20 +311,24 @@ export class DeliveryService {
       return [];
     }
     const token = await this.getCdekToken();
+    
+    const requestParams = {
+      city_code: cityCode,
+      type: 'ALL',
+    };
 
     try {
-      const requestParams = {
-        city_code: cityCode,
-        type: 'ALL',
-      };
 
-      // Логируем запрос
-      this.logger.log('CDEK API request: getCdekPvzList', {
+      // Логируем запрос (полный для поддержки CDEK)
+      this.logger.log('CDEK API request: getCdekPvzList - FULL', {
         url: 'https://api.cdek.ru/v2/deliverypoints',
         method: 'GET',
-        params: requestParams,
+        request_headers: {
+          Authorization: `Bearer ${token ? token.substring(0, 20) + '...' : 'no token'}`,
+          Accept: 'application/json',
+        },
+        request_params_full: JSON.stringify(requestParams),
         has_token: !!token,
-        token_preview: token ? `${token.substring(0, 20)}...` : 'no token',
       });
 
       const response = await firstValueFrom(
@@ -289,12 +341,14 @@ export class DeliveryService {
         }),
       );
 
-      // Логируем ответ
-      this.logger.log('CDEK API response: getCdekPvzList', {
+      // Логируем ответ (полный для поддержки CDEK)
+      this.logger.log('CDEK API response: getCdekPvzList - FULL', {
+        url: 'https://api.cdek.ru/v2/deliverypoints',
         status: response.status,
         statusText: response.statusText,
+        headers: response.headers,
+        response_body_full: JSON.stringify(response.data),
         points_count: Array.isArray(response.data) ? response.data.length : 0,
-        data_preview: response.data ? JSON.stringify(response.data).substring(0, 200) : 'no data',
       });
 
       const entities: any[] = response.data || [];
@@ -320,12 +374,27 @@ export class DeliveryService {
         : error?.message || 'Unknown error';
       const statusCode = error?.response?.status || 'N/A';
       
+      // Полное логирование ошибки для поддержки CDEK
       this.logger.error(`Failed to fetch CDEK delivery points: cityCode=${cityCode}`, {
+        // Запрос
+        request_url: 'https://api.cdek.ru/v2/deliverypoints',
+        request_method: 'GET',
+        request_headers: {
+          Authorization: `Bearer ${token ? token.substring(0, 20) + '...' : 'no token'}`,
+          Accept: 'application/json',
+        },
+        request_params_full: JSON.stringify(requestParams),
+        
+        // Ответ
+        response_status: statusCode,
+        response_statusText: error?.response?.statusText,
+        response_headers: error?.response?.headers,
+        response_body_full: JSON.stringify(error?.response?.data || {}),
+        
+        // Детали
         cityCode,
-        statusCode,
         errorMessage,
         errorDetails: error?.response?.data,
-        url: 'https://api.cdek.ru/v2/deliverypoints',
         hasToken: !!token,
         stack: error?.stack,
       });
@@ -356,13 +425,17 @@ export class DeliveryService {
     };
 
     try {
-      // Логируем запрос
-      this.logger.log('CDEK API request: calculateCdekTariffs', {
+      // Логируем запрос (полный для поддержки CDEK)
+      this.logger.log('CDEK API request: calculateCdekTariffs - FULL', {
         url: 'https://api.cdek.ru/v2/calculator/tarifflist',
         method: 'POST',
-        payload: payload,
+        request_headers: {
+          Authorization: `Bearer ${token ? token.substring(0, 20) + '...' : 'no token'}`,
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        request_body_full: JSON.stringify(payload),
         has_token: !!token,
-        token_preview: token ? `${token.substring(0, 20)}...` : 'no token',
       });
 
       const response = await firstValueFrom(
@@ -375,11 +448,13 @@ export class DeliveryService {
         }),
       );
 
-      // Логируем ответ
-      this.logger.log('CDEK API response: calculateCdekTariffs', {
+      // Логируем ответ (полный для поддержки CDEK)
+      this.logger.log('CDEK API response: calculateCdekTariffs - FULL', {
+        url: 'https://api.cdek.ru/v2/calculator/tarifflist',
         status: response.status,
         statusText: response.statusText,
-        data_preview: response.data ? JSON.stringify(response.data).substring(0, 300) : 'no data',
+        headers: response.headers,
+        response_body_full: JSON.stringify(response.data),
       });
 
       const results: any[] = response.data?.tariff_codes || response.data?.result || [];
@@ -397,14 +472,29 @@ export class DeliveryService {
         : error?.message || 'Unknown error';
       const statusCode = error?.response?.status || 'N/A';
       
+      // Полное логирование ошибки для поддержки CDEK
       this.logger.error(`Failed to calculate CDEK tariffs: cityCode=${cityCode}`, {
+        // Запрос
+        request_url: 'https://api.cdek.ru/v2/calculator/tarifflist',
+        request_method: 'POST',
+        request_headers: {
+          Authorization: `Bearer ${token ? token.substring(0, 20) + '...' : 'no token'}`,
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+        },
+        request_body_full: JSON.stringify(payload),
+        
+        // Ответ
+        response_status: statusCode,
+        response_statusText: error?.response?.statusText,
+        response_headers: error?.response?.headers,
+        response_body_full: JSON.stringify(error?.response?.data || {}),
+        
+        // Детали
         cityCode,
-        statusCode,
         errorMessage,
         errorDetails: error?.response?.data,
-        url: 'https://api.cdek.ru/v2/calculator/tarifflist',
         hasToken: !!token,
-        payload: JSON.stringify(payload),
         stack: error?.stack,
       });
       throw new InternalServerErrorException('Не удалось рассчитать стоимость доставки CDEK');
