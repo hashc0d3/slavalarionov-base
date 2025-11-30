@@ -629,5 +629,40 @@ export class DeliveryService {
       throw new InternalServerErrorException('Не удалось получить подсказки домов');
     }
   }
+
+  async searchCities(query: string): Promise<any[]> {
+    if (!query || !query.trim()) {
+      return [];
+    }
+
+    this.ensureDadataCredentials();
+
+    try {
+      const response = await firstValueFrom(
+        this.http.post(
+          'https://suggestions.dadata.ru/suggestions/api/4_1/rs/suggest/address',
+          {
+            query: query.trim().toLowerCase(),
+            count: 10,
+            from_bound: { value: 'city' },
+            to_bound: { value: 'city' },
+            restrict_value: true,
+          },
+          {
+            headers: {
+              Authorization: `Token ${this.dadataToken}`,
+              'X-Secret': this.dadataSecret,
+              'Content-Type': 'application/json',
+            },
+          },
+        ),
+      );
+
+      return response.data?.suggestions || [];
+    } catch (error) {
+      this.logger.error('Failed to fetch DaData city suggestions', error);
+      throw new InternalServerErrorException('Не удалось получить подсказки городов');
+    }
+  }
 }
 

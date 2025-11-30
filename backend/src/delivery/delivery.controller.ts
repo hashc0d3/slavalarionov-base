@@ -90,6 +90,12 @@ export class DeliveryController {
     return this.deliveryService.searchBuildings(streetFiasId, query);
   }
 
+  @Post('address/cities')
+  @HttpCode(HttpStatus.OK)
+  async searchCities(@Body('query') query: string) {
+    return this.deliveryService.searchCities(query);
+  }
+
   // Endpoint для виджета CDEK (обрабатывает запросы к /api/delivery/cdek?action=...)
   // Должен быть в конце, чтобы не конфликтовать с другими маршрутами
   @All('cdek')

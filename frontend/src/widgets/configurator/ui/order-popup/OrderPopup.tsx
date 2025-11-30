@@ -143,7 +143,7 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 	const [promoLoading, setPromoLoading] = useState(false)
 	const [deliveryOptions, setDeliveryOptions] = useState<DeliveryOption[]>(initialDeliveryOptions)
 	const [cityQuery, setCityQuery] = useState('')
-	const [citySuggestions, setCitySuggestions] = useState<CdekCity[]>([])
+	const [citySuggestions, setCitySuggestions] = useState<DadataSuggestion[]>([])
 	const [isCityLoading, setIsCityLoading] = useState(false)
 	const [pvzList, setPvzList] = useState<CdekPvz[]>([])
 	const [isPvzLoading, setIsPvzLoading] = useState(false)
@@ -322,205 +322,115 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 		}
 	}, [form.remember, visible])
 
-useEffect(() => {
-	if (!visible) return
-	if (defaultCityAppliedRef.current) return
-	
-	// Если город уже установлен и это не дефолтный, просто помечаем как примененный
-	if (form.cityCode && form.city.trim() && form.city !== DEFAULT_CITY_NAME) {
-		defaultCityAppliedRef.current = true
-		return
-	}
-	
-	// Устанавливаем город по умолчанию сразу
-	setCityQuery(DEFAULT_CITY_NAME)
-	if (!form.cityCode || form.city !== DEFAULT_CITY_NAME) {
-		updateForm(
-			() => ({
-				city: DEFAULT_CITY_NAME,
-				cityCode: DEFAULT_CITY_CODE,
-				cityUuid: DEFAULT_CITY_UUID
-			}),
-			['city']
-		)
-	}
 
-	// Пытаемся получить актуальные данные из API (но не блокируем работу)
-	let cancelled = false
-	setIsCityLoading(true)
-	isSettingDefaultCityRef.current = true
+	// Загрузка дефолтного города при открытии модального окна (по аналогии с custom - через DaData)
+	useEffect(() => {
+		if (!visible) return
+		// Если уже есть города в списке, не загружаем повторно
+		if (citySuggestions.length > 0) return
 
-	deliveryApi
-		.searchCities(DEFAULT_CITY_NAME)
-		.then((cities) => {
-			if (cancelled || !visible) return
-			let target =
-				cities.find(
-					(city) =>
-						city.cityName?.toLowerCase().includes('санкт') ||
-						city.cityName?.toLowerCase().includes('spb'),
-				) || cities[0]
-
-			if (target) {
-				setCityQuery(target.cityName)
+		// Загружаем только дефолтный город (Санкт-Петербург) через DaData
+		const loadDefaultCity = async () => {
+			setIsCityLoading(true)
+			try {
+				const dadataCities = await deliveryApi.searchCities(DEFAULT_CITY_NAME)
+				if (dadataCities && dadataCities.length > 0) {
+					// Ищем Санкт-Петербург в результатах DaData
+					const spbCity = dadataCities.find(c => 
+						c.data?.city?.toLowerCase().includes('санкт') ||
+						c.data?.city?.toLowerCase().includes('петербург') ||
+						c.value?.toLowerCase().includes('санкт') ||
+						c.value?.toLowerCase().includes('петербург')
+					) || dadataCities[0]
+					
+					// Устанавливаем дефолтный город в список
+					setCitySuggestions([spbCity])
+					
+					// Находим cityCode через CDEK API и устанавливаем в форму
+					if (!form.cityCode || form.cityCode === DEFAULT_CITY_CODE) {
+						await handleCitySelectFromDadata(spbCity)
+					}
+				} else {
+					// Если не удалось загрузить через DaData, используем дефолтные значения
+					updateForm(
+						() => ({
+							city: DEFAULT_CITY_NAME,
+							cityCode: DEFAULT_CITY_CODE,
+							cityUuid: DEFAULT_CITY_UUID
+						}),
+						['city']
+					)
+				}
+			} catch (error: any) {
+				console.error('Failed to load default city', error)
+				// В случае ошибки используем дефолтные значения
 				updateForm(
 					() => ({
-						city: target.cityName,
-						cityCode: target.cityCode ?? DEFAULT_CITY_CODE,
-						cityUuid: target.cityUuid || DEFAULT_CITY_UUID
+						city: DEFAULT_CITY_NAME,
+						cityCode: DEFAULT_CITY_CODE,
+						cityUuid: DEFAULT_CITY_UUID
 					}),
 					['city']
 				)
-			}
-		})
-		.catch((error) => {
-			console.error('Failed to preload default city', error)
-			// Город уже установлен по умолчанию, просто игнорируем ошибку
-		})
-		.finally(() => {
-			if (!cancelled) {
-				setIsCityLoading(false)
-				isSettingDefaultCityRef.current = false
-				defaultCityAppliedRef.current = true
-			}
-		})
-
-	return () => {
-		cancelled = true
-	}
-	// eslint-disable-next-line react-hooks/exhaustive-deps
-}, [visible])
-
-	// Загрузка списка городов для селектора (по аналогии с custom - через API)
-	useEffect(() => {
-		if (!visible) return
-		if (citySuggestions.length > 0) return // Уже загружены
-
-		setIsCityLoading(true)
-		const loadCities = async () => {
-			try {
-				// Загружаем все города параллельно через Promise.allSettled
-				// Это гарантирует, что даже если некоторые запросы отменятся, другие загрузятся
-				const cityQueries = [
-					DEFAULT_CITY_NAME,
-					'Москва',
-					'Новосибирск',
-					'Екатеринбург',
-					'Казань',
-					'Нижний Новгород',
-					'Челябинск',
-					'Самара',
-					'Омск',
-					'Ростов-на-Дону'
-				]
-				
-				// Загружаем все города параллельно
-				const cityPromises = cityQueries.map(query => 
-					deliveryApi.searchCities(query).catch((error: any) => {
-						// Обрабатываем CanceledError и другие ошибки
-						if (error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED' || error?.message?.includes('canceled')) {
-							console.warn(`[Cities] Request for ${query} was canceled`)
-						} else {
-							console.error(`[Cities] Failed to load city ${query}:`, error)
-						}
-						return [] // Возвращаем пустой массив при ошибке
-					})
-				)
-				
-				const results = await Promise.allSettled(cityPromises)
-				let allCities: CdekCity[] = []
-				
-				// Обрабатываем результаты
-				results.forEach((result, index) => {
-					if (result.status === 'fulfilled' && result.value.length > 0) {
-						const query = cityQueries[index]
-						const cities = result.value
-						
-						// Для Санкт-Петербурга ищем точное совпадение
-						if (query === DEFAULT_CITY_NAME) {
-							const spbCity = cities.find(c => 
-								c.cityCode === DEFAULT_CITY_CODE ||
-								c.cityName?.toLowerCase().includes('санкт') ||
-								c.cityName?.toLowerCase().includes('петербург')
-							) || cities[0]
-							if (spbCity && !allCities.find(c => c.cityCode === spbCity.cityCode)) {
-								allCities.push(spbCity)
-							}
-						} else {
-							// Для других городов ищем по названию
-							const city = cities.find(c => 
-								c.cityName?.toLowerCase().includes(query.toLowerCase()) ||
-								query.toLowerCase().includes(c.cityName?.toLowerCase() || '')
-							) || cities[0]
-							if (city && !allCities.find(c => c.cityCode === city.cityCode)) {
-								allCities.push(city)
-							}
-						}
-					}
-				})
-				
-				// Убеждаемся, что Санкт-Петербург всегда в списке
-				const hasSpb = allCities.some(c => c.cityCode === DEFAULT_CITY_CODE)
-				if (!hasSpb) {
-					allCities.unshift({
-						cityName: DEFAULT_CITY_NAME,
-						cityCode: DEFAULT_CITY_CODE,
-						cityUuid: DEFAULT_CITY_UUID,
-						country: 'Россия',
-						countryCode: 'RU',
-						region: 'Ленинградская область'
-					} as CdekCity)
-				}
-				
-				// Если не удалось загрузить города, создаем дефолтный город
-				if (allCities.length === 0) {
-					allCities = [{
-						cityName: DEFAULT_CITY_NAME,
-						cityCode: DEFAULT_CITY_CODE,
-						cityUuid: DEFAULT_CITY_UUID,
-						country: 'Россия',
-						countryCode: 'RU',
-						region: 'Ленинградская область'
-					} as CdekCity]
-				}
-				
-				console.log('[Cities] Loaded cities:', allCities.length, allCities.map(c => c.cityName))
-				setCitySuggestions(allCities)
-				
-				// Устанавливаем Санкт-Петербург по умолчанию, если он еще не установлен
-				const spbCity = allCities.find(c => c.cityCode === DEFAULT_CITY_CODE) || allCities[0]
-				if (spbCity && (!form.cityCode || form.cityCode === DEFAULT_CITY_CODE)) {
-					handleCitySelect(spbCity)
-				}
-			} catch (error: any) {
-				// Обрабатываем CanceledError и другие ошибки
-				if (error?.name === 'CanceledError' || error?.code === 'ERR_CANCELED' || error?.message?.includes('canceled')) {
-					console.warn('[Cities] Request was canceled, using default city')
-				} else {
-					console.error('Failed to load cities', error)
-				}
-				// В случае ошибки создаем дефолтный город
-				const defaultCity: CdekCity = {
-					cityName: DEFAULT_CITY_NAME,
-					cityCode: DEFAULT_CITY_CODE,
-					cityUuid: DEFAULT_CITY_UUID,
-					country: 'Россия',
-					countryCode: 'RU',
-					region: 'Ленинградская область'
-				}
-				setCitySuggestions([defaultCity])
-				// Устанавливаем дефолтный город, если он еще не установлен
-				if (!form.cityCode || form.cityCode === DEFAULT_CITY_CODE) {
-					handleCitySelect(defaultCity)
-				}
 			} finally {
 				setIsCityLoading(false)
 			}
 		}
 
-		loadCities()
+		loadDefaultCity()
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [visible])
+
+	// Загрузка популярных городов при открытии селектора (по аналогии с custom - через DaData)
+	const handleCitySelectFocus = async () => {
+		// Если уже загружены города (кроме дефолтного), не загружаем повторно
+		if (citySuggestions.length > 1) return
+
+		setIsCityLoading(true)
+		try {
+			// Список популярных городов для загрузки
+			const popularCities = [
+				'Москва',
+				'Новосибирск',
+				'Екатеринбург',
+				'Казань',
+				'Нижний Новгород',
+				'Челябинск',
+				'Самара',
+				'Омск',
+				'Ростов-на-Дону'
+			]
+
+			// Загружаем города последовательно через DaData, чтобы избежать проблем с отменой запросов
+			const loadedCities: DadataSuggestion[] = [...citySuggestions] // Начинаем с уже загруженных
+
+			for (const cityQuery of popularCities) {
+				try {
+					const dadataCities = await deliveryApi.searchCities(cityQuery)
+					if (dadataCities && dadataCities.length > 0) {
+						const city = dadataCities.find(c => 
+							c.data?.city?.toLowerCase().includes(cityQuery.toLowerCase()) ||
+							c.value?.toLowerCase().includes(cityQuery.toLowerCase())
+						) || dadataCities[0]
+						
+						// Добавляем город, если его еще нет в списке (проверяем по value)
+						if (city && !loadedCities.find(c => c.value === city.value)) {
+							loadedCities.push(city)
+						}
+					}
+				} catch (error: any) {
+					// Игнорируем ошибки для отдельных городов
+					console.warn(`Failed to load city ${cityQuery}:`, error)
+				}
+			}
+
+			setCitySuggestions(loadedCities)
+		} catch (error: any) {
+			console.error('Failed to load popular cities', error)
+		} finally {
+			setIsCityLoading(false)
+		}
+	}
 
 	useEffect(() => {
 		if (!visible) return
@@ -738,6 +648,83 @@ useEffect(() => {
 		setBuildingSuggestions([])
 	}
 
+	// Обработчик выбора города из DaData (по аналогии с custom)
+	const handleCitySelectFromDadata = async (dadataCity: DadataSuggestion) => {
+		const cityName = dadataCity.data?.city || dadataCity.data?.settlement || dadataCity.value || ''
+		
+		// Ищем cityCode через CDEK API по названию города
+		try {
+			const cdekCities = await deliveryApi.searchCdekCities(cityName)
+			if (cdekCities && cdekCities.length > 0) {
+				// Ищем город в результатах CDEK
+				const cdekCity = cdekCities.find(c => 
+					c.cityName?.toLowerCase().includes(cityName.toLowerCase()) ||
+					cityName.toLowerCase().includes(c.cityName?.toLowerCase() || '')
+				) || cdekCities[0]
+				
+				updateForm(
+					(prev) => ({
+						city: cityName,
+						cityCode: cdekCity.cityCode ?? null,
+						cityUuid: cdekCity.cityUuid || null,
+						pickupPoint: '',
+						deliveryPointData: null,
+						street: '',
+						streetFiasId: null,
+						building: '',
+						courierAddress: '',
+						mailAddress: '',
+						deliveryValue: initialDeliveryOptions[0].value
+					}),
+					['city', 'pickupPoint', 'street', 'building', 'courierAddress', 'mailAddress']
+				)
+			} else {
+				// Если не нашли в CDEK, используем только название города
+				updateForm(
+					(prev) => ({
+						city: cityName,
+						cityCode: null,
+						cityUuid: null,
+						pickupPoint: '',
+						deliveryPointData: null,
+						street: '',
+						streetFiasId: null,
+						building: '',
+						courierAddress: '',
+						mailAddress: '',
+						deliveryValue: initialDeliveryOptions[0].value
+					}),
+					['city', 'pickupPoint', 'street', 'building', 'courierAddress', 'mailAddress']
+				)
+			}
+		} catch (error) {
+			console.error('Failed to find cityCode for city:', cityName, error)
+			// В случае ошибки используем только название города
+			updateForm(
+				(prev) => ({
+					city: cityName,
+					cityCode: null,
+					cityUuid: null,
+					pickupPoint: '',
+					deliveryPointData: null,
+					street: '',
+					streetFiasId: null,
+					building: '',
+					courierAddress: '',
+					mailAddress: '',
+					deliveryValue: initialDeliveryOptions[0].value
+				}),
+				['city', 'pickupPoint', 'street', 'building', 'courierAddress', 'mailAddress']
+			)
+		}
+		
+		setCityQuery(cityName)
+		setStreetQuery('')
+		setStreetSuggestions([])
+		setBuildingQuery('')
+		setBuildingSuggestions([])
+	}
+
 	const handlePvzSelect = (pvz: CdekPvz) => {
 		updateForm(
 			() => ({
@@ -824,6 +811,20 @@ useEffect(() => {
 
 	// Инициализация карты
 	useEffect(() => {
+		// Если модальное окно закрыто или не требуется ПВЗ, уничтожаем виджет
+		if (!visible || !currentDeliveryOption.requiresPvz) {
+			if (mapInstanceRef.current && typeof mapInstanceRef.current.destroy === 'function') {
+				console.log('[CDEK Map] Destroying widget - modal closed or PVZ not required')
+				try {
+					mapInstanceRef.current.destroy()
+				} catch (error) {
+					console.warn('[CDEK Map] Error destroying widget:', error)
+				}
+				mapInstanceRef.current = null
+			}
+			return
+		}
+
 		console.log('[CDEK Map] Init effect triggered:', {
 			visible,
 			mapReady,
@@ -834,7 +835,7 @@ useEffect(() => {
 			hasContainer: !!mapContainerRef.current
 		})
 
-		if (!visible || !mapReady || !window.CDEKWidget || !form.city || !currentDeliveryOption.requiresPvz) {
+		if (!mapReady || !window.CDEKWidget || !form.city || !form.cityCode) {
 			console.log('[CDEK Map] Skipping map init - conditions not met')
 			return
 		}
@@ -844,10 +845,15 @@ useEffect(() => {
 			return
 		}
 
-		// Уничтожаем предыдущий экземпляр карты
+		// Уничтожаем предыдущий экземпляр карты перед созданием нового
 		if (mapInstanceRef.current && typeof mapInstanceRef.current.destroy === 'function') {
 			console.log('[CDEK Map] Destroying previous map instance')
-			mapInstanceRef.current.destroy()
+			try {
+				mapInstanceRef.current.destroy()
+			} catch (error) {
+				console.warn('[CDEK Map] Error destroying previous instance:', error)
+			}
+			mapInstanceRef.current = null
 		}
 
 		// Проверяем, что виджет действительно доступен и является функцией
@@ -874,11 +880,18 @@ useEffect(() => {
 					return
 				}
 
+				// Получаем почтовый индекс из данных города DaData (если есть) или используем дефолтный для СПб
+				// Ищем выбранный город в списке citySuggestions
+				const selectedCityData = citySuggestions.find((c) => 
+					(c.data?.city || c.data?.settlement || c.value) === form.city
+				)
+				const cityPostalCode = selectedCityData?.data?.postal_code || (form.cityCode === DEFAULT_CITY_CODE ? 190000 : undefined)
+
 				const widgetOptions = {
 					from: form.city || DEFAULT_CITY_NAME,
 					root: 'cdek-delivery-map',
 					apiKey: cdekWidgetApiKey,
-					postal_code: 190000,
+					postal_code: cityPostalCode || 190000,
 					servicePath: '/api/delivery/cdek',
 					defaultLocation: form.city || DEFAULT_CITY_NAME,
 					tariffs: {
@@ -1027,25 +1040,25 @@ useEffect(() => {
 				}
 			}
 		}
-
-		return () => {
-			if (mapInstanceRef.current && typeof mapInstanceRef.current.destroy === 'function') {
-				console.log('[CDEK Map] Cleaning up map instance')
-				mapInstanceRef.current.destroy()
-				mapInstanceRef.current = null
-			}
-		}
-	}, [visible, mapReady, form.city, form.cityCode, currentDeliveryOption.requiresPvz, cdekWidgetApiKey, pvzList])
+		// Убираем pvzList из зависимостей, чтобы избежать переинициализации при изменении списка ПВЗ
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [visible, mapReady, form.city, form.cityCode, currentDeliveryOption.requiresPvz, cdekWidgetApiKey])
 
 	// Обновление локации карты при изменении города
 	useEffect(() => {
 		if (mapInstanceRef.current && form.cityCode && form.city) {
 			console.log('[CDEK Map] Updating location:', { cityCode: form.cityCode, city: form.city })
-			// Находим координаты города из списка городов или используем координаты первого ПВЗ
-			const cityCoords = citySuggestions.find((c) => c.cityCode === form.cityCode)
-			if (cityCoords && cityCoords.latitude && cityCoords.longitude) {
-				console.log('[CDEK Map] Using city coordinates:', [cityCoords.longitude, cityCoords.latitude])
-				mapInstanceRef.current.updateLocation([cityCoords.longitude, cityCoords.latitude])
+			// Находим координаты города из списка городов DaData или используем координаты первого ПВЗ
+			const cityCoords = citySuggestions.find((c) => 
+				(c.data?.city || c.data?.settlement || c.value) === form.city
+			)
+			if (cityCoords && cityCoords.data?.geo_lat && cityCoords.data?.geo_lon) {
+				const lat = parseFloat(cityCoords.data.geo_lat)
+				const lon = parseFloat(cityCoords.data.geo_lon)
+				if (!isNaN(lat) && !isNaN(lon)) {
+					console.log('[CDEK Map] Using city coordinates:', [lon, lat])
+					mapInstanceRef.current.updateLocation([lon, lat])
+				}
 			} else if (pvzList.length > 0 && pvzList[0].coordX && pvzList[0].coordY) {
 				console.log('[CDEK Map] Using PVZ coordinates:', [pvzList[0].coordX, pvzList[0].coordY])
 				mapInstanceRef.current.updateLocation([pvzList[0].coordX, pvzList[0].coordY])
@@ -1053,7 +1066,9 @@ useEffect(() => {
 				console.log('[CDEK Map] No coordinates available for update')
 			}
 		}
-	}, [form.cityCode, form.city, citySuggestions, pvzList])
+		// Убираем pvzList из зависимостей, чтобы избежать частых обновлений
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [visible, form.cityCode, form.city, citySuggestions, currentDeliveryOption.requiresPvz])
 
 	const handleStreetSelect = (suggestion: DadataSuggestion) => {
 		const streetName = suggestion.value || suggestion.unrestricted_value || ''
@@ -1526,24 +1541,31 @@ useEffect(() => {
 									deliveryStyles.select,
 									errors.city ? deliveryStyles.inputError : ''
 								].join(' ')}
-								value={form.cityCode || DEFAULT_CITY_CODE}
-								onChange={(event) => {
-									const cityCode = Number(event.target.value)
-									const city = citySuggestions.find((c) => c.cityCode === cityCode)
+								value={form.city || DEFAULT_CITY_NAME}
+								onChange={async (event) => {
+									const cityName = event.target.value
+									const city = citySuggestions.find((c) => 
+										(c.data?.city || c.data?.settlement || c.value) === cityName
+									)
 									if (city) {
-										handleCitySelect(city)
+										await handleCitySelectFromDadata(city)
 									}
 								}}
+								onFocus={handleCitySelectFocus}
 								disabled={isLoading || isCityLoading}
 							>
 								{citySuggestions.length === 0 ? (
-									<option value={DEFAULT_CITY_CODE}>{DEFAULT_CITY_NAME}</option>
+									<option value={DEFAULT_CITY_NAME}>{DEFAULT_CITY_NAME}</option>
 								) : (
-									citySuggestions.map((city) => (
-										<option key={city.cityCode} value={city.cityCode}>
-											{city.cityName} {city.region ? `(${city.region})` : ''}
-										</option>
-									))
+									citySuggestions.map((city, index) => {
+										const cityName = city.data?.city || city.data?.settlement || city.value || ''
+										const region = city.data?.region_with_type || city.data?.region || ''
+										return (
+											<option key={index} value={cityName}>
+												{cityName} {region ? `(${region})` : ''}
+											</option>
+										)
+									})
 								)}
 							</select>
 							{errors.city && <p className={deliveryStyles.errorText}>{errors.city}</p>}
