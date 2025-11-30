@@ -87,7 +87,7 @@ const initialDeliveryOptions: DeliveryOption[] = [
 	{
 		value: 'city-courier-delivery',
 		label: 'Доставка курьером по Санкт-Петербургу',
-		price: undefined,
+		price: 600,
 		priceFixed: true,
 		note: 'Согласуем удобное место и время доставки и передадим заказ Яндекс.Доставкой.'
 	},
@@ -95,7 +95,7 @@ const initialDeliveryOptions: DeliveryOption[] = [
 		value: 'self-pickup',
 		label: 'Самовывоз с производства в Санкт-Петербурге',
 		price: 0,
-		note: 'По готовности заказа согласуем удобное время. Забор с производства по адресу Масляный переулок, 7.'
+		note: 'По готовности заказа согласуем удобное время. Забор с производства по адресу наб. Обводного канала, 199-201Е.'
 	}
 ] as const
 
@@ -401,6 +401,8 @@ useEffect(() => {
 			try {
 				// Сначала загружаем Санкт-Петербург (дефолтный город) через API
 				const spbCities = await deliveryApi.searchCities(DEFAULT_CITY_NAME)
+				let allCities: CdekCity[] = []
+				
 				if (spbCities.length > 0) {
 					const spbCity = spbCities.find(c => 
 						c.cityCode === DEFAULT_CITY_CODE ||
@@ -408,7 +410,9 @@ useEffect(() => {
 						c.cityName?.toLowerCase().includes('петербург')
 					) || spbCities[0]
 					
-					const allCities: CdekCity[] = [spbCity]
+					if (spbCity) {
+						allCities.push(spbCity)
+					}
 					
 					// Загружаем другие популярные города через API (как в custom)
 					const popularCityQueries = ['Москва', 'Новосибирск', 'Екатеринбург', 'Казань', 'Нижний Новгород', 'Челябинск', 'Самара', 'Омск', 'Ростов-на-Дону']
@@ -429,29 +433,45 @@ useEffect(() => {
 							console.error(`Failed to load city ${cityQuery}`, error)
 						}
 					}
-					
-					setCitySuggestions(allCities)
-					
-					// Устанавливаем Санкт-Петербург по умолчанию, если он еще не установлен
-					// Это загрузит ПВЗ для дефолтного города через handleCitySelect -> useEffect [form.cityCode]
-					if (spbCity && (!form.cityCode || form.cityCode === DEFAULT_CITY_CODE)) {
-						handleCitySelect(spbCity)
-					} else if (form.cityCode && form.cityCode === DEFAULT_CITY_CODE) {
-						// Если город уже установлен как дефолтный, но ПВЗ еще не загружены, загружаем их
-						// Это сработает через useEffect [form.cityCode], но убедимся что он сработает
-						if (pvzList.length === 0 && !isPvzLoading) {
-							// useEffect уже должен обработать это, но на всякий случай проверим
-						}
-					}
+				}
+				
+				// Если не удалось загрузить города, создаем дефолтный город
+				if (allCities.length === 0) {
+					allCities = [{
+						cityName: DEFAULT_CITY_NAME,
+						cityCode: DEFAULT_CITY_CODE,
+						cityUuid: DEFAULT_CITY_UUID,
+						country: 'Россия',
+						countryCode: 'RU',
+						region: 'Ленинградская область'
+					} as CdekCity]
+				}
+				
+				setCitySuggestions(allCities)
+				
+				// Устанавливаем Санкт-Петербург по умолчанию, если он еще не установлен
+				const spbCity = allCities.find(c => c.cityCode === DEFAULT_CITY_CODE) || allCities[0]
+				if (spbCity && (!form.cityCode || form.cityCode === DEFAULT_CITY_CODE)) {
+					handleCitySelect(spbCity)
 				}
 			} catch (error) {
 				console.error('Failed to load cities', error)
+				// В случае ошибки создаем дефолтный город
+				setCitySuggestions([{
+					cityName: DEFAULT_CITY_NAME,
+					cityCode: DEFAULT_CITY_CODE,
+					cityUuid: DEFAULT_CITY_UUID,
+					country: 'Россия',
+					countryCode: 'RU',
+					region: 'Ленинградская область'
+				} as CdekCity])
 			} finally {
 				setIsCityLoading(false)
 			}
 		}
 
 		loadCities()
+		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [visible])
 
 	useEffect(() => {
@@ -1466,13 +1486,17 @@ useEffect(() => {
 										handleCitySelect(city)
 									}
 								}}
-								disabled={isLoading || isCityLoading || citySuggestions.length === 0}
+								disabled={isLoading || isCityLoading}
 							>
-								{citySuggestions.map((city) => (
-									<option key={city.cityCode} value={city.cityCode}>
-										{city.cityName} {city.region ? `(${city.region})` : ''}
-									</option>
-								))}
+								{citySuggestions.length === 0 ? (
+									<option value={DEFAULT_CITY_CODE}>{DEFAULT_CITY_NAME}</option>
+								) : (
+									citySuggestions.map((city) => (
+										<option key={city.cityCode} value={city.cityCode}>
+											{city.cityName} {city.region ? `(${city.region})` : ''}
+										</option>
+									))
+								)}
 							</select>
 							{errors.city && <p className={deliveryStyles.errorText}>{errors.city}</p>}
 						</div>
