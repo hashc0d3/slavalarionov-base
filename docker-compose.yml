@@ -8,10 +8,11 @@ services:
       NODE_ENV: production
       PORT: 8081
       DATABASE_URL: "file:./prisma/dev.db"
+      NEXT_PUBLIC_MEDIA_BASE_URL: "https://sl.cdn1.dev"  # Добавить эту строку
     env_file:
       - backend/.env
     ports:
-      - "8081:8081"
+      - "127.0.0.1:8081:8081"
     working_dir: /app/backend
     volumes:
       - backend_db:/app/backend/prisma
