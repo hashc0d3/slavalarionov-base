@@ -648,15 +648,16 @@ useEffect(() => {
 		setBuildingSuggestions([])
 	}
 
-	// Обработчик выбора города из DaData (по аналогии с custom)
+	// Обработчик выбора города из DaData (по аналогии с custom - используем postal_code)
 	const handleCitySelectFromDadata = async (dadataCity: DadataSuggestion) => {
 		const cityName = dadataCity.data?.city || dadataCity.data?.settlement || dadataCity.value || ''
 		const cityLat = dadataCity.data?.geo_lat ? parseFloat(dadataCity.data.geo_lat) : null
 		const cityLon = dadataCity.data?.geo_lon ? parseFloat(dadataCity.data.geo_lon) : null
+		const postalCode = dadataCity.data?.postal_code || ''
 		
-		// Ищем cityCode через CDEK API по названию города
+		// Ищем cityCode через CDEK API по postal_code (как в custom) или по названию города
 		try {
-			const cdekCities = await deliveryApi.searchCdekCities(cityName)
+			const cdekCities = await deliveryApi.searchCdekCities(cityName, postalCode)
 			if (cdekCities && cdekCities.length > 0) {
 				// Ищем город в результатах CDEK
 				const cdekCity = cdekCities.find(c => 
@@ -867,8 +868,13 @@ useEffect(() => {
 			hasContainer: !!mapContainerRef.current
 		})
 
-		if (!mapReady || !window.CDEKWidget || !form.city || !form.cityCode) {
-			console.log('[CDEK Map] Skipping map init - conditions not met')
+		// Виджет CDEK работает с названием города, не требует cityCode (по аналогии с custom)
+		if (!mapReady || !window.CDEKWidget || !form.city || !form.city.trim()) {
+			console.log('[CDEK Map] Skipping map init - conditions not met', {
+				mapReady,
+				hasWidget: !!window.CDEKWidget,
+				city: form.city
+			})
 			return
 		}
 
@@ -1749,8 +1755,8 @@ useEffect(() => {
 									{errors.pickupPoint && (
 										<p className={deliveryStyles.errorText}>{errors.pickupPoint}</p>
 									)}
-									{/* Карта с пунктами выдачи */}
-									{form.cityCode && currentDeliveryOption.requiresPvz && (
+									{/* Карта с пунктами выдачи (по аналогии с custom - отображается когда город выбран и карта готова) */}
+									{form.city && currentDeliveryOption.requiresPvz && mapReady && (
 										<div
 											id="cdek-delivery-map"
 											ref={mapContainerRef}

@@ -99,16 +99,16 @@ export const deliveryApi = {
 		}
 	},
 
-	async searchCdekCities(query: string, signal?: AbortSignal): Promise<CdekCity[]> {
+	async searchCdekCities(query: string, postalCode?: string, signal?: AbortSignal): Promise<CdekCity[]> {
 		if (!query?.trim()) return []
 		try {
-		const response = await fetch(`${BASE_URL}/cdek/cities`, {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ query }),
+			const response = await fetch(`${BASE_URL}/cdek/cities`, {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ query, postalCode }),
 				signal
-		})
-		return handleResponse<CdekCity[]>(response)
+			})
+			return handleResponse<CdekCity[]>(response)
 		} catch (error: any) {
 			// Обрабатываем CanceledError и AbortError
 			if (

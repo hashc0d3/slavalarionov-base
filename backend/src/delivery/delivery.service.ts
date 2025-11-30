@@ -210,18 +210,24 @@ export class DeliveryService {
     }
   }
 
-  async searchCdekCities(query: string): Promise<CdekCity[]> {
+  async searchCdekCities(query: string, postalCode?: string): Promise<CdekCity[]> {
     if (!query || !query.trim()) {
       return [];
     }
 
     const token = await this.getCdekToken();
     
-    const requestParams = {
-      city: query.trim(),
+    // Если передан postal_code, используем его для поиска (по аналогии с custom)
+    const requestParams: any = {
       country_codes: 'RU',
       size: 10,
     };
+
+    if (postalCode) {
+      requestParams.postal_code = postalCode;
+    } else {
+      requestParams.city = query.trim();
+    }
 
     try {
 

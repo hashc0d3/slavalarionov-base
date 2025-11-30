@@ -10,14 +10,14 @@ export class DeliveryController {
 
   @Post('cdek/cities')
   @HttpCode(HttpStatus.OK)
-  async getCdekCities(@Body('query') query: string) {
-    this.logger.log(`[CDEK Cities] Request received: query="${query}"`);
+  async getCdekCities(@Body('query') query: string, @Body('postalCode') postalCode?: string) {
+    this.logger.log(`[CDEK Cities] Request received: query="${query}", postalCode="${postalCode || 'not provided'}"`);
     try {
-      const result = await this.deliveryService.searchCdekCities(query);
+      const result = await this.deliveryService.searchCdekCities(query, postalCode);
       this.logger.log(`[CDEK Cities] Success: found ${result.length} cities`);
       return result;
     } catch (error: any) {
-      this.logger.error(`[CDEK Cities] Failed: query="${query}"`, {
+      this.logger.error(`[CDEK Cities] Failed: query="${query}", postalCode="${postalCode || 'not provided'}"`, {
         error: error?.message,
         stack: error?.stack,
         status: error?.status,
