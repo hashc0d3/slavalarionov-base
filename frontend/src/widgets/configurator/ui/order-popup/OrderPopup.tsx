@@ -500,15 +500,22 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 
 	// Загрузка ПВЗ и тарифов при изменении города (включая дефолтный)
 	useEffect(() => {
+		console.log('[PVZ Load] useEffect triggered:', { cityCode: form.cityCode, visible, city: form.city })
+		
 		if (!form.cityCode) {
+			console.log('[PVZ Load] No cityCode, clearing PVZ list')
 			setPvzList([])
 			setTariffs([])
 			return
 		}
 
 		// Загружаем ПВЗ только если модальное окно видимо
-		if (!visible) return
+		if (!visible) {
+			console.log('[PVZ Load] Modal not visible, skipping')
+			return
+		}
 
+		console.log('[PVZ Load] Loading PVZ for cityCode:', form.cityCode)
 		setIsPvzLoading(true)
 		setForm((prev) => ({ ...prev, deliveryPointData: null, pickupPoint: '' }))
 		setErrors((prev) => {
@@ -518,30 +525,52 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 			return next
 		})
 
+		const currentCityCode = form.cityCode // Сохраняем текущий cityCode для проверки
+
 		deliveryApi
 			.getPvzList(form.cityCode)
 			.then((points) => {
-				setPvzList(points)
+				// Проверяем, что cityCode не изменился во время загрузки
+				if (currentCityCode === form.cityCode) {
+					console.log('[PVZ Load] PVZ loaded successfully:', points.length, 'points')
+					setPvzList(points)
+				} else {
+					console.log('[PVZ Load] CityCode changed during load, ignoring results')
+				}
 			})
 			.catch((error) => {
-				console.error('Failed to load CDEK PVZ list', error)
-				setPvzList([])
+				console.error('[PVZ Load] Failed to load CDEK PVZ list', error)
+				if (currentCityCode === form.cityCode) {
+					setPvzList([])
+				}
 			})
-			.finally(() => setIsPvzLoading(false))
+			.finally(() => {
+				if (currentCityCode === form.cityCode) {
+					setIsPvzLoading(false)
+				}
+			})
 
 		setIsTariffsLoading(true)
 		deliveryApi
 			.calculateTariffs(form.cityCode)
 			.then((items) => {
-				setTariffs(items)
+				if (currentCityCode === form.cityCode) {
+					console.log('[PVZ Load] Tariffs loaded successfully:', items.length, 'tariffs')
+					setTariffs(items)
+				}
 			})
 			.catch((error) => {
-				console.error('Failed to calculate CDEK tariffs', error)
-				setTariffs([])
+				console.error('[PVZ Load] Failed to calculate CDEK tariffs', error)
+				if (currentCityCode === form.cityCode) {
+					setTariffs([])
+				}
 			})
-			.finally(() => setIsTariffsLoading(false))
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [form.cityCode, visible])
+			.finally(() => {
+				if (currentCityCode === form.cityCode) {
+					setIsTariffsLoading(false)
+				}
+			})
+	}, [form.cityCode, visible, form.city])
 
 	useEffect(() => {
 		if (!tariffs.length) {
@@ -727,16 +756,16 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 					
 					// Обновляем cityCode, если найден
 					if (cdekCity.cityCode) {
-						updateForm(
-							(prev) => ({
-								...prev,
-								cityCode: cdekCity.cityCode,
-								cityUuid: cdekCity.cityUuid || null
-							}),
-							[]
-						)
+						console.log('[City Select] Found cityCode via CDEK API:', cdekCity.cityCode, 'for city:', cityName)
+						// Используем setForm напрямую, чтобы изменение применилось сразу
+						setForm((prev) => ({
+							...prev,
+							cityCode: cdekCity.cityCode,
+							cityUuid: cdekCity.cityUuid || null
+						}))
 					} else if (!isDefaultCity) {
 						// Если не найден cityCode для не-дефолтного города, оставляем null
+						console.warn('[City Select] CityCode not found for city:', cityName)
 						// ПВЗ не загрузятся, но это нормально - пользователь увидит сообщение
 					}
 
@@ -1629,43 +1658,46 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 						<div className={deliveryStyles.field}>
 							<div className={deliveryStyles.labelRow}>
 								<span>Город*</span>
-								{isCityLoading && <span className={deliveryStyles.loader}>Загрузка...</span>}
 							</div>
-							<select
+							{isCityLoading && citySuggestions.length === 0 ? (
+								<div className={`${deliveryStyles.skeleton} ${deliveryStyles.skeletonSelect}`} />
+							) : (
+								<select
 									className={[
-									deliveryStyles.select,
+										deliveryStyles.select,
 										errors.city ? deliveryStyles.inputError : ''
 									].join(' ')}
-								value={citySuggestions.length > 0 && form.city 
-									? citySuggestions.find(c => 
-										(c.data?.city || c.data?.settlement || c.value) === form.city
-									)?.value || form.city || DEFAULT_CITY_NAME
-									: form.city || DEFAULT_CITY_NAME
-								}
-								onChange={(event) => {
-									const selectedValue = event.target.value
-									const city = citySuggestions.find((c) => c.value === selectedValue)
-									if (city) {
-										handleCitySelectFromDadata(city)
+									value={citySuggestions.length > 0 && form.city 
+										? citySuggestions.find(c => 
+											(c.data?.city || c.data?.settlement || c.value) === form.city
+										)?.value || form.city || DEFAULT_CITY_NAME
+										: form.city || DEFAULT_CITY_NAME
 									}
-								}}
-								onFocus={handleCitySelectFocus}
-								disabled={isLoading}
-							>
-								{citySuggestions.length === 0 ? (
-									<option value={DEFAULT_CITY_NAME}>{DEFAULT_CITY_NAME}</option>
-								) : (
-									citySuggestions.map((city, index) => {
-										const cityName = city.data?.city || city.data?.settlement || city.value || ''
-										const region = city.data?.region_with_type || city.data?.region || ''
-										return (
-											<option key={index} value={city.value}>
-												{cityName} {region ? `(${region})` : ''}
-											</option>
-										)
-									})
-								)}
-							</select>
+									onChange={(event) => {
+										const selectedValue = event.target.value
+										const city = citySuggestions.find((c) => c.value === selectedValue)
+										if (city) {
+											handleCitySelectFromDadata(city)
+										}
+									}}
+									onFocus={handleCitySelectFocus}
+									disabled={isLoading}
+								>
+									{citySuggestions.length === 0 ? (
+										<option value={DEFAULT_CITY_NAME}>{DEFAULT_CITY_NAME}</option>
+									) : (
+										citySuggestions.map((city, index) => {
+											const cityName = city.data?.city || city.data?.settlement || city.value || ''
+											const region = city.data?.region_with_type || city.data?.region || ''
+											return (
+												<option key={index} value={city.value}>
+													{cityName} {region ? `(${region})` : ''}
+												</option>
+											)
+										})
+									)}
+								</select>
+							)}
 							{errors.city && <p className={deliveryStyles.errorText}>{errors.city}</p>}
 						</div>
 
@@ -1674,12 +1706,16 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 						<div className={deliveryStyles.field}>
 							<div className={deliveryStyles.labelRow}>
 								<span>Способ доставки*</span>
-								{isTariffsLoading && (
-									<span className={deliveryStyles.loader}>Обновляем тарифы...</span>
-								)}
 							</div>
 							<div className={deliveryStyles.section}>
-								{filteredDeliveryOptions.map((option) => {
+								{isTariffsLoading && tariffs.length === 0 ? (
+									<>
+										<div className={`${deliveryStyles.skeleton} ${deliveryStyles.skeletonDeliveryOption}`} />
+										<div className={`${deliveryStyles.skeleton} ${deliveryStyles.skeletonDeliveryOption}`} />
+										<div className={`${deliveryStyles.skeleton} ${deliveryStyles.skeletonDeliveryOption}`} />
+									</>
+								) : (
+									filteredDeliveryOptions.map((option) => {
 									const isActive = form.deliveryValue === option.value
 									
 									// Формируем строку с временем и ценой по аналогии с custom (вместе через запятую)
@@ -1743,7 +1779,7 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 											</div>
 										</label>
 									)
-								})}
+								}))}
 							</div>
 						</div>
 
@@ -1753,43 +1789,44 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 								<div className={deliveryStyles.field}>
 									<div className={deliveryStyles.labelRow}>
 										<span>Пункт выдачи*</span>
-										{isPvzLoading && (
-											<span className={deliveryStyles.loader}>Загрузка пунктов...</span>
-										)}
 									</div>
 									{form.city ? (
-										<select
-															className={[
-												deliveryStyles.select,
-												errors.pickupPoint ? deliveryStyles.inputError : ''
-															].join(' ')}
-											value={form.deliveryPointData?.code || ''}
-											onChange={(event) => {
-												const pvzCode = event.target.value
-												const pvz = pvzList.find((p) => p.code === pvzCode)
-												if (pvz) {
-													handlePvzSelect(pvz)
-												}
-											}}
-											disabled={isLoading || isPvzLoading || pvzList.length === 0 || !form.cityCode}
-										>
-											<option value="">
-												{!form.cityCode 
-													? 'Загрузка пунктов выдачи...' 
-													: pvzList.length === 0 
-														? 'Пункты выдачи не найдены' 
-														: 'Выберите пункт выдачи'
-												}
-											</option>
-											{pvzList.map((pvz) => {
-												const displayText = `${pvz.name}, ${pvz.address}`
-												return (
-													<option key={pvz.code} value={pvz.code} title={displayText}>
-														{displayText}
-													</option>
+										isPvzLoading && pvzList.length === 0 ? (
+											<div className={`${deliveryStyles.skeleton} ${deliveryStyles.skeletonSelect}`} />
+										) : (
+											<select
+												className={[
+													deliveryStyles.select,
+													errors.pickupPoint ? deliveryStyles.inputError : ''
+												].join(' ')}
+												value={form.deliveryPointData?.code || ''}
+												onChange={(event) => {
+													const pvzCode = event.target.value
+													const pvz = pvzList.find((p) => p.code === pvzCode)
+													if (pvz) {
+														handlePvzSelect(pvz)
+													}
+												}}
+												disabled={isLoading || (!form.cityCode && !isPvzLoading) || (pvzList.length === 0 && !!form.cityCode)}
+											>
+												<option value="">
+													{!form.cityCode 
+														? 'Загрузка пунктов выдачи...' 
+														: pvzList.length === 0 
+															? 'Пункты выдачи не найдены' 
+															: 'Выберите пункт выдачи'
+													}
+												</option>
+												{pvzList.map((pvz) => {
+													const displayText = `${pvz.name}, ${pvz.address}`
+													return (
+														<option key={pvz.code} value={pvz.code} title={displayText}>
+															{displayText}
+														</option>
 													)
 												})}
-										</select>
+											</select>
+										)
 									) : (
 										<p className={deliveryStyles.helper}>Сначала выберите город.</p>
 									)}

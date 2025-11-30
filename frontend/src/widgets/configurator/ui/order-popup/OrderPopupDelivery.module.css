@@ -38,6 +38,46 @@
 .loader { font-size: 13px; color: #6b7280; }
 .twoColumn { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
 
+/* Skeleton styles */
+.skeleton {
+	background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+	background-size: 200% 100%;
+	animation: skeleton-loading 1.5s ease-in-out infinite;
+	border-radius: 14px;
+}
+
+@keyframes skeleton-loading {
+	0% {
+		background-position: 200% 0;
+	}
+	100% {
+		background-position: -200% 0;
+	}
+}
+
+.skeletonSelect {
+	height: 48px;
+	width: 100%;
+}
+
+.skeletonOption {
+	height: 20px;
+	width: 80%;
+	margin: 4px 0;
+}
+
+.skeletonDeliveryOption {
+	height: 60px;
+	width: 100%;
+	margin-bottom: 12px;
+}
+
+.skeletonPvz {
+	height: 80px;
+	width: 100%;
+	margin-bottom: 8px;
+}
+
 .deliveryMap {
 	position: relative;
 	width: 100%;
