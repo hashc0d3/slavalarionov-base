@@ -34,3 +34,4 @@ echo "Для просмотра логов в реальном времени и
 echo "  docker compose logs -f backend"
 
 
+

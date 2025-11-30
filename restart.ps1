@@ -30,3 +30,4 @@ Write-Host "Для просмотра логов в реальном време�
 Write-Host "  docker compose logs -f backend" -ForegroundColor Yellow
 
 
+

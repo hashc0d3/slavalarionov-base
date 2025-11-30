@@ -198,7 +198,7 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 			setPromoMessage(null)
 			setPromoStatus(null)
 			setIsLoading(false)
-		defaultCityAppliedRef.current = false
+			defaultCityAppliedRef.current = false
 			setCitySuggestions([])
 			setStreetSuggestions([])
 			setBuildingSuggestions([])
@@ -324,14 +324,14 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 
 
 	// Загрузка дефолтного города при открытии модального окна (по аналогии с custom - через DaData)
-	useEffect(() => {
-		if (!visible) return
+useEffect(() => {
+	if (!visible) return
 		// Если уже есть города в списке, не загружаем повторно
 		if (citySuggestions.length > 0) return
 
 		// Загружаем только дефолтный город (Санкт-Петербург) через DaData
 		const loadDefaultCity = async () => {
-			setIsCityLoading(true)
+	setIsCityLoading(true)
 			try {
 				const dadataCities = await deliveryApi.searchCities(DEFAULT_CITY_NAME)
 				if (dadataCities && dadataCities.length > 0) {
@@ -352,34 +352,34 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 					}
 				} else {
 					// Если не удалось загрузить через DaData, используем дефолтные значения
-					updateForm(
-						() => ({
+			updateForm(
+				() => ({
 							city: DEFAULT_CITY_NAME,
 							cityCode: DEFAULT_CITY_CODE,
 							cityUuid: DEFAULT_CITY_UUID
-						}),
-						['city']
-					)
+				}),
+				['city']
+			)
 				}
 			} catch (error: any) {
 				console.error('Failed to load default city', error)
 				// В случае ошибки используем дефолтные значения
-				updateForm(
-					() => ({
-						city: DEFAULT_CITY_NAME,
-						cityCode: DEFAULT_CITY_CODE,
-						cityUuid: DEFAULT_CITY_UUID
-					}),
-					['city']
-				)
+			updateForm(
+				() => ({
+					city: DEFAULT_CITY_NAME,
+					cityCode: DEFAULT_CITY_CODE,
+					cityUuid: DEFAULT_CITY_UUID
+				}),
+				['city']
+			)
 			} finally {
 				setIsCityLoading(false)
 			}
-		}
+	}
 
 		loadDefaultCity()
-		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [visible])
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+}, [visible])
 
 	// Загрузка популярных городов при открытии селектора (по аналогии с custom - через DaData)
 	const handleCitySelectFocus = async () => {
@@ -427,9 +427,9 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 			setCitySuggestions(loadedCities)
 		} catch (error: any) {
 			console.error('Failed to load popular cities', error)
-		} finally {
-			setIsCityLoading(false)
-		}
+			} finally {
+				setIsCityLoading(false)
+			}
 	}
 
 	useEffect(() => {
@@ -651,6 +651,8 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 	// Обработчик выбора города из DaData (по аналогии с custom)
 	const handleCitySelectFromDadata = async (dadataCity: DadataSuggestion) => {
 		const cityName = dadataCity.data?.city || dadataCity.data?.settlement || dadataCity.value || ''
+		const cityLat = dadataCity.data?.geo_lat ? parseFloat(dadataCity.data.geo_lat) : null
+		const cityLon = dadataCity.data?.geo_lon ? parseFloat(dadataCity.data.geo_lon) : null
 		
 		// Ищем cityCode через CDEK API по названию города
 		try {
@@ -678,6 +680,16 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 					}),
 					['city', 'pickupPoint', 'street', 'building', 'courierAddress', 'mailAddress']
 				)
+
+				// Обновляем локацию карты, если она уже инициализирована (по аналогии с custom)
+				if (mapInstanceRef.current && cityLat && cityLon && !isNaN(cityLat) && !isNaN(cityLon)) {
+					console.log('[CDEK Map] Updating location after city select:', [cityLon, cityLat])
+					try {
+						mapInstanceRef.current.updateLocation([cityLon, cityLat])
+					} catch (error) {
+						console.warn('[CDEK Map] Error updating location:', error)
+					}
+				}
 			} else {
 				// Если не нашли в CDEK, используем только название города
 				updateForm(
@@ -696,6 +708,16 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 					}),
 					['city', 'pickupPoint', 'street', 'building', 'courierAddress', 'mailAddress']
 				)
+
+				// Обновляем локацию карты, если она уже инициализирована
+				if (mapInstanceRef.current && cityLat && cityLon && !isNaN(cityLat) && !isNaN(cityLon)) {
+					console.log('[CDEK Map] Updating location after city select (no CDEK code):', [cityLon, cityLat])
+					try {
+						mapInstanceRef.current.updateLocation([cityLon, cityLat])
+					} catch (error) {
+						console.warn('[CDEK Map] Error updating location:', error)
+					}
+				}
 			}
 		} catch (error) {
 			console.error('Failed to find cityCode for city:', cityName, error)
@@ -716,6 +738,16 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 				}),
 				['city', 'pickupPoint', 'street', 'building', 'courierAddress', 'mailAddress']
 			)
+
+			// Обновляем локацию карты, если она уже инициализирована
+			if (mapInstanceRef.current && cityLat && cityLon && !isNaN(cityLat) && !isNaN(cityLon)) {
+				console.log('[CDEK Map] Updating location after city select (error):', [cityLon, cityLat])
+				try {
+					mapInstanceRef.current.updateLocation([cityLon, cityLat])
+				} catch (updateError) {
+					console.warn('[CDEK Map] Error updating location:', updateError)
+				}
+			}
 		}
 		
 		setCityQuery(cityName)
@@ -887,13 +919,19 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 				)
 				const cityPostalCode = selectedCityData?.data?.postal_code || (form.cityCode === DEFAULT_CITY_CODE ? 190000 : undefined)
 
+				// Убеждаемся, что город есть перед инициализацией виджета (по аналогии с custom)
+				if (!form.city || !form.city.trim()) {
+					console.warn('[CDEK Map] City is not set, skipping widget initialization')
+					return
+				}
+
 				const widgetOptions = {
-					from: form.city || DEFAULT_CITY_NAME,
+					from: form.city,
 					root: 'cdek-delivery-map',
 					apiKey: cdekWidgetApiKey,
 					postal_code: cityPostalCode || 190000,
 					servicePath: '/api/delivery/cdek',
-					defaultLocation: form.city || DEFAULT_CITY_NAME,
+					defaultLocation: form.city,
 					tariffs: {
 						office: [137]
 					},
@@ -1044,10 +1082,18 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [visible, mapReady, form.city, form.cityCode, currentDeliveryOption.requiresPvz, cdekWidgetApiKey])
 
-	// Обновление локации карты при изменении города
+	// Обновление локации карты при изменении города (по аналогии с custom)
 	useEffect(() => {
-		if (mapInstanceRef.current && form.cityCode && form.city) {
-			console.log('[CDEK Map] Updating location:', { cityCode: form.cityCode, city: form.city })
+		// Не обновляем локацию, если виджет еще не готов или модальное окно закрыто
+		if (!visible || !mapInstanceRef.current || !form.city || !currentDeliveryOption.requiresPvz) {
+			return
+		}
+
+		// Используем debounce, чтобы не обновлять локацию слишком часто
+		const timeoutId = setTimeout(() => {
+			if (!mapInstanceRef.current || !form.city) return
+			
+			console.log('[CDEK Map] Updating location:', { city: form.city })
 			// Находим координаты города из списка городов DaData или используем координаты первого ПВЗ
 			const cityCoords = citySuggestions.find((c) => 
 				(c.data?.city || c.data?.settlement || c.value) === form.city
@@ -1057,18 +1103,30 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 				const lon = parseFloat(cityCoords.data.geo_lon)
 				if (!isNaN(lat) && !isNaN(lon)) {
 					console.log('[CDEK Map] Using city coordinates:', [lon, lat])
-					mapInstanceRef.current.updateLocation([lon, lat])
+					try {
+						mapInstanceRef.current.updateLocation([lon, lat])
+					} catch (error) {
+						console.warn('[CDEK Map] Error updating location:', error)
+					}
 				}
 			} else if (pvzList.length > 0 && pvzList[0].coordX && pvzList[0].coordY) {
 				console.log('[CDEK Map] Using PVZ coordinates:', [pvzList[0].coordX, pvzList[0].coordY])
-				mapInstanceRef.current.updateLocation([pvzList[0].coordX, pvzList[0].coordY])
+				try {
+					mapInstanceRef.current.updateLocation([pvzList[0].coordX, pvzList[0].coordY])
+				} catch (error) {
+					console.warn('[CDEK Map] Error updating location:', error)
+				}
 			} else {
 				console.log('[CDEK Map] No coordinates available for update')
 			}
+		}, 300) // Debounce 300ms
+
+		return () => {
+			clearTimeout(timeoutId)
 		}
 		// Убираем pvzList из зависимостей, чтобы избежать частых обновлений
 		// eslint-disable-next-line react-hooks/exhaustive-deps
-	}, [visible, form.cityCode, form.city, citySuggestions, currentDeliveryOption.requiresPvz])
+	}, [visible, form.city, citySuggestions, currentDeliveryOption.requiresPvz])
 
 	const handleStreetSelect = (suggestion: DadataSuggestion) => {
 		const streetName = suggestion.value || suggestion.unrestricted_value || ''
@@ -1537,10 +1595,10 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 								{isCityLoading && <span className={deliveryStyles.loader}>Загрузка...</span>}
 							</div>
 							<select
-								className={[
+									className={[
 									deliveryStyles.select,
-									errors.city ? deliveryStyles.inputError : ''
-								].join(' ')}
+										errors.city ? deliveryStyles.inputError : ''
+									].join(' ')}
 								value={form.city || DEFAULT_CITY_NAME}
 								onChange={async (event) => {
 									const cityName = event.target.value
@@ -1661,10 +1719,10 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 									</div>
 									{form.cityCode && form.city ? (
 										<select
-											className={[
+															className={[
 												deliveryStyles.select,
 												errors.pickupPoint ? deliveryStyles.inputError : ''
-											].join(' ')}
+															].join(' ')}
 											value={form.deliveryPointData?.code || ''}
 											onChange={(event) => {
 												const pvzCode = event.target.value
@@ -1682,8 +1740,8 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 													<option key={pvz.code} value={pvz.code} title={displayText}>
 														{displayText}
 													</option>
-												)
-											})}
+													)
+												})}
 										</select>
 									) : (
 										<p className={deliveryStyles.helper}>Сначала выберите город.</p>
