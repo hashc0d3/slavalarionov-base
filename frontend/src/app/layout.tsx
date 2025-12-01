@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { ColorSchemeScript } from '@mantine/core';
 import { Providers } from "./providers";
+import { Header } from "@/widgets/layout/ui/Header";
+import { Footer } from "@/widgets/layout/ui/Footer";
 import "./globals.css";
 
 const inter = Inter({
@@ -28,7 +30,9 @@ export default function RootLayout({
         className={`${inter.variable} antialiased`}
       >
         <Providers>
+          <Header />
           {children}
+          <Footer />
         </Providers>
       </body>
     </html>

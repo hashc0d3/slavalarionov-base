@@ -1,0 +1,306 @@
+.footer {
+	padding: 100px 0;
+}
+
+@media (max-width: 850px) {
+	.footer {
+		padding: 50px 0;
+	}
+}
+
+@media (max-width: 550px) {
+	.footer {
+		padding: 40px 0;
+	}
+}
+
+.footerMain {
+	width: 100%;
+	display: flex;
+	align-items: stretch;
+	justify-content: space-between;
+	margin: 0 auto;
+	max-width: 1100px;
+}
+
+@media (max-width: 850px) {
+	.footerMain {
+		max-width: 320px;
+		flex-wrap: wrap;
+		justify-content: center;
+	}
+}
+
+.footerColumn {
+	flex: 0 0 30%;
+}
+
+@media (max-width: 850px) {
+	.footerColumn {
+		flex-basis: 100%;
+		margin-top: 80px;
+	}
+}
+
+.footerOtherMarkets {
+	max-width: 300px;
+}
+
+@media (max-width: 850px) {
+	.footerOtherMarkets {
+		order: 2;
+	}
+}
+
+.footerColumnTitle {
+	font-size: 20px;
+	line-height: 32px;
+	color: #424242;
+	font-weight: 700;
+	text-align: center;
+	max-width: 220px;
+	margin: 0 auto 20px;
+}
+
+.footerOtherMarketsLinks {
+	margin-top: 25px;
+}
+
+.footerOtherMarketsLink {
+	display: flex;
+	justify-content: center;
+	max-width: 160px;
+	margin: 0 auto 15px;
+}
+
+.footerOtherMarketsLink:last-child {
+	margin-bottom: 0;
+}
+
+.footerOtherMarketsLinkImage {
+	object-fit: cover;
+}
+
+.footerColumnText {
+	font-size: 14px;
+	line-height: 19px;
+	font-weight: 500;
+	color: #424242;
+	width: 100%;
+	max-width: 290px;
+}
+
+.footerOtherMarketsText {
+	margin: 25px auto 0;
+}
+
+.footerOtherMarketsMoreLink {
+	display: block;
+	width: 100%;
+	max-width: 150px;
+	font-size: 13px;
+	line-height: 1.55;
+	font-weight: 400;
+	text-align: center;
+	color: #fafafa;
+	margin: 25px auto 0;
+	padding: 4px 10px;
+	border-radius: 30px;
+	background-color: #858585;
+	transition: 0.2s ease;
+	text-decoration: none;
+}
+
+.footerOtherMarketsMoreLink:hover {
+	background: #616161;
+}
+
+.footerPayment {
+	/* Payment column styles */
+}
+
+@media (max-width: 850px) {
+	.footerPayment {
+		order: 3;
+	}
+}
+
+.footerPaymentTypes {
+	margin-top: 40px;
+}
+
+.footerPaymentTypesItem {
+	display: flex;
+	align-items: center;
+	margin-bottom: 30px;
+}
+
+.footerPaymentTypesItem:last-child {
+	margin-bottom: 0;
+}
+
+.footerPaymentTypesItem:nth-child(2) .footerPaymentTypesItemImage {
+	max-width: 150px;
+}
+
+.footerPaymentTypesItemImage {
+	max-width: 60px;
+}
+
+.footerPaymentTypesItemText {
+	margin-left: 15px;
+	font-size: 14px;
+	line-height: 19px;
+	font-weight: 500;
+	color: #424242;
+}
+
+.footerPaymentTextInner {
+	margin-top: 30px;
+}
+
+.footerPaymentText {
+	margin-bottom: 20px;
+}
+
+.footerPaymentText:last-child {
+	margin-bottom: 0;
+}
+
+.footerContact {
+	max-width: 240px;
+}
+
+@media (max-width: 850px) {
+	.footerContact {
+		order: 1;
+		margin-top: 0;
+	}
+}
+
+.footerContactTitle {
+	max-width: 180px;
+}
+
+.footerContactSocials {
+	display: flex;
+	align-items: stretch;
+	justify-content: center;
+	width: 100%;
+	max-width: 260px;
+	margin: 40px auto 0;
+}
+
+.footerContactSocialsItem {
+	margin-right: 10px;
+	width: 100%;
+	max-width: 30px;
+	max-height: 30px;
+	display: block;
+}
+
+.footerContactSocialsItem:first-child {
+	max-width: 66px;
+}
+
+.footerContactSocialsItem:last-child {
+	margin-right: 0;
+}
+
+.footerContactSocialsItemIcon {
+	display: block;
+	width: 100%;
+	height: 100%;
+}
+
+.footerContactSocialsItemIcon:hover path:first-child {
+	fill: #4e68f2;
+}
+
+.footerContactText {
+	margin: 40px auto 10px;
+	max-width: 200px;
+	text-align: center;
+}
+
+.footerContactLink {
+	font-size: 14px;
+	display: block;
+	line-height: 1.55;
+	font-weight: 600;
+	text-align: center;
+	transition: 0.2s ease;
+	color: #424242;
+	text-decoration: none;
+}
+
+.footerContactLink:hover {
+	color: #828282;
+}
+
+.footerBottom {
+	padding-top: 60px;
+	color: #424242;
+	font-size: 14px;
+	line-height: 19px;
+}
+
+@media (max-width: 850px) {
+	.footerBottom {
+		max-width: 300px;
+		margin: 0 auto;
+	}
+}
+
+.footerOwner {
+	/* Owner text styles */
+}
+
+.footerBottomInner {
+	width: 100%;
+	max-width: 420px;
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	flex-wrap: wrap;
+	margin-top: 20px;
+}
+
+.footerBottomCol {
+	display: flex;
+	flex-direction: column;
+	margin-right: 20px;
+}
+
+.footerBottomCol:last-child {
+	margin-right: 0;
+}
+
+@media (max-width: 850px) {
+	.footerBottomCol {
+		flex-basis: 100%;
+	}
+
+	.footerBottomCol:nth-child(n + 2) {
+		margin-top: 20px;
+	}
+}
+
+.footerInn {
+	/* INN text styles */
+}
+
+.footerCity {
+	/* City text styles */
+}
+
+.footerBottomLink {
+	color: #424242;
+	text-decoration: none;
+	transition: 0.2s ease;
+}
+
+.footerBottomLink:hover {
+	opacity: 0.8;
+}
+
