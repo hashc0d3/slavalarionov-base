@@ -1,0 +1,6 @@
+/* Hide header and footer in admin section */
+body:has(.admin-layout) header,
+body:has(.admin-layout) footer {
+  display: none;
+}
+

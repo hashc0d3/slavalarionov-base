@@ -1,13 +1,22 @@
-'use client';
+'use client'
 
-import { Greeting } from '@/features/greeting/ui/Greeting';
+import { SectionConfigurator } from '@/widgets/configurator/ui/SectionConfigurator'
+import { configuratorStore } from '@/shared/store/configurator.store'
+import { AdminButton } from '@/features/admin/ui/AdminButton'
+import { useEffect } from 'react'
 
 export default function Home() {
+	useEffect(() => {
+		// Загружаем данные из API при старте
+		configuratorStore.loadWatchModelsFromAPI()
+		configuratorStore.loadWatchStrapsFromAPI()
+		configuratorStore.loadConfiguratorSettings()
+	}, [])
 
-  return (
-    <>
-      <Greeting />
-
-    </>
-  )
+	return (
+		<>
+			<AdminButton />
+			<SectionConfigurator />
+		</>
+	)
 }
