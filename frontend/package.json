@@ -9,10 +9,13 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
     "@mantine/core": "^7.17.8",
     "@mantine/dropzone": "^7.17.8",
     "@mantine/hooks": "^7.17.8",
     "@mantine/notifications": "^7.17.8",
+    "@mui/material": "^7.3.5",
     "@tabler/icons-react": "^3.35.0",
     "gsap": "^3.13.0",
     "mobx": "^6.13.7",

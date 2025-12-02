@@ -17,6 +17,7 @@ import {
 } from '@/shared/api/delivery.api'
 import deliveryStyles from './OrderPopupDelivery.module.css'
 import type { CDEKWidgetInstance, CDEKWidgetPoint, CDEKWidgetOptions } from '@/types/cdek-widget'
+import { Select, MenuItem, TextField, Button, FormControl, InputLabel, FormHelperText } from '@mui/material'
 
 // Типы CDEK Widget импортируются из @/types/cdek-widget
 
@@ -1624,29 +1625,32 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 				<section className={s.section}>
 					<h4 className={s.sectionTitle}>Контактные данные</h4>
 					<div className={s.inputsGrid}>
-						<div className={s.field}>
-							<label className={s.label}>Email*</label>
-							<input
-								className={`${s.input} ${errors.email ? s.inputError : ''}`}
-								type="email"
-								placeholder="example@site.com"
-								value={form.email}
-								onChange={handleFieldChange('email')}
-								disabled={isLoading}
-							/>
-							{errors.email && <p className={s.errorText}>{errors.email}</p>}
-						</div>
-						<div className={s.field}>
-							<label className={s.label}>Телефон*</label>
-							<input
-								className={`${s.input} ${errors.phone ? s.inputError : ''}`}
-								placeholder="+7 (999) 999-99-99"
-								value={form.phone}
-								onChange={handleFieldChange('phone')}
-								disabled={isLoading}
-							/>
-							{errors.phone && <p className={s.errorText}>{errors.phone}</p>}
-						</div>
+						<TextField
+							label="Email"
+							type="email"
+							placeholder="example@site.com"
+							value={form.email}
+							onChange={(e) => updateForm({ email: e.target.value }, ['email'])}
+							disabled={isLoading}
+							error={!!errors.email}
+							helperText={errors.email}
+							required
+							fullWidth
+							size="small"
+						/>
+						<TextField
+							label="Телефон"
+							type="tel"
+							placeholder="+7 (999) 999-99-99"
+							value={form.phone}
+							onChange={(e) => updateForm({ phone: e.target.value }, ['phone'])}
+							disabled={isLoading}
+							error={!!errors.phone}
+							helperText={errors.phone}
+							required
+							fullWidth
+							size="small"
+						/>
 					</div>
 				</section>
 
@@ -1654,50 +1658,47 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 					<h4 className={s.sectionTitle}>Доставка</h4>
 					<div className={deliveryStyles.section}>
 						<div className={deliveryStyles.field}>
-							<div className={deliveryStyles.labelRow}>
-								<span>Город*</span>
-							</div>
 							{isCityLoading && citySuggestions.length <= 1 ? (
-								// Показываем скелетон, когда загружаются популярные города (когда только дефолтный город в списке)
+								// Показываем скелетон, когда загружаются популярные города
 								<div className={`${deliveryStyles.skeleton} ${deliveryStyles.skeletonSelect}`} />
 							) : (
-								<select
-									className={[
-										deliveryStyles.select,
-										errors.city ? deliveryStyles.inputError : ''
-									].join(' ')}
-									value={citySuggestions.length > 0 && form.city 
-										? citySuggestions.find(c => {
-											const cityName = c.data?.city || c.data?.settlement || c.value || ''
-											return cityName === form.city || c.value === form.city
-										})?.value || (citySuggestions.length > 0 ? citySuggestions[0].value : '')
-										: (citySuggestions.length > 0 ? citySuggestions[0].value : '')
-									}
-									onChange={(event) => {
-										const selectedValue = event.target.value
-										const city = citySuggestions.find((c) => c.value === selectedValue)
-										if (city) {
-											handleCitySelectFromDadata(city)
+								<FormControl fullWidth error={!!errors.city} size="small">
+									<InputLabel>Город *</InputLabel>
+									<Select
+										value={citySuggestions.length > 0 && form.city 
+											? citySuggestions.find(c => {
+												const cityName = c.data?.city || c.data?.settlement || c.value || ''
+												return cityName === form.city || c.value === form.city
+											})?.value || (citySuggestions.length > 0 ? citySuggestions[0].value : '')
+											: (citySuggestions.length > 0 ? citySuggestions[0].value : '')
 										}
-									}}
-									disabled={isLoading}
-								>
-									{citySuggestions.length === 0 ? (
-										<option value="">Загрузка...</option>
-									) : (
-										citySuggestions.map((city, index) => {
-											const cityName = city.data?.city || city.data?.settlement || city.value || ''
-											const region = city.data?.region_with_type || city.data?.region || ''
-											return (
-												<option key={index} value={city.value}>
-													{cityName} {region ? `(${region})` : ''}
-												</option>
-											)
-										})
-									)}
-								</select>
+										onChange={(event) => {
+											const selectedValue = event.target.value
+											const city = citySuggestions.find((c) => c.value === selectedValue)
+											if (city) {
+												handleCitySelectFromDadata(city)
+											}
+										}}
+										disabled={isLoading}
+										label="Город *"
+									>
+										{citySuggestions.length === 0 ? (
+											<MenuItem value="">Загрузка...</MenuItem>
+										) : (
+											citySuggestions.map((city, index) => {
+												const cityName = city.data?.city || city.data?.settlement || city.value || ''
+												const region = city.data?.region_with_type || city.data?.region || ''
+												return (
+													<MenuItem key={index} value={city.value}>
+														{cityName} {region ? `(${region})` : ''}
+													</MenuItem>
+												)
+											})
+										)}
+									</Select>
+									{errors.city && <FormHelperText>{errors.city}</FormHelperText>}
+								</FormControl>
 							)}
-							{errors.city && <p className={deliveryStyles.errorText}>{errors.city}</p>}
 						</div>
 
 						<div className={deliveryStyles.sectionDivider} />
@@ -1786,52 +1787,41 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 							<>
 								<div className={deliveryStyles.sectionDivider} />
 								<div className={deliveryStyles.field}>
-									<div className={deliveryStyles.labelRow}>
-										<span>Пункт выдачи*</span>
-									</div>
 									{form.city ? (
-										// Показываем скелетон когда:
-										// 1. Загружаются ПВЗ (isPvzLoading) и список пуст
-										// 2. Или город выбран, но cityCode еще не загружен
 										(isPvzLoading && pvzList.length === 0) || (!form.cityCode && form.city) ? (
 											<div className={`${deliveryStyles.skeleton} ${deliveryStyles.skeletonSelect}`} />
 										) : (
-											<select
-												className={[
-													deliveryStyles.select,
-													errors.pickupPoint ? deliveryStyles.inputError : ''
-												].join(' ')}
-												value={form.deliveryPointData?.code || ''}
-												onChange={(event) => {
-													const pvzCode = event.target.value
-													const pvz = pvzList.find((p) => p.code === pvzCode)
-													if (pvz) {
-														handlePvzSelect(pvz)
-													}
-												}}
-												disabled={isLoading || (pvzList.length === 0 && !!form.cityCode)}
-											>
-												<option value="">
-													{pvzList.length === 0 
-														? 'Пункты выдачи не найдены' 
-														: 'Выберите пункт выдачи'
-													}
-												</option>
-												{pvzList.map((pvz) => {
-													const displayText = `${pvz.name}, ${pvz.address}`
-													return (
-														<option key={pvz.code} value={pvz.code} title={displayText}>
-															{displayText}
-														</option>
-													)
-												})}
-											</select>
+											<FormControl fullWidth error={!!errors.pickupPoint} size="small">
+												<InputLabel>Пункт выдачи *</InputLabel>
+												<Select
+													value={form.deliveryPointData?.code || ''}
+													onChange={(event) => {
+														const pvzCode = event.target.value as string
+														const pvz = pvzList.find((p) => p.code === pvzCode)
+														if (pvz) {
+															handlePvzSelect(pvz)
+														}
+													}}
+													disabled={isLoading || (pvzList.length === 0 && !!form.cityCode)}
+													label="Пункт выдачи *"
+												>
+													<MenuItem value="">
+														{pvzList.length === 0 
+															? 'Пункты выдачи не найдены' 
+															: 'Выберите пункт выдачи'
+														}
+													</MenuItem>
+													{pvzList.map((pvz) => (
+														<MenuItem key={pvz.code} value={pvz.code}>
+															{pvz.name}, {pvz.address}
+														</MenuItem>
+													))}
+												</Select>
+												{errors.pickupPoint && <FormHelperText>{errors.pickupPoint}</FormHelperText>}
+											</FormControl>
 										)
 									) : (
 										<p className={deliveryStyles.helper}>Сначала выберите город.</p>
-									)}
-									{errors.pickupPoint && (
-										<p className={deliveryStyles.errorText}>{errors.pickupPoint}</p>
 									)}
 									{/* Карта с пунктами выдачи (по аналогии с custom - отображается когда город выбран и карта готова) */}
 									{form.city && currentDeliveryOption.requiresPvz && mapReady && (
@@ -2017,20 +2007,22 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 				<section className={s.section}>
 					<h4 className={s.sectionTitle}>Промокод</h4>
 					<div className={s.promoRow}>
-						<input
-							className={`${s.input} ${s.inputPromo}`}
+						<TextField
 							placeholder="Введите промокод"
 							value={form.promoCode}
-							onChange={handleFieldChange('promoCode')}
+							onChange={(e) => updateForm({ promoCode: e.target.value })}
 							disabled={isLoading || promoLoading}
+							size="small"
+							sx={{ flex: 1 }}
 						/>
-						<button
-							className={s.promoButton}
+						<Button
+							variant="contained"
 							onClick={handleApplyPromo}
 							disabled={isLoading || promoLoading}
+							sx={{ textTransform: 'none' }}
 						>
 							{promoLoading ? 'Проверяем...' : 'Применить'}
-						</button>
+						</Button>
 					</div>
 					{promoMessage && (
 						<p
@@ -2091,13 +2083,16 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 				{errors.general && <div className={s.errorBanner}>{errors.general}</div>}
 
 				<section className={s.actions}>
-					<button
-						className={`${s.button} ${s.buttonPrimary}`}
+					<Button
+						variant="contained"
+						size="large"
+						fullWidth
 						onClick={submitOrder}
 						disabled={isLoading}
+						sx={{ py: 1.5, fontSize: '16px', textTransform: 'none' }}
 					>
 						{isLoading ? 'Отправляем...' : 'Оплатить заказ'}
-					</button>
+					</Button>
 				</section>
 
 				<footer className={s.footer}>
