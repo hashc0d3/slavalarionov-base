@@ -687,22 +687,54 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 	}
 
 	// Обработчик выбора города из DaData (по аналогии с custom - используем postal_code)
-	const handleCitySelectFromDadata = (dadataCity: DadataSuggestion) => {
+	const handleCitySelectFromDadata = async (dadataCity: DadataSuggestion) => {
+		console.log('[City Select] Starting city selection:', dadataCity)
 		const cityName = dadataCity.data?.city || dadataCity.data?.settlement || dadataCity.value || ''
 		const cityLat = dadataCity.data?.geo_lat ? parseFloat(dadataCity.data.geo_lat) : null
 		const cityLon = dadataCity.data?.geo_lon ? parseFloat(dadataCity.data.geo_lon) : null
 		const postalCode = dadataCity.data?.postal_code || ''
 		const isDefaultCity = cityName.toLowerCase().includes('санкт') || cityName.toLowerCase().includes('петербург')
 		
-		// Сначала устанавливаем город в форму (для всех городов одинаково)
-		// Для дефолтного города (Санкт-Петербург) используем DEFAULT_CITY_CODE как временное значение
-		// Для других городов очищаем cityCode
+		// Очищаем список ПВЗ и тарифов сразу
+		setPvzList([])
+		setTariffs([])
+		setIsPvzLoading(true) // Включаем загрузку
+		
+		// Сначала ищем cityCode через CDEK API СИНХРОННО (по аналогии с custom)
+		let finalCityCode: number | null = isDefaultCity ? DEFAULT_CITY_CODE : null
+		let finalCityUuid: string | null = isDefaultCity ? DEFAULT_CITY_UUID : null
+		
+		try {
+			console.log('[City Select] Searching CDEK cities for:', cityName, 'postalCode:', postalCode)
+			const cdekCities = await deliveryApi.searchCdekCities(cityName, postalCode)
+			console.log('[City Select] CDEK cities found:', cdekCities)
+			
+			if (cdekCities && cdekCities.length > 0) {
+				// Ищем город в результатах CDEK
+				const cdekCity = cdekCities.find(c => 
+					c.cityName?.toLowerCase().includes(cityName.toLowerCase()) ||
+					cityName.toLowerCase().includes(c.cityName?.toLowerCase() || '')
+				) || cdekCities[0]
+				
+				if (cdekCity.cityCode) {
+					console.log('[City Select] Found cityCode via CDEK API:', cdekCity.cityCode)
+					finalCityCode = cdekCity.cityCode
+					finalCityUuid = cdekCity.cityUuid || null
+				} else {
+					console.warn('[City Select] CityCode not found for city:', cityName)
+				}
+			}
+		} catch (error) {
+			console.error('[City Select] Failed to find cityCode for city:', cityName, error)
+		}
+		
+		// Обновляем форму ОДИН РАЗ со всеми данными (по аналогии с custom)
 		updateForm(
 			(prev) => ({
 				...prev,
 				city: cityName,
-				cityCode: isDefaultCity ? DEFAULT_CITY_CODE : null, // Для СПб используем дефолтный код, для других - null
-				cityUuid: isDefaultCity ? DEFAULT_CITY_UUID : null,
+				cityCode: finalCityCode,
+				cityUuid: finalCityUuid,
 				pickupPoint: '',
 				deliveryPointData: null,
 				street: '',
@@ -715,100 +747,23 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 			['city', 'pickupPoint', 'street', 'building', 'courierAddress', 'mailAddress']
 		)
 		
-		if (!isDefaultCity) {
-			// Для других городов сначала очищаем cityCode, затем ищем через CDEK API
-			updateForm(
-				(prev) => ({
-					...prev,
-					city: cityName,
-					cityCode: null, // Очищаем cityCode, чтобы ПВЗ очистились
-					cityUuid: null,
-					pickupPoint: '',
-					deliveryPointData: null,
-					street: '',
-					streetFiasId: null,
-					building: '',
-					courierAddress: '',
-					mailAddress: '',
-					deliveryValue: initialDeliveryOptions[0].value
-				}),
-				['city', 'pickupPoint', 'street', 'building', 'courierAddress', 'mailAddress']
-			)
-			
-			// Очищаем список ПВЗ сразу при смене города
-			setPvzList([])
-			setTariffs([])
-		}
+		// Обновляем cityCode напрямую для триггера useEffect
+		setForm((prev) => ({
+			...prev,
+			cityCode: finalCityCode
+		}))
 		
-		// Ищем cityCode через CDEK API по postal_code (как в custom) или по названию города
-		// Для дефолтного города это необязательно, но можно обновить, если найден более точный код
-		// Делаем это асинхронно, чтобы не блокировать UI
-		const searchCityCode = async () => {
+		console.log('[City Select] City updated, cityCode:', finalCityCode)
+		
+		// Обновляем локацию карты
+		if (mapInstanceRef.current && cityLat && cityLon && !isNaN(cityLat) && !isNaN(cityLon)) {
+			console.log('[CDEK Map] Updating location:', [cityLon, cityLat])
 			try {
-				const cdekCities = await deliveryApi.searchCdekCities(cityName, postalCode)
-				if (cdekCities && cdekCities.length > 0) {
-					// Ищем город в результатах CDEK
-					const cdekCity = cdekCities.find(c => 
-						c.cityName?.toLowerCase().includes(cityName.toLowerCase()) ||
-						cityName.toLowerCase().includes(c.cityName?.toLowerCase() || '')
-					) || cdekCities[0]
-					
-					// Обновляем cityCode, если найден
-					if (cdekCity.cityCode) {
-						console.log('[City Select] Found cityCode via CDEK API:', cdekCity.cityCode, 'for city:', cityName)
-						// Используем setForm напрямую, чтобы изменение применилось сразу
-						setForm((prev) => ({
-							...prev,
-							cityCode: cdekCity.cityCode,
-							cityUuid: cdekCity.cityUuid || null
-						}))
-					} else if (!isDefaultCity) {
-						// Если не найден cityCode для не-дефолтного города, оставляем null
-						console.warn('[City Select] CityCode not found for city:', cityName)
-						// ПВЗ не загрузятся, но это нормально - пользователь увидит сообщение
-					}
-
-					// Обновляем локацию карты, если она уже инициализирована (по аналогии с custom)
-					if (mapInstanceRef.current && cityLat && cityLon && !isNaN(cityLat) && !isNaN(cityLon)) {
-						console.log('[CDEK Map] Updating location after city select:', [cityLon, cityLat])
-						try {
-							mapInstanceRef.current.updateLocation([cityLon, cityLat])
-						} catch (error) {
-							console.warn('[CDEK Map] Error updating location:', error)
-						}
-					}
-				} else {
-					// Если не нашли в CDEK, для не-дефолтного города оставляем cityCode = null
-					// Для дефолтного города cityCode уже установлен выше
-
-					// Обновляем локацию карты, если она уже инициализирована
-					if (mapInstanceRef.current && cityLat && cityLon && !isNaN(cityLat) && !isNaN(cityLon)) {
-						console.log('[CDEK Map] Updating location after city select (no CDEK code):', [cityLon, cityLat])
-						try {
-							mapInstanceRef.current.updateLocation([cityLon, cityLat])
-						} catch (error) {
-							console.warn('[CDEK Map] Error updating location:', error)
-						}
-					}
-				}
+				mapInstanceRef.current.updateLocation([cityLon, cityLat])
 			} catch (error) {
-				console.error('Failed to find cityCode for city:', cityName, error)
-				// В случае ошибки для дефолтного города cityCode уже установлен выше
-				// Для не-дефолтного города оставляем cityCode = null
-
-				// Обновляем локацию карты, если она уже инициализирована
-				if (mapInstanceRef.current && cityLat && cityLon && !isNaN(cityLat) && !isNaN(cityLon)) {
-					console.log('[CDEK Map] Updating location after city select (error):', [cityLon, cityLat])
-					try {
-						mapInstanceRef.current.updateLocation([cityLon, cityLat])
-					} catch (updateError) {
-						console.warn('[CDEK Map] Error updating location:', updateError)
-					}
-				}
+				console.warn('[CDEK Map] Error updating location:', error)
 			}
 		}
-		
-		searchCityCode()
 		
 		setCityQuery(cityName)
 		setStreetQuery('')
