@@ -99,6 +99,7 @@ COPY --from=build /app/backend/package.json /app/backend/package-lock.json ./
 COPY --from=build /app/backend/node_modules ./node_modules
 COPY --from=build /app/backend/dist ./dist
 COPY --from=build /app/backend/prisma ./prisma
+COPY --from=build /app/backend/scripts ./scripts
 # next.middleware.ts должен быть в dist (скопирован на этапе сборки)
 
 # Copy frontend build (нужен для Next.js middleware)
@@ -111,5 +112,6 @@ EXPOSE 8081
 
 # Команда запуска:
 # 1. Применяем миграции Prisma (создаёт БД если её нет)
-# 2. Запускаем backend, который работает как middleware для frontend
-CMD ["sh", "-c", "echo 'Применяем миграции Prisma...' && npx prisma migrate deploy && echo 'Миграции применены успешно' || echo 'Предупреждение: ошибка при применении миграций'; echo 'Запускаем backend...' && node dist/main"]
+# 2. Инициализируем начальные данные
+# 3. Запускаем backend, который работает как middleware для frontend
+CMD ["sh", "-c", "echo 'Применяем миграции Prisma...' && npx prisma migrate deploy && echo 'Миграции применены успешно' && echo 'Инициализируем начальные данные...' && node scripts/init-db.js && echo 'Инициализация завершена' || echo 'Предупреждение: ошибка при инициализации БД'; echo 'Запускаем backend...' && node dist/main"]
