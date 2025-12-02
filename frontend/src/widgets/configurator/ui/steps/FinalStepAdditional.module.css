@@ -38,7 +38,7 @@
 	align-items: center;
 	justify-content: space-between;
 	padding: 19px 34px;
-	min-height: 100px;
+	height: 100px;
 	border-radius: 20px;
 	border: 1px solid #d0d0d0;
 	transition: 0.2s ease;

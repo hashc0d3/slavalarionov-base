@@ -337,7 +337,14 @@ export class ConfiguratorStore {
 	}
 
 	// modal actions
-	showOrderPopup() { this.orderPopupVisible = true }
+	showOrderPopup() { 
+		// Добавляем текущий товар в корзину перед открытием окна оформления (без сброса)
+		// Только если не редактируем существующий товар И есть выбранная модель
+		if (!this.editingCartItemId && this.selectedWatchModel && this.selectedStrapModel) {
+			this.addCurrentToCart(false)
+		}
+		this.orderPopupVisible = true 
+	}
 	closeOrderPopup() { this.orderPopupVisible = false }
 
 	// getters (computed)
@@ -677,7 +684,7 @@ export class ConfiguratorStore {
 	}
 	
 	// Методы для работы с корзиной
-	addCurrentToCart() {
+	addCurrentToCart(resetAfter: boolean = true) {
 		const cartItem = {
 			id: Date.now().toString(),
 			watchModel: this.selectedWatchModel,
@@ -696,11 +703,18 @@ export class ConfiguratorStore {
 		}
 		
 		this.cartItems.push(cartItem)
-		this.resetConfigurator()
+		if (resetAfter) {
+			this.resetConfigurator()
+		}
 	}
 	
 	removeFromCart(itemId: string) {
 		this.cartItems = this.cartItems.filter(item => item.id !== itemId)
+		// Если удаляем редактируемый товар, сбрасываем режим редактирования
+		if (this.editingCartItemId === itemId) {
+			this.editingCartItemId = null
+			this.resetConfigurator()
+		}
 	}
 	
 	clearCart() {

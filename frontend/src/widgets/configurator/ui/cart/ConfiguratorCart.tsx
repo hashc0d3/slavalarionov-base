@@ -27,10 +27,8 @@ export const ConfiguratorCart = observer(function ConfiguratorCart() {
 	const additionalOptions = configuratorStore.steps.final.additionalOptions
 
 	const getSelectedOptionsCount = () => {
-		// Считаем количество товаров в корзине + текущий конфигурируемый товар
-		const cartItemsCount = configuratorStore.cartItemsCount
-		const currentItemCount = configuratorStore.productAmount
-		return cartItemsCount + currentItemCount
+		// Считаем только количество товаров в корзине (без текущего)
+		return configuratorStore.cartItemsCount
 	}
 
 	const handleOrderClick = () => {
@@ -484,9 +482,9 @@ export const ConfiguratorCart = observer(function ConfiguratorCart() {
 						<div className={styles.cartFooter}>
 							<div className={styles.cartTotal}>
 								<div className={styles.cartTotalLabel}>
-									Итого ({configuratorStore.cartItemsCount + productAmount} товаров):
+									Итого ({configuratorStore.cartItemsCount} товаров):
 								</div>
-								<div className={styles.cartTotalPrice}>{configuratorStore.cartTotalPrice + totalPrice}₽</div>
+								<div className={styles.cartTotalPrice}>{configuratorStore.cartTotalPrice}₽</div>
 							</div>
 							
 							<div className={styles.cartButtons}>

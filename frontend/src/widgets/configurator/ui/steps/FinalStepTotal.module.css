@@ -18,27 +18,30 @@
 	display: flex;
 	align-items: center;
 	margin-top: 20px;
-	gap: 10px;
+	gap: 12px;
 }
 
 .totalPromoInput {
 	display: block;
-	flex: 1 1 30%;
-	max-width: 173px;
+	flex: 1;
 	padding: 12px 16px;
-	border-radius: 4px;
+	border-radius: 8px;
 	border: 1px solid #d0d0d0;
 	box-shadow: 0px 0px 2px 0px rgba(0, 0, 0, 0.1) inset;
+	font-size: 14px;
 }
 
 .totalPromoButton {
-	padding: 12px 16px;
-	border-radius: 4px;
-	border: 1px solid #5078DF;
+	padding: 12px 24px;
+	border-radius: 8px;
+	border: none;
 	background: #5078DF;
 	color: white;
 	cursor: pointer;
 	font-size: 14px;
+	font-weight: 500;
+	white-space: nowrap;
+	transition: background-color 0.2s ease;
 }
 
 .totalPromoButton:hover {

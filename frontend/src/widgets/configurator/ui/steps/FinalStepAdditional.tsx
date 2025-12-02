@@ -8,8 +8,41 @@ interface FinalStepAdditionalProps {
 	className?: string
 }
 
+// Статичные дефолтные опции
+const DEFAULT_OPTIONS = [
+	{
+		option_name: 'initials',
+		option_title: 'Нанесение инициалов',
+		option_price: 390,
+		option_image: null
+	},
+	{
+		option_name: 'present_box',
+		option_title: 'Подарочная коробка',
+		option_price: 300,
+		option_image: null
+	},
+	{
+		option_name: 'postcard',
+		option_title: 'Подарочная открытка',
+		option_price: 300,
+		option_image: null
+	}
+]
+
 export const FinalStepAdditional = observer(function FinalStepAdditional({ className }: FinalStepAdditionalProps) {
-	const additionalOptions = configuratorStore.additionalOption?.data.attributes.additional_options || []
+	// Всегда используем статичные опции
+	const additionalOptions = DEFAULT_OPTIONS
+
+	// Локальные изображения для опций
+	const getOptionImage = (optionName: string) => {
+		const imageMap: Record<string, string> = {
+			'initials': '/additional-options/image-1.png',
+			'present_box': '/additional-options/image-2.png',
+			'postcard': '/additional-options/image-3.png'
+		}
+		return imageMap[optionName] || '/additional-options/image-1.png'
+	}
 
 	const getOptionChoosen = (optionName: string) => {
 		switch (optionName) {
@@ -97,7 +130,7 @@ export const FinalStepAdditional = observer(function FinalStepAdditional({ class
 					
 					<div className={styles.additionalOptionImageInner}>
 						<img
-							src={`https://api.slavalarionov.store${option.option_image.data.attributes.url}`}
+							src={getOptionImage(option.option_name)}
 							alt={option.option_title}
 							className={styles.additionalOptionImage}
 						/>
