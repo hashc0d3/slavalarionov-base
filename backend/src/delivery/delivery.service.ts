@@ -506,6 +506,119 @@ export class DeliveryService {
     }
   }
 
+  async getCdekPvzListByPostalCode(postalCode: string): Promise<CdekPvz[]> {
+    if (!postalCode) {
+      return [];
+    }
+    const token = await this.getCdekToken();
+    
+    const requestParams = {
+      postal_code: postalCode,
+      type: 'ALL',
+    };
+
+    try {
+      this.logger.log('CDEK API request: getCdekPvzListByPostalCode', {
+        url: 'https://api.cdek.ru/v2/deliverypoints',
+        method: 'GET',
+        params: requestParams,
+      });
+
+      const response = await firstValueFrom(
+        this.http.get('https://api.cdek.ru/v2/deliverypoints', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+          },
+          params: requestParams,
+        }),
+      );
+
+      this.logger.log('CDEK API response: getCdekPvzListByPostalCode', {
+        status: response.status,
+        points_count: Array.isArray(response.data) ? response.data.length : 0,
+      });
+
+      const entities: any[] = response.data || [];
+
+      return entities.map((item) => ({
+        code: item.code,
+        name: item.name,
+        address: item.location?.address || item.address,
+        addressComment: item.address_comment,
+        type: item.type,
+        city: item.location?.city || item.city,
+        cityCode: item.location?.city_code || item.city_code,
+        workTime: item.work_time,
+        postalCode: item.location?.postal_code || item.postal_code,
+        phone: item.phone,
+        phoneDetails: item.phone_additional,
+        coordX: item.location?.longitude ?? item.longitude,
+        coordY: item.location?.latitude ?? item.latitude,
+      })) as CdekPvz[];
+    } catch (error: any) {
+      this.logger.error(`Failed to fetch CDEK PVZ list by postalCode: ${postalCode}`, error);
+      throw new InternalServerErrorException('Не удалось получить список ПВЗ CDEK по почтовому индексу');
+    }
+  }
+
+  async calculateCdekTariffsByPostalCode(postalCode: string): Promise<CdekCalculation[]> {
+    if (!postalCode) {
+      return [];
+    }
+
+    const token = await this.getCdekToken();
+
+    const payload = {
+      from_location: { code: 137 }, // Санкт-Петербург (отправка)
+      to_location: { postal_code: postalCode }, // Город назначения по почтовому индексу
+      packages: [
+        {
+          weight: 0.5,
+          length: 20,
+          width: 10,
+          height: 10,
+        },
+      ],
+      tariff_codes: [136, 137],
+    };
+
+    try {
+      this.logger.log('CDEK API request: calculateCdekTariffsByPostalCode', {
+        url: 'https://api.cdek.ru/v2/calculator/tarifflist',
+        method: 'POST',
+        body: payload,
+      });
+
+      const response = await firstValueFrom(
+        this.http.post('https://api.cdek.ru/v2/calculator/tarifflist', payload, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+            'Content-Type': 'application/json',
+          },
+        }),
+      );
+
+      this.logger.log('CDEK API response: calculateCdekTariffsByPostalCode', {
+        status: response.status,
+      });
+
+      const results: any[] = response.data?.tariff_codes || response.data?.result || [];
+
+      return results
+        .filter((item) => !item.errors || item.errors.length === 0)
+        .map((item) => ({
+          price: item.delivery_sum ?? item.total_sum ?? 0,
+          minDays: item.period_min ?? item.delivery_mode?.min_days ?? item.period ?? 0,
+          tariffId: item.tariff_code ?? item.tariff_id ?? 0,
+        })) as CdekCalculation[];
+    } catch (error: any) {
+      this.logger.error(`Failed to calculate CDEK tariffs by postalCode: ${postalCode}`, error);
+      throw new InternalServerErrorException('Не удалось рассчитать стоимость доставки CDEK по почтовому индексу');
+    }
+  }
+
   async proxyCdekWidget(
     action: string,
     method: string,

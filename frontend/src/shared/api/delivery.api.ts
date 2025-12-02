@@ -136,12 +136,34 @@ export const deliveryApi = {
 		return handleResponse<CdekPvz[]>(response)
 	},
 
+	// Новый метод: загрузка ПВЗ по postalCode (по аналогии с custom)
+	async getPvzListByPostalCode(postalCode: string): Promise<CdekPvz[]> {
+		if (!postalCode) return []
+		const response = await fetch(`${BASE_URL}/cdek/pvz-by-postal`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ postalCode })
+		})
+		return handleResponse<CdekPvz[]>(response)
+	},
+
 	async calculateTariffs(cityCode: number): Promise<CdekCalculation[]> {
 		if (!cityCode) return []
 		const response = await fetch(`${BASE_URL}/cdek/calc`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ cityCode })
+		})
+		return handleResponse<CdekCalculation[]>(response)
+	},
+
+	// Новый метод: расчет тарифов по postalCode (по аналогии с custom)
+	async calculateTariffsByPostalCode(postalCode: string): Promise<CdekCalculation[]> {
+		if (!postalCode) return []
+		const response = await fetch(`${BASE_URL}/cdek/calc-by-postal`, {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ postalCode })
 		})
 		return handleResponse<CdekCalculation[]>(response)
 	},

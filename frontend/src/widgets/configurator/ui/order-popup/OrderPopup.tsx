@@ -37,6 +37,7 @@ type FormState = {
 	city: string
 	cityCode: number | null
 	cityUuid: string | null
+	cityPostalCode: string | null // Добавили почтовый индекс (по аналогии с custom)
 	courierAddress: string
 	street: string
 	streetFiasId: string | null
@@ -122,6 +123,7 @@ const initialFormState: FormState = {
 	city: '', // Будет установлен после загрузки через DaData
 	cityCode: null, // Будет установлен после загрузки через DaData
 	cityUuid: null,
+	cityPostalCode: null, // Почтовый индекс города (по аналогии с custom)
 	courierAddress: '',
 	street: '',
 	streetFiasId: null,
@@ -686,17 +688,17 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 		setBuildingSuggestions([])
 	}
 
-	// Функция загрузки ПВЗ для города (вынесена отдельно для прямого вызова)
-	const loadPvzForCity = async (cityCode: number) => {
-		console.log('[Load PVZ] Starting to load PVZ for cityCode:', cityCode)
+	// Функция загрузки ПВЗ по postalCode (по аналогии с custom)
+	const loadPvzByPostalCode = async (postalCode: string) => {
+		console.log('[Load PVZ] Starting to load PVZ for postalCode:', postalCode)
 		setPvzList([])
 		setTariffs([])
 		setIsPvzLoading(true)
 		setIsTariffsLoading(true)
 		
 		try {
-			// Загружаем ПВЗ
-			const points = await deliveryApi.getPvzList(cityCode)
+			// Загружаем ПВЗ по postalCode (по аналогии с custom)
+			const points = await deliveryApi.getPvzListByPostalCode(postalCode)
 			console.log('[Load PVZ] PVZ loaded successfully:', points.length, 'points')
 			setPvzList(points)
 		} catch (error) {
@@ -707,8 +709,8 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 		}
 		
 		try {
-			// Загружаем тарифы
-			const items = await deliveryApi.calculateTariffs(cityCode)
+			// Загружаем тарифы по postalCode (по аналогии с custom)
+			const items = await deliveryApi.calculateTariffsByPostalCode(postalCode)
 			console.log('[Load PVZ] Tariffs loaded successfully:', items.length, 'tariffs')
 			setTariffs(items)
 		} catch (error) {
@@ -728,7 +730,9 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 		const postalCode = dadataCity.data?.postal_code || ''
 		const isDefaultCity = cityName.toLowerCase().includes('санкт') || cityName.toLowerCase().includes('петербург')
 		
-		// Сначала ищем cityCode через CDEK API СИНХРОННО (по аналогии с custom)
+		console.log('[City Select] City data:', { cityName, postalCode, isDefaultCity })
+		
+		// Сначала ищем cityCode через CDEK API (для совместимости, хотя будем использовать postalCode)
 		let finalCityCode: number | null = isDefaultCity ? DEFAULT_CITY_CODE : null
 		let finalCityUuid: string | null = isDefaultCity ? DEFAULT_CITY_UUID : null
 		
@@ -738,7 +742,6 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 			console.log('[City Select] CDEK cities found:', cdekCities)
 			
 			if (cdekCities && cdekCities.length > 0) {
-				// Ищем город в результатах CDEK
 				const cdekCity = cdekCities.find(c => 
 					c.cityName?.toLowerCase().includes(cityName.toLowerCase()) ||
 					cityName.toLowerCase().includes(c.cityName?.toLowerCase() || '')
@@ -748,21 +751,20 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 					console.log('[City Select] Found cityCode via CDEK API:', cdekCity.cityCode)
 					finalCityCode = cdekCity.cityCode
 					finalCityUuid = cdekCity.cityUuid || null
-				} else {
-					console.warn('[City Select] CityCode not found for city:', cityName)
 				}
 			}
 		} catch (error) {
 			console.error('[City Select] Failed to find cityCode for city:', cityName, error)
 		}
 		
-		// Обновляем форму
+		// Обновляем форму (по аналогии с custom - добавляем postalCode)
 		updateForm(
 			(prev) => ({
 				...prev,
 				city: cityName,
 				cityCode: finalCityCode,
 				cityUuid: finalCityUuid,
+				cityPostalCode: postalCode || null, // Почтовый индекс из DaData
 				pickupPoint: '',
 				deliveryPointData: null,
 				street: '',
@@ -775,11 +777,14 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 			['city', 'pickupPoint', 'street', 'building', 'courierAddress', 'mailAddress']
 		)
 		
-		console.log('[City Select] City updated, cityCode:', finalCityCode)
+		console.log('[City Select] City updated, postalCode:', postalCode, 'cityCode:', finalCityCode)
 		
-		// Загружаем ПВЗ напрямую, если cityCode найден
-		if (finalCityCode) {
-			await loadPvzForCity(finalCityCode)
+		// Загружаем ПВЗ по postalCode (по аналогии с custom), если он есть
+		if (postalCode) {
+			console.log('[City Select] Loading PVZ by postalCode:', postalCode)
+			await loadPvzByPostalCode(postalCode)
+		} else {
+			console.warn('[City Select] No postalCode, cannot load PVZ')
 		}
 		
 		// Обновляем локацию карты
@@ -1785,17 +1790,15 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 											cityCode: form.cityCode,
 											isPvzLoading,
 											pvzListLength: pvzList.length,
-											firstPvz: pvzList[0]?.name
+											firstPvz: pvzList[0]?.name,
+											showSkeleton: (isPvzLoading && pvzList.length === 0) || (!form.cityCode && form.city)
 										})
 										return null
 									})()}
 									{form.city ? (
-										(isPvzLoading && pvzList.length === 0) || (!form.cityCode && form.city) ? (
-											<div className={`${deliveryStyles.skeleton} ${deliveryStyles.skeletonSelect}`} />
-										) : (
-											<FormControl fullWidth error={!!errors.pickupPoint} size="small">
-												<InputLabel>Пункт выдачи *</InputLabel>
-												<Select
+										<FormControl fullWidth error={!!errors.pickupPoint} size="small">
+											<InputLabel>Пункт выдачи *</InputLabel>
+											<Select
 													value={form.deliveryPointData?.code || ''}
 													onChange={(event) => {
 														const pvzCode = event.target.value as string
@@ -1817,11 +1820,10 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 														<MenuItem key={pvz.code} value={pvz.code}>
 															{pvz.name}, {pvz.address}
 														</MenuItem>
-													))}
-												</Select>
-												{errors.pickupPoint && <FormHelperText>{errors.pickupPoint}</FormHelperText>}
-											</FormControl>
-										)
+												))}
+											</Select>
+											{errors.pickupPoint && <FormHelperText>{errors.pickupPoint}</FormHelperText>}
+										</FormControl>
 									) : (
 										<p className={deliveryStyles.helper}>Сначала выберите город.</p>
 									)}

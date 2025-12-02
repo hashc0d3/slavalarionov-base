@@ -44,6 +44,24 @@ export class DeliveryController {
     }
   }
 
+  @Post('cdek/pvz-by-postal')
+  @HttpCode(HttpStatus.OK)
+  async getCdekPvzByPostal(@Body('postalCode') postalCode: string) {
+    this.logger.log(`[CDEK PVZ by Postal] Request received: postalCode=${postalCode}`);
+    try {
+      const result = await this.deliveryService.getCdekPvzListByPostalCode(postalCode);
+      this.logger.log(`[CDEK PVZ by Postal] Success: found ${result.length} points`);
+      return result;
+    } catch (error: any) {
+      this.logger.error(`[CDEK PVZ by Postal] Failed: postalCode=${postalCode}`, {
+        error: error?.message,
+        stack: error?.stack,
+        status: error?.status,
+      });
+      throw error;
+    }
+  }
+
   @Post('cdek/calc')
   @HttpCode(HttpStatus.OK)
   async calculateCdek(@Body('cityCode') cityCode: number) {
@@ -54,6 +72,24 @@ export class DeliveryController {
       return result;
     } catch (error: any) {
       this.logger.error(`[CDEK Calc] Failed: cityCode=${cityCode}`, {
+        error: error?.message,
+        stack: error?.stack,
+        status: error?.status,
+      });
+      throw error;
+    }
+  }
+
+  @Post('cdek/calc-by-postal')
+  @HttpCode(HttpStatus.OK)
+  async calculateCdekByPostal(@Body('postalCode') postalCode: string) {
+    this.logger.log(`[CDEK Calc by Postal] Request received: postalCode=${postalCode}`);
+    try {
+      const result = await this.deliveryService.calculateCdekTariffsByPostalCode(postalCode);
+      this.logger.log(`[CDEK Calc by Postal] Success: found ${result.length} tariffs`);
+      return result;
+    } catch (error: any) {
+      this.logger.error(`[CDEK Calc by Postal] Failed: postalCode=${postalCode}`, {
         error: error?.message,
         stack: error?.stack,
         status: error?.status,
