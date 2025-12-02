@@ -1644,17 +1644,14 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 								console.log('[City Selector] State:', {
 									isCityLoading,
 									citySuggestionsLength: citySuggestions.length,
+									formCity: form.city,
 									showSkeleton: isCityLoading && citySuggestions.length <= 1
 								})
 								return null
 							})()}
-							{isCityLoading && citySuggestions.length <= 1 ? (
-								// Показываем скелетон, когда загружаются популярные города
-								<div className={`${deliveryStyles.skeleton} ${deliveryStyles.skeletonSelect}`} />
-							) : (
-								<FormControl fullWidth error={!!errors.city} size="small">
-									<InputLabel>Город *</InputLabel>
-									<Select
+							<FormControl fullWidth error={!!errors.city} size="small">
+								<InputLabel>Город *</InputLabel>
+								<Select
 										value={citySuggestions.length > 0 && form.city 
 											? citySuggestions.find(c => {
 												const cityName = c.data?.city || c.data?.settlement || c.value || ''
@@ -1690,11 +1687,10 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 													</MenuItem>
 												)
 											})
-										)}
-									</Select>
-									{errors.city && <FormHelperText>{errors.city}</FormHelperText>}
-								</FormControl>
-							)}
+									)}
+								</Select>
+								{errors.city && <FormHelperText>{errors.city}</FormHelperText>}
+							</FormControl>
 						</div>
 
 						<div className={deliveryStyles.sectionDivider} />
@@ -1783,6 +1779,16 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 							<>
 								<div className={deliveryStyles.sectionDivider} />
 								<div className={deliveryStyles.field}>
+									{(() => {
+										console.log('[PVZ Selector] State:', {
+											city: form.city,
+											cityCode: form.cityCode,
+											isPvzLoading,
+											pvzListLength: pvzList.length,
+											firstPvz: pvzList[0]?.name
+										})
+										return null
+									})()}
 									{form.city ? (
 										(isPvzLoading && pvzList.length === 0) || (!form.cityCode && form.city) ? (
 											<div className={`${deliveryStyles.skeleton} ${deliveryStyles.skeletonSelect}`} />
