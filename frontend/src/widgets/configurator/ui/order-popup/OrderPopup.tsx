@@ -619,10 +619,11 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 		filteredDeliveryOptions[0] ??
 		initialDeliveryOptions[0]
 
-	const productsPrice = configuratorStore.productsPrice || 0
-	const productsPriceWithDiscount = configuratorStore.productsPriceWithDiscount || productsPrice
-	const totalPrice = configuratorStore.totalPrice || productsPrice
-	const totalPriceWithDiscount = configuratorStore.totalPriceWithDiscount || productsPriceWithDiscount
+	// Считаем общую сумму всех товаров в корзине
+	const productsPrice = configuratorStore.cartItems.reduce((sum, item) => sum + (item.price || 0), 0)
+	const productsPriceWithDiscount = productsPrice // TODO: применить промокод ко всей корзине
+	const totalPrice = productsPrice + (form.deliveryValue ? (currentDeliveryOption?.price || 0) : 0)
+	const totalPriceWithDiscount = productsPriceWithDiscount + (form.deliveryValue ? (currentDeliveryOption?.price || 0) : 0)
 	const selectedStrapName = configuratorStore.steps.strap.strapName
 	const selectedLeatherColorTitle =
 		configuratorStore.selectedLeatherColor?.color_title ||
@@ -1398,47 +1399,24 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 				})
 			}
 
-			// Добавляем текущий товар только если он не является дубликатом товара в корзине
-			if (configuratorStore.steps.strap.isChoosen && configuratorStore.selectedStrapModel) {
-				const currentProduct = {
-					strapModel: configuratorStore.selectedStrapModel,
-					watchModel: configuratorStore.selectedWatchModel,
-					frameColor: configuratorStore.selectedFrameColor,
-					leatherColor: configuratorStore.selectedLeatherColor,
-					stitchingColor: configuratorStore.selectedStitchingColor,
-					edgeColor: configuratorStore.selectedEdgeColor,
-					buckleColor: configuratorStore.selectedBuckleColor,
-					adapterColor: configuratorStore.selectedAdapterColor,
-					buckleButterfly: configuratorStore.steps.strapDesign.buckleButterflyChoosen,
-					additionalOptions: configuratorStore.steps.final.additionalOptions,
-					quantity: configuratorStore.productAmount || 1
-				}
-
-				// Проверяем, нет ли уже такого же товара в корзине
-				const isDuplicate = configuratorStore.cartItems.some((cartItem) => {
-					return (
-						cartItem.strapModel?.attributes?.watch_strap?.strap_title === currentProduct.strapModel?.attributes?.watch_strap?.strap_title &&
-						cartItem.watchModel?.watch_model_name === currentProduct.watchModel?.watch_model_name &&
-						cartItem.frameColor?.color_name === currentProduct.frameColor?.color_name &&
-						cartItem.leatherColor?.color_title === currentProduct.leatherColor?.color_title &&
-						cartItem.stitchingColor?.color_title === currentProduct.stitchingColor?.color_title &&
-						cartItem.edgeColor?.color_title === currentProduct.edgeColor?.color_title &&
-						cartItem.buckleColor?.color_title === currentProduct.buckleColor?.color_title &&
-						cartItem.adapterColor?.color_title === currentProduct.adapterColor?.color_title &&
-						cartItem.buckleButterfly === currentProduct.buckleButterfly &&
-						cartItem.additionalOptions?.initials?.choosen === currentProduct.additionalOptions?.initials?.choosen &&
-						cartItem.additionalOptions?.initials?.text === currentProduct.additionalOptions?.initials?.text &&
-						cartItem.additionalOptions?.presentBox?.choosen === currentProduct.additionalOptions?.presentBox?.choosen &&
-						cartItem.additionalOptions?.postCard?.choosen === currentProduct.additionalOptions?.postCard?.choosen &&
-						cartItem.additionalOptions?.postCard?.text === currentProduct.additionalOptions?.postCard?.text
-					)
-				})
-
-				// Добавляем только если не дубликат
-				if (!isDuplicate) {
-					allItems.push(currentProduct)
-				}
+		// Добавляем текущий товар в список (дубликаты разрешены)
+		if (configuratorStore.steps.strap.isChoosen && configuratorStore.selectedStrapModel) {
+			const currentProduct = {
+				strapModel: configuratorStore.selectedStrapModel,
+				watchModel: configuratorStore.selectedWatchModel,
+				frameColor: configuratorStore.selectedFrameColor,
+				leatherColor: configuratorStore.selectedLeatherColor,
+				stitchingColor: configuratorStore.selectedStitchingColor,
+				edgeColor: configuratorStore.selectedEdgeColor,
+				buckleColor: configuratorStore.selectedBuckleColor,
+				adapterColor: configuratorStore.selectedAdapterColor,
+				buckleButterfly: configuratorStore.steps.strapDesign.buckleButterflyChoosen,
+				additionalOptions: configuratorStore.steps.final.additionalOptions,
+				quantity: configuratorStore.productAmount || 1
 			}
+
+			allItems.push(currentProduct)
+		}
 
 			if (!allItems.length) {
 				setErrors({ general: 'Добавьте хотя бы один товар в корзину' })
@@ -1583,56 +1561,92 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 					</button>
 				</header>
 
-				<section className={s.section}>
-					<h4 className={s.sectionTitle}>Ваш заказ</h4>
-					<div className={s.productCard}>
+			<section className={s.section}>
+				<h4 className={s.sectionTitle}>Ваш заказ ({configuratorStore.cartItems.length} {configuratorStore.cartItems.length === 1 ? 'товар' : 'товара'})</h4>
+				{configuratorStore.cartItems.map((item, index) => {
+					const itemStrapName = item.strapModel?.attributes?.watch_strap?.strap_title || 'Ремешок'
+					const itemLeatherColor = item.leatherColor?.color_title || ''
+					const itemStitchingColor = item.stitchingColor?.color_title || ''
+					const itemEdgeColor = item.edgeColor?.color_title || ''
+					const itemBuckleColor = item.buckleColor?.color_title || ''
+					const itemAdapterColor = item.adapterColor?.color_title || ''
+				const itemModelSize = item.watchModel?.watch_sizes?.find((s: any) => s.choosen)?.watch_size || ''
+				// Используем сохраненную цену из корзины (уже включает все опции и пряжку-бабочку)
+				const itemPrice = item.price || 0
+					
+				return (
+					<div key={item.id || index} className={s.productCard} style={{ marginBottom: '16px' }}>
 						<div className={s.productPreview}>
-							<StrapDesignPreview className={s.productPreviewCanvas} layout="flex" variant="final" />
+							{item.strapModel?.attributes?.watch_strap?.preview_image ? (
+								<img 
+									src={item.strapModel.attributes.watch_strap.preview_image} 
+									alt={itemStrapName}
+									className={s.productPreviewImage}
+									style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+								/>
+							) : (
+								<div style={{ 
+									width: '100%', 
+									height: '100%', 
+									display: 'flex', 
+									alignItems: 'center', 
+									justifyContent: 'center',
+									background: '#f5f5f5',
+									color: '#999'
+								}}>
+									Нет изображения
+								</div>
+							)}
 						</div>
 						<div className={s.productInfo}>
 							<p className={s.productName}>
-								{selectedStrapName} / {selectedLeatherColorTitle}
+								{itemStrapName} / {itemLeatherColor}
 							</p>
 							<ul className={s.productDetails}>
-								<li>Размер корпуса: {configuratorStore.steps.model.modelSize} мм</li>
-								<li>Цвет адаптеров: {selectedAdapterColorTitle}</li>
-								<li>Цвет пряжки: {selectedBuckleColorTitle}</li>
-								<li>Цвет строчки: {selectedStitchingColorTitle}</li>
-								<li>Цвет края: {selectedEdgeColorTitle}</li>
-								{configuratorStore.selectedStrapModel?.attributes.watch_strap.strap_params?.has_buckle_butterfly && (
+								<li>Размер корпуса: {itemModelSize} мм</li>
+								<li>Цвет адаптеров: {itemAdapterColor}</li>
+								<li>Цвет пряжки: {itemBuckleColor}</li>
+								<li>Цвет строчки: {itemStitchingColor}</li>
+								<li>Цвет края: {itemEdgeColor}</li>
+								{item.strapModel?.attributes?.watch_strap?.strap_params?.has_buckle_butterfly && (
 									<li>
 										Вид пряжки:{' '}
-										{configuratorStore.steps.strapDesign.buckleButterflyChoosen
-											? 'Пряжка бабочка'
-											: 'Стандартная'}
+										{item.buckleButterfly ? 'Пряжка бабочка' : 'Стандартная'}
 									</li>
 								)}
-							<li>
-								Инициалы:{' '}
-								{configuratorStore.steps.final.additionalOptions.initials.choosen
-									? `${configuratorStore.steps.final.additionalOptions.initials.text || 'А.А.'} (+390 ₽)`
-									: 'нет'}
-							</li>
-							<li>
-								Подарочная коробка:{' '}
-								{configuratorStore.steps.final.additionalOptions.presentBox.choosen
-									? 'да (+300 ₽)'
-									: 'нет'}
-							</li>
-							<li>
-								Открытка:{' '}
-								{configuratorStore.steps.final.additionalOptions.postCard.choosen
-									? `${configuratorStore.steps.final.additionalOptions.postCard.text || 'Надпись'} (+300 ₽)`
-									: 'нет'}
-							</li>
+								<li>
+									Инициалы:{' '}
+									{item.additionalOptions?.initials?.choosen
+										? `${item.additionalOptions?.initials?.text || 'А.А.'} (+390 ₽)`
+										: 'нет'}
+								</li>
+								<li>
+									Подарочная коробка:{' '}
+									{item.additionalOptions?.presentBox?.choosen ? 'да (+300 ₽)' : 'нет'}
+								</li>
+								<li>
+									Открытка:{' '}
+									{item.additionalOptions?.postCard?.choosen
+										? `${item.additionalOptions?.postCard?.text || 'Надпись'} (+300 ₽)`
+										: 'нет'}
+								</li>
 							</ul>
 						</div>
 						<div className={s.productTotals}>
-							<span className={s.productTotalsTitle}>Сумма</span>
-							<span className={s.productTotalsValue}>{formatCurrency(productsPrice)} ₽</span>
+							<span className={s.productTotalsTitle}>Цена</span>
+							<span className={s.productTotalsValue}>{formatCurrency(itemPrice)} ₽</span>
 						</div>
 					</div>
-				</section>
+				)
+				})}
+				
+				<div className={s.productCard}>
+					<div className={s.productTotals} style={{ width: '100%', justifyContent: 'flex-end' }}>
+						<span className={s.productTotalsTitle}>Итого за товары:</span>
+						<span className={s.productTotalsValue}>{formatCurrency(productsPrice)} ₽</span>
+					</div>
+				</div>
+			</section>
 
 				<section className={s.section}>
 					<h4 className={s.sectionTitle}>Контактные данные</h4>

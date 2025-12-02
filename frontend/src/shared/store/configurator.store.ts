@@ -341,30 +341,8 @@ export class ConfiguratorStore {
 		// Добавляем текущий товар в корзину перед открытием окна оформления (без сброса)
 		// Только если не редактируем существующий товар И есть выбранная модель
 		if (!this.editingCartItemId && this.selectedWatchModel && this.selectedStrapModel) {
-			// Проверяем, нет ли уже такого же товара в корзине
-			const isDuplicate = this.cartItems.some((cartItem) => {
-				return (
-					cartItem.strapModel?.attributes?.watch_strap?.strap_title === this.selectedStrapModel?.attributes?.watch_strap?.strap_title &&
-					cartItem.watchModel?.watch_model_name === this.selectedWatchModel?.watch_model_name &&
-					cartItem.frameColor?.color_name === this.selectedFrameColor?.color_name &&
-					cartItem.leatherColor?.color_title === this.selectedLeatherColor?.color_title &&
-					cartItem.stitchingColor?.color_title === this.selectedStitchingColor?.color_title &&
-					cartItem.edgeColor?.color_title === this.selectedEdgeColor?.color_title &&
-					cartItem.buckleColor?.color_title === this.selectedBuckleColor?.color_title &&
-					cartItem.adapterColor?.color_title === this.selectedAdapterColor?.color_title &&
-					cartItem.buckleButterfly === this.steps.strapDesign.buckleButterflyChoosen &&
-					cartItem.additionalOptions?.initials?.choosen === this.steps.final.additionalOptions?.initials?.choosen &&
-					cartItem.additionalOptions?.initials?.text === this.steps.final.additionalOptions?.initials?.text &&
-					cartItem.additionalOptions?.presentBox?.choosen === this.steps.final.additionalOptions?.presentBox?.choosen &&
-					cartItem.additionalOptions?.postCard?.choosen === this.steps.final.additionalOptions?.postCard?.choosen &&
-					cartItem.additionalOptions?.postCard?.text === this.steps.final.additionalOptions?.postCard?.text
-				)
-			})
-			
-			// Добавляем только если не дубликат
-			if (!isDuplicate) {
-				this.addCurrentToCart(false)
-			}
+			// Добавляем товар в корзину (дубликаты разрешены)
+			this.addCurrentToCart(false)
 		}
 		this.orderPopupVisible = true 
 	}
