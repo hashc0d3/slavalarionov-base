@@ -93,6 +93,8 @@
 	font-weight: 300;
 	line-height: 1;
 	color: #949494;
+	transition: all 0.3s ease;
+	user-select: none;
 }
 
 .additionalOptionImageInner {

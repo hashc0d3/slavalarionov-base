@@ -1,19 +1,105 @@
 'use client'
 
 import Link from 'next/link'
+import { useEffect, useRef } from 'react'
 import { VkIcon } from './icons/VkIcon'
 import { TelegramIcon } from './icons/TelegramIcon'
 import { WhatsappIcon } from './icons/WhatsappIcon'
 import { YandexDzenIcon } from './icons/YandexDzenIcon'
 import { PinterestIcon } from './icons/PinterestIcon'
 import styles from './Footer.module.css'
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
+
+// Регистрируем плагин ScrollTrigger
+if (typeof window !== 'undefined') {
+	gsap.registerPlugin(ScrollTrigger)
+}
 
 export const Footer = () => {
+	const footerRef = useRef<HTMLElement>(null)
+	const columnsRef = useRef<(HTMLDivElement | null)[]>([])
+	const bottomRef = useRef<HTMLDivElement>(null)
+
+	useEffect(() => {
+		if (!footerRef.current) return
+
+		// Анимация для footer при скролле
+		gsap.fromTo(
+			footerRef.current,
+			{
+				opacity: 0,
+				y: 50
+			},
+			{
+				opacity: 1,
+				y: 0,
+				duration: 0.8,
+				ease: 'power2.out',
+				scrollTrigger: {
+					trigger: footerRef.current,
+					start: 'top bottom-=100',
+					toggleActions: 'play none none reverse'
+				}
+			}
+		)
+
+		// Анимация для колонок
+		const columns = columnsRef.current.filter(Boolean)
+		gsap.fromTo(
+			columns,
+			{
+				opacity: 0,
+				y: 30
+			},
+			{
+				opacity: 1,
+				y: 0,
+				duration: 0.6,
+				stagger: 0.15,
+				ease: 'power2.out',
+				scrollTrigger: {
+					trigger: footerRef.current,
+					start: 'top bottom-=50',
+					toggleActions: 'play none none reverse'
+				}
+			}
+		)
+
+		// Анимация для нижней части
+		if (bottomRef.current) {
+			gsap.fromTo(
+				bottomRef.current,
+				{
+					opacity: 0,
+					y: 20
+				},
+				{
+					opacity: 1,
+					y: 0,
+					duration: 0.6,
+					delay: 0.4,
+					ease: 'power2.out',
+					scrollTrigger: {
+						trigger: bottomRef.current,
+						start: 'top bottom',
+						toggleActions: 'play none none reverse'
+					}
+				}
+			)
+		}
+
+		// Cleanup
+		return () => {
+			ScrollTrigger.getAll().forEach(trigger => trigger.kill())
+		}
+	}, [])
+
 	return (
-		<footer className={styles.footer}>
+		<footer ref={footerRef} className={styles.footer}>
 			<div className={`${styles.footerContainer} container`}>
 				<div className={styles.footerMain}>
-					<div className={`${styles.footerColumn} ${styles.footerOtherMarkets}`}>
+					<div ref={(el) => { columnsRef.current[0] = el }} className={`${styles.footerColumn} ${styles.footerOtherMarkets}`}>
 						<h4 className={styles.footerColumnTitle}>Покупайте нас везде!</h4>
 						<div className={styles.footerOtherMarketsLinks}>
 							<a
@@ -59,7 +145,7 @@ export const Footer = () => {
 							подробнее об этом
 						</a>
 					</div>
-					<div className={`${styles.footerColumn} ${styles.footerPayment}`}>
+					<div ref={(el) => { columnsRef.current[1] = el }} className={`${styles.footerColumn} ${styles.footerPayment}`}>
 						<h4 className={styles.footerColumnTitle}>Оплата на сайте</h4>
 						<div className={styles.footerPaymentTypes}>
 							<div className={styles.footerPaymentTypesItem}>
@@ -94,7 +180,7 @@ export const Footer = () => {
 							</p>
 						</div>
 					</div>
-					<div className={`${styles.footerColumn} ${styles.footerContact}`}>
+					<div ref={(el) => { columnsRef.current[2] = el }} className={`${styles.footerColumn} ${styles.footerContact}`}>
 						<h4 className={`${styles.footerColumnTitle} ${styles.footerContactTitle}`}>
 							Пишите нам в чат на сайте или тут:
 						</h4>
@@ -172,7 +258,7 @@ export const Footer = () => {
 						</a>
 					</div>
 				</div>
-				<div className={styles.footerBottom}>
+				<div ref={bottomRef} className={styles.footerBottom}>
 					<p className={styles.footerOwner}>
 						©2024 ИП Ларионов Вячеслав Владимирович
 					</p>

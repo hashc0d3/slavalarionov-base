@@ -8,11 +8,13 @@ import { StrapModelStep } from './StrapModelStep'
 import { StrapDesignStep } from './StrapDesignStep'
 import { FinalStep } from './FinalStep'
 import { useEffect, useRef, useState } from 'react'
+import gsap from 'gsap'
 
 export const ConfiguratorSteps = observer(function ConfiguratorSteps() {
 	const step = configuratorStore.currentStepNum
 	const prevStepRef = useRef(step)
 	const [animClass, setAnimClass] = useState(styles.fadeRightStatic)
+	const watchModelCardsRef = useRef<(HTMLDivElement | null)[]>([])
 
 	useEffect(() => {
 		const prev = prevStepRef.current
@@ -20,6 +22,31 @@ export const ConfiguratorSteps = observer(function ConfiguratorSteps() {
 		setAnimClass(prev > next ? styles.fadeLeftStatic : styles.fadeRightStatic)
 		prevStepRef.current = next
 	}, [configuratorStore.currentStepNum])
+
+	// Анимация для карточек моделей часов на первом шаге
+	useEffect(() => {
+		if (step === 1) {
+			const cards = watchModelCardsRef.current.filter(Boolean)
+			
+			// Начальное состояние
+			gsap.set(cards, { 
+				opacity: 0, 
+				y: 40,
+				scale: 0.9
+			})
+
+			// Анимация появления
+			gsap.to(cards, {
+				opacity: 1,
+				y: 0,
+				scale: 1,
+				duration: 0.7,
+				stagger: 0.12,
+				ease: 'power3.out',
+				delay: 0.1
+			})
+		}
+	}, [step])
 
 	return (
 		<div className={styles.configuratorSteps}>
@@ -29,6 +56,7 @@ export const ConfiguratorSteps = observer(function ConfiguratorSteps() {
 						{configuratorStore.watchModels.map((model, idx) => (
 							<div
 								key={model.watch_model_name}
+								ref={(el) => { watchModelCardsRef.current[idx] = el }}
 								className={[styles.stepItem, model.choosen ? styles.choosen : ''].join(' ')}
 								onClick={() => !model.choosen && configuratorStore.chooseWatchModel(idx)}
 							>

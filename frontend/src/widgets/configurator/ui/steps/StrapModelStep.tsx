@@ -3,16 +3,43 @@
 import styles from './StrapModelStep.module.css'
 import { observer } from 'mobx-react-lite'
 import { configuratorStore } from '@/shared/store/configurator.store'
+import { useEffect, useRef } from 'react'
+import gsap from 'gsap'
 
 export const StrapModelStep = observer(function StrapModelStep() {
 	const isUltra = configuratorStore.selectedWatchModel?.model_name.toLowerCase().includes('ultra')
+	const strapCardsRef = useRef<(HTMLDivElement | null)[]>([])
+
+	// Анимация для карточек ремешков
+	useEffect(() => {
+		const cards = strapCardsRef.current.filter(Boolean)
+		
+		// Начальное состояние
+		gsap.set(cards, { 
+			opacity: 0, 
+			y: 40,
+			scale: 0.9
+		})
+
+		// Анимация появления
+		gsap.to(cards, {
+			opacity: 1,
+			y: 0,
+			scale: 1,
+			duration: 0.7,
+			stagger: 0.12,
+			ease: 'power3.out',
+			delay: 0.1
+		})
+	}, [])
 	
 	return (
 		<div className={styles.step}>
 			<div className={styles.stepWrapper}>
-				{configuratorStore.availableWatchStraps.map((strap) => (
+				{configuratorStore.availableWatchStraps.map((strap, idx) => (
 					<div
 						key={strap.attributes.watch_strap.id}
+						ref={(el) => { strapCardsRef.current[idx] = el }}
 						className={[styles.item, strap.choosen ? styles.choosen : ''].join(' ')}
 						onClick={() => configuratorStore.chooseStrapModel(strap.attributes.watch_strap.id)}
 					>

@@ -1,8 +1,10 @@
 "use client"
 
 import { observer } from 'mobx-react-lite'
+import { useEffect, useRef } from 'react'
 import { configuratorStore } from '@/shared/store/configurator.store'
 import styles from './FinalStepAdditional.module.css'
+import gsap from 'gsap'
 
 interface FinalStepAdditionalProps {
 	className?: string
@@ -33,6 +35,30 @@ const DEFAULT_OPTIONS = [
 export const FinalStepAdditional = observer(function FinalStepAdditional({ className }: FinalStepAdditionalProps) {
 	// Всегда используем статичные опции
 	const additionalOptions = DEFAULT_OPTIONS
+	const imagesRef = useRef<(HTMLDivElement | null)[]>([])
+
+	// Анимация при монтировании компонента
+	useEffect(() => {
+		const images = imagesRef.current.filter(Boolean)
+		
+		// Начальное состояние - изображения невидимы
+		gsap.set(images, { 
+			opacity: 0, 
+			y: 30,
+			scale: 0.95 
+		})
+
+		// Анимация появления с задержкой для каждого изображения
+		gsap.to(images, {
+			opacity: 1,
+			y: 0,
+			scale: 1,
+			duration: 0.6,
+			stagger: 0.15,
+			ease: 'power2.out',
+			delay: 0.2
+		})
+	}, [])
 
 	// Локальные изображения для опций
 	const getOptionImage = (optionName: string) => {
@@ -60,13 +86,31 @@ export const FinalStepAdditional = observer(function FinalStepAdditional({ class
 	const handleOptionClick = (optionId: string) => {
 		switch (optionId) {
 			case 'initials':
-				configuratorStore.toggleInitials(!configuratorStore.steps.final.additionalOptions.initials.choosen)
+				const initialsChosen = configuratorStore.steps.final.additionalOptions.initials.choosen
+				const initialsText = configuratorStore.steps.final.additionalOptions.initials.text
+				// Если опция выбрана И есть текст - очищаем текст и снимаем выбор
+				if (initialsChosen && initialsText) {
+					configuratorStore.setInitialsText('')
+					configuratorStore.toggleInitials(false)
+				} else {
+					// Если опция не выбрана или нет текста - включаем
+					configuratorStore.toggleInitials(true)
+				}
 				break
 			case 'present_box':
 				configuratorStore.togglePresentBox(!configuratorStore.steps.final.additionalOptions.presentBox.choosen)
 				break
 			case 'postcard':
-				configuratorStore.togglePostCard(!configuratorStore.steps.final.additionalOptions.postCard.choosen)
+				const postCardChosen = configuratorStore.steps.final.additionalOptions.postCard.choosen
+				const postCardText = configuratorStore.steps.final.additionalOptions.postCard.text
+				// Если опция выбрана И есть текст - очищаем текст и снимаем выбор
+				if (postCardChosen && postCardText) {
+					configuratorStore.setPostCardText('')
+					configuratorStore.togglePostCard(false)
+				} else {
+					// Если опция не выбрана или нет текста - включаем
+					configuratorStore.togglePostCard(true)
+				}
 				break
 		}
 	}
@@ -75,17 +119,46 @@ export const FinalStepAdditional = observer(function FinalStepAdditional({ class
 		switch (optionId) {
 			case 'initials':
 				configuratorStore.setInitialsText(value)
+				// Автоматически активируем опцию при вводе текста
+				if (value && !configuratorStore.steps.final.additionalOptions.initials.choosen) {
+					configuratorStore.toggleInitials(true)
+				}
+				// Деактивируем опцию если текст пустой
+				if (!value && configuratorStore.steps.final.additionalOptions.initials.choosen) {
+					configuratorStore.toggleInitials(false)
+				}
 				break
 			case 'postcard':
 				configuratorStore.setPostCardText(value)
+				// Автоматически активируем опцию при вводе текста
+				if (value && !configuratorStore.steps.final.additionalOptions.postCard.choosen) {
+					configuratorStore.togglePostCard(true)
+				}
+				// Деактивируем опцию если текст пустой
+				if (!value && configuratorStore.steps.final.additionalOptions.postCard.choosen) {
+					configuratorStore.togglePostCard(false)
+				}
 				break
+		}
+	}
+
+	// Проверяем, есть ли текст в опции
+	const hasText = (optionName: string) => {
+		switch (optionName) {
+			case 'initials':
+				return !!configuratorStore.steps.final.additionalOptions.initials.text
+			case 'postcard':
+				return !!configuratorStore.steps.final.additionalOptions.postCard.text
+			default:
+				return false
 		}
 	}
 
 	return (
 		<div className={`${styles.additional} ${className || ''}`}>
-			{additionalOptions.map((option: any) => {
+			{additionalOptions.map((option: any, index: number) => {
 				const isChoosen = getOptionChoosen(option.option_name)
+				const hasValue = hasText(option.option_name) || (option.option_name === 'present_box' && isChoosen)
 				return (
 				<div
 					key={option.option_name}
@@ -125,17 +198,22 @@ export const FinalStepAdditional = observer(function FinalStepAdditional({ class
 							/>
 						)}
 						
-						<div className={styles.additionalOptionPlus}>+</div>
+						<div className={styles.additionalOptionPlus}>
+							{hasValue ? '×' : '+'}
+						</div>
 					</div>
-					
-					<div className={styles.additionalOptionImageInner}>
-						<img
-							src={getOptionImage(option.option_name)}
-							alt={option.option_title}
-							className={styles.additionalOptionImage}
-						/>
-					</div>
+				
+				<div 
+					ref={(el) => { imagesRef.current[index] = el }}
+					className={styles.additionalOptionImageInner}
+				>
+					<img
+						src={getOptionImage(option.option_name)}
+						alt={option.option_title}
+						className={styles.additionalOptionImage}
+					/>
 				</div>
+			</div>
 				)
 			})}
 		</div>
