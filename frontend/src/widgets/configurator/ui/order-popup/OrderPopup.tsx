@@ -1673,8 +1673,10 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 											: (citySuggestions.length > 0 ? citySuggestions[0].value : '')
 										}
 										onChange={(event) => {
-											const selectedValue = event.target.value
+											console.log('[City Select] MUI Select changed:', event.target.value)
+											const selectedValue = event.target.value as string
 											const city = citySuggestions.find((c) => c.value === selectedValue)
+											console.log('[City Select] Found city:', city)
 											if (city) {
 												handleCitySelectFromDadata(city)
 											}
