@@ -1398,8 +1398,9 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 				})
 			}
 
+			// Добавляем текущий товар только если он не является дубликатом товара в корзине
 			if (configuratorStore.steps.strap.isChoosen && configuratorStore.selectedStrapModel) {
-				allItems.push({
+				const currentProduct = {
 					strapModel: configuratorStore.selectedStrapModel,
 					watchModel: configuratorStore.selectedWatchModel,
 					frameColor: configuratorStore.selectedFrameColor,
@@ -1411,7 +1412,32 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 					buckleButterfly: configuratorStore.steps.strapDesign.buckleButterflyChoosen,
 					additionalOptions: configuratorStore.steps.final.additionalOptions,
 					quantity: configuratorStore.productAmount || 1
+				}
+
+				// Проверяем, нет ли уже такого же товара в корзине
+				const isDuplicate = configuratorStore.cartItems.some((cartItem) => {
+					return (
+						cartItem.strapModel?.attributes?.watch_strap?.strap_title === currentProduct.strapModel?.attributes?.watch_strap?.strap_title &&
+						cartItem.watchModel?.watch_model_name === currentProduct.watchModel?.watch_model_name &&
+						cartItem.frameColor?.color_name === currentProduct.frameColor?.color_name &&
+						cartItem.leatherColor?.color_title === currentProduct.leatherColor?.color_title &&
+						cartItem.stitchingColor?.color_title === currentProduct.stitchingColor?.color_title &&
+						cartItem.edgeColor?.color_title === currentProduct.edgeColor?.color_title &&
+						cartItem.buckleColor?.color_title === currentProduct.buckleColor?.color_title &&
+						cartItem.adapterColor?.color_title === currentProduct.adapterColor?.color_title &&
+						cartItem.buckleButterfly === currentProduct.buckleButterfly &&
+						cartItem.additionalOptions?.initials?.choosen === currentProduct.additionalOptions?.initials?.choosen &&
+						cartItem.additionalOptions?.initials?.text === currentProduct.additionalOptions?.initials?.text &&
+						cartItem.additionalOptions?.presentBox?.choosen === currentProduct.additionalOptions?.presentBox?.choosen &&
+						cartItem.additionalOptions?.postCard?.choosen === currentProduct.additionalOptions?.postCard?.choosen &&
+						cartItem.additionalOptions?.postCard?.text === currentProduct.additionalOptions?.postCard?.text
+					)
 				})
+
+				// Добавляем только если не дубликат
+				if (!isDuplicate) {
+					allItems.push(currentProduct)
+				}
 			}
 
 			if (!allItems.length) {
@@ -1550,12 +1576,11 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 	return (
 		<div className={s.overlay} role="dialog" aria-modal="true">
 			<div className={s.container}>
-				<button className={s.close} onClick={onClose} aria-label="Закрыть попап" disabled={isLoading}>
-					<span aria-hidden="true">×</span>
-				</button>
-
 				<header className={s.header}>
 					<h3 className={s.title}>Оформление заказа</h3>
+					<button className={s.close} onClick={onClose} aria-label="Закрыть попап" disabled={isLoading}>
+						<span aria-hidden="true">×</span>
+					</button>
 				</header>
 
 				<section className={s.section}>

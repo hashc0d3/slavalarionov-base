@@ -45,6 +45,16 @@
 	.headerNavInner {
 		display: none;
 	}
+	
+	.headerLogo {
+		margin-right: 0;
+	}
+}
+
+@media (max-width: 1000px) {
+	.headerNavInner {
+		display: none;
+	}
 }
 
 

@@ -68,15 +68,15 @@
 }
 
 .baseImage {
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%, -50%);
 	width: 85%;
 	height: 85%;
+	margin: auto;
 	object-fit: contain;
 	display: block;
-	margin: auto;
-	position: absolute;
-	top: 50%;
-	left: 50%;
-	transform: translate(-50%, -50%);
 }
 
 .overlayImage {
@@ -136,4 +136,3 @@
 		max-width: 100%;
 	}
 }
-

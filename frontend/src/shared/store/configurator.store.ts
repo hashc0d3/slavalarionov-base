@@ -341,7 +341,30 @@ export class ConfiguratorStore {
 		// Добавляем текущий товар в корзину перед открытием окна оформления (без сброса)
 		// Только если не редактируем существующий товар И есть выбранная модель
 		if (!this.editingCartItemId && this.selectedWatchModel && this.selectedStrapModel) {
-			this.addCurrentToCart(false)
+			// Проверяем, нет ли уже такого же товара в корзине
+			const isDuplicate = this.cartItems.some((cartItem) => {
+				return (
+					cartItem.strapModel?.attributes?.watch_strap?.strap_title === this.selectedStrapModel?.attributes?.watch_strap?.strap_title &&
+					cartItem.watchModel?.watch_model_name === this.selectedWatchModel?.watch_model_name &&
+					cartItem.frameColor?.color_name === this.selectedFrameColor?.color_name &&
+					cartItem.leatherColor?.color_title === this.selectedLeatherColor?.color_title &&
+					cartItem.stitchingColor?.color_title === this.selectedStitchingColor?.color_title &&
+					cartItem.edgeColor?.color_title === this.selectedEdgeColor?.color_title &&
+					cartItem.buckleColor?.color_title === this.selectedBuckleColor?.color_title &&
+					cartItem.adapterColor?.color_title === this.selectedAdapterColor?.color_title &&
+					cartItem.buckleButterfly === this.steps.strapDesign.buckleButterflyChoosen &&
+					cartItem.additionalOptions?.initials?.choosen === this.steps.final.additionalOptions?.initials?.choosen &&
+					cartItem.additionalOptions?.initials?.text === this.steps.final.additionalOptions?.initials?.text &&
+					cartItem.additionalOptions?.presentBox?.choosen === this.steps.final.additionalOptions?.presentBox?.choosen &&
+					cartItem.additionalOptions?.postCard?.choosen === this.steps.final.additionalOptions?.postCard?.choosen &&
+					cartItem.additionalOptions?.postCard?.text === this.steps.final.additionalOptions?.postCard?.text
+				)
+			})
+			
+			// Добавляем только если не дубликат
+			if (!isDuplicate) {
+				this.addCurrentToCart(false)
+			}
 		}
 		this.orderPopupVisible = true 
 	}
@@ -952,6 +975,12 @@ export class ConfiguratorStore {
 		try {
 			const { configuratorApi } = await import('../api/configurator.api')
 			const settings = await configuratorApi.getSettings()
+			
+			// Загружаем примерную дату готовности
+			if (settings.estimated_date) {
+				this.closestReadyDate = settings.estimated_date
+			}
+			
 			this.additionalOption = {
 				data: {
 					attributes: {
@@ -1234,14 +1263,19 @@ export class ConfiguratorStore {
 			const { promocodeApi } = await import('../api/promocode.api')
 			const promoCodesBackup = await promocodeApi.backup()
 			
+			// Получаем общие настройки
+			const { configuratorApi } = await import('../api/configurator.api')
+			const settings = await configuratorApi.getSettings()
+			
 			// Создаем полный бэкап
 			const fullBackup = {
 				timestamp: new Date().toISOString(),
-				version: '1.1',
+				version: '1.2',
 				models: modelsBackup,
 				straps: strapsBackup,
 				promoCodes: promoCodesBackup,
-				description: 'Полный бэкап всех данных админки (модели, ремешки, промокоды)'
+				settings: settings,
+				description: 'Полный бэкап всех данных админки (модели, ремешки, промокоды, настройки)'
 			}
 			
 			// Скачиваем как JSON файл
@@ -1288,21 +1322,22 @@ export class ConfiguratorStore {
 			}
 			
 			// Проверяем версию бэкапа
-			if (backupData.version && backupData.version !== '1.0' && backupData.version !== '1.1') {
+			if (backupData.version && backupData.version !== '1.0' && backupData.version !== '1.1' && backupData.version !== '1.2') {
 				console.warn('Версия бэкапа отличается от текущей:', backupData.version)
 			}
 			
-			console.log('Начинаем восстановление из бэкапа:', backupData.timestamp)
-			
-			// Восстанавливаем модели часов
-			const { watchModelsApi } = await import('../api/watchModels.api')
-			await watchModelsApi.restore(backupData.models)
-			console.log('Модели часов восстановлены')
-			
-			// Восстанавливаем ремешки
-			const { watchStrapsApi } = await import('../api/watchStraps.api')
-			await watchStrapsApi.restore(backupData.straps)
-			console.log('Ремешки восстановлены')
+		console.log('Начинаем восстановление из бэкапа:', backupData.timestamp)
+		
+		// ВАЖНО: Сначала восстанавливаем ремешки, потом модели
+		// (т.к. модели содержат связи с ремешками по ID)
+		const { watchStrapsApi } = await import('../api/watchStraps.api')
+		await watchStrapsApi.restore(backupData.straps.data || backupData.straps)
+		console.log('Ремешки восстановлены')
+		
+		// Восстанавливаем модели часов
+		const { watchModelsApi } = await import('../api/watchModels.api')
+		await watchModelsApi.restore(backupData.models.data || backupData.models)
+		console.log('Модели часов восстановлены')
 			
 			// Восстанавливаем промокоды (если есть в бэкапе)
 			if (backupData.promoCodes?.data) {
@@ -1311,9 +1346,21 @@ export class ConfiguratorStore {
 				console.log('Промокоды восстановлены')
 			}
 			
+		// Восстанавливаем общие настройки (если есть в бэкапе)
+		if (backupData.settings) {
+			const { configuratorApi } = await import('../api/configurator.api')
+			await configuratorApi.updateSettings({ 
+				title: backupData.settings.title,
+				description: backupData.settings.description,
+				estimated_date: backupData.settings.estimated_date 
+			})
+			console.log('Общие настройки восстановлены')
+		}
+			
 			// Перезагружаем все данные
 			await this.loadWatchModelsFromAPI()
 			await this.loadWatchStrapsFromAPI()
+			await this.loadConfiguratorSettings()
 			
 			console.log('Все данные успешно восстановлены')
 			

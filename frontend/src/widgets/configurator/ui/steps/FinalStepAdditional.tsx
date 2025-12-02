@@ -69,6 +69,7 @@ export const FinalStepAdditional = observer(function FinalStepAdditional({ class
 		}
 		return imageMap[optionName] || '/additional-options/image-1.png'
 	}
+	
 
 	const getOptionChoosen = (optionName: string) => {
 		switch (optionName) {

@@ -5,6 +5,7 @@ import { Tabs, Container, Title, Group, Button, Stack } from '@mantine/core'
 import { AdminModelsMantine } from '@/widgets/admin/ui/AdminModelsMantine'
 import { AdminStrapsMantine } from '@/widgets/admin/ui/AdminStrapsMantine'
 import { AdminPromoCodesMantine } from '@/widgets/admin/ui/AdminPromoCodesMantine'
+import { AdminSettingsMantine } from '@/widgets/admin/ui/AdminSettingsMantine'
 import { configuratorStore } from '@/shared/store/configurator.store'
 import { notifications } from '@mantine/notifications'
 import { useState } from 'react'
@@ -112,6 +113,9 @@ export const AdminPanelMantine = observer(() => {
             <Tabs.Tab value="promocodes">
               🎟️ Промокоды
             </Tabs.Tab>
+            <Tabs.Tab value="settings">
+              ⚙️ Общие параметры
+            </Tabs.Tab>
           </Tabs.List>
 
           <Tabs.Panel value="models" pt="md">
@@ -124,6 +128,10 @@ export const AdminPanelMantine = observer(() => {
 
           <Tabs.Panel value="promocodes" pt="md">
             <AdminPromoCodesMantine />
+          </Tabs.Panel>
+
+          <Tabs.Panel value="settings" pt="md">
+            <AdminSettingsMantine />
           </Tabs.Panel>
         </Tabs>
       </Stack>

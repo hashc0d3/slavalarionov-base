@@ -13,6 +13,7 @@ export interface ConfiguratorSettingsResponse {
 	id: number | null
 	title: string
 	description: string
+	estimated_date?: string | null
 	options: ConfiguratorOption[]
 }
 
@@ -21,6 +22,18 @@ export const configuratorApi = {
 		const response = await fetch(API_URL)
 		if (!response.ok) {
 			throw new Error('Failed to fetch configurator settings')
+		}
+		return response.json()
+	},
+
+	async updateSettings(data: Partial<ConfiguratorSettingsResponse>): Promise<ConfiguratorSettingsResponse> {
+		const response = await fetch(API_URL, {
+			method: 'PATCH',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(data)
+		})
+		if (!response.ok) {
+			throw new Error('Failed to update configurator settings')
 		}
 		return response.json()
 	}
