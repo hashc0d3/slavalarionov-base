@@ -226,33 +226,33 @@ export const ConfiguratorCart = observer(function ConfiguratorCart() {
 											</div>
 										)}
 										
-										{/* Дополнительные опции */}
-										{item.additionalOptions?.initials?.choosen && (
-											<div className={styles.cartItemDetail}>
-												<span className={styles.cartItemDetailLabel}>Инициалы:</span>
-												<span className={styles.cartItemDetailValue}>
-													{item.additionalOptions.initials.text || 'А.А.'} (+ 500₽)
-												</span>
-											</div>
-										)}
-										
-										{item.additionalOptions?.presentBox?.choosen && (
-											<div className={styles.cartItemDetail}>
-												<span className={styles.cartItemDetailLabel}>Подарочная коробка:</span>
-												<span className={styles.cartItemDetailValue}>
-													+ 700₽
-												</span>
-											</div>
-										)}
-										
-										{item.additionalOptions?.postCard?.choosen && (
-											<div className={styles.cartItemDetail}>
-												<span className={styles.cartItemDetailLabel}>Подарочная открытка:</span>
-												<span className={styles.cartItemDetailValue}>
-													{item.additionalOptions.postCard.text || 'Надпись'} (+ 300₽)
-												</span>
-											</div>
-										)}
+									{/* Дополнительные опции */}
+									{item.additionalOptions?.initials?.choosen && (
+										<div className={styles.cartItemDetail}>
+											<span className={styles.cartItemDetailLabel}>Инициалы:</span>
+											<span className={styles.cartItemDetailValue}>
+												{item.additionalOptions.initials.text || 'А.А.'} (+390₽)
+											</span>
+										</div>
+									)}
+									
+									{item.additionalOptions?.presentBox?.choosen && (
+										<div className={styles.cartItemDetail}>
+											<span className={styles.cartItemDetailLabel}>Подарочная коробка:</span>
+											<span className={styles.cartItemDetailValue}>
+												да (+300₽)
+											</span>
+										</div>
+									)}
+									
+									{item.additionalOptions?.postCard?.choosen && (
+										<div className={styles.cartItemDetail}>
+											<span className={styles.cartItemDetailLabel}>Подарочная открытка:</span>
+											<span className={styles.cartItemDetailValue}>
+												{item.additionalOptions.postCard.text || 'Надпись'} (+300₽)
+											</span>
+										</div>
+									)}
 										
 										<div className={styles.cartItemDetail}>
 											<span className={styles.cartItemDetailLabel}>Цена:</span>
@@ -403,33 +403,33 @@ export const ConfiguratorCart = observer(function ConfiguratorCart() {
 											</div>
 										)}
 										
-										{/* Дополнительные опции */}
-										{additionalOptions.initials.choosen && (
-											<div className={styles.cartItemDetail}>
-												<span className={styles.cartItemDetailLabel}>Инициалы:</span>
-												<span className={styles.cartItemDetailValue}>
-													{additionalOptions.initials.text || 'А.А.'} (+ 500₽)
-												</span>
-											</div>
-										)}
-										
-										{additionalOptions.presentBox.choosen && (
-											<div className={styles.cartItemDetail}>
-												<span className={styles.cartItemDetailLabel}>Подарочная коробка:</span>
-												<span className={styles.cartItemDetailValue}>
-													+ 700₽
-												</span>
-											</div>
-										)}
-										
-										{additionalOptions.postCard.choosen && (
-											<div className={styles.cartItemDetail}>
-												<span className={styles.cartItemDetailLabel}>Подарочная открытка:</span>
-												<span className={styles.cartItemDetailValue}>
-													{additionalOptions.postCard.text || 'Надпись'} (+ 300₽)
-												</span>
-											</div>
-										)}
+									{/* Дополнительные опции */}
+									{additionalOptions.initials.choosen && (
+										<div className={styles.cartItemDetail}>
+											<span className={styles.cartItemDetailLabel}>Инициалы:</span>
+											<span className={styles.cartItemDetailValue}>
+												{additionalOptions.initials.text || 'А.А.'} (+390₽)
+											</span>
+										</div>
+									)}
+									
+									{additionalOptions.presentBox.choosen && (
+										<div className={styles.cartItemDetail}>
+											<span className={styles.cartItemDetailLabel}>Подарочная коробка:</span>
+											<span className={styles.cartItemDetailValue}>
+												да (+300₽)
+											</span>
+										</div>
+									)}
+									
+									{additionalOptions.postCard.choosen && (
+										<div className={styles.cartItemDetail}>
+											<span className={styles.cartItemDetailLabel}>Подарочная открытка:</span>
+											<span className={styles.cartItemDetailValue}>
+												{additionalOptions.postCard.text || 'Надпись'} (+300₽)
+											</span>
+										</div>
+									)}
 										
 										{/* Количество */}
 										<div className={styles.cartItemDetail}>

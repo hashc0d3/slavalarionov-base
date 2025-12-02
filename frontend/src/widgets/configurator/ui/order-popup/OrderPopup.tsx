@@ -1594,24 +1594,24 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 											: 'Стандартная'}
 									</li>
 								)}
-								<li>
-									Инициалы:{' '}
-									{configuratorStore.steps.final.additionalOptions.initials.choosen
-										? `да (+${configuratorStore.steps.final.additionalOptions.initials.price} ₽)`
-										: 'нет'}
-								</li>
-								<li>
-									Подарочная коробка:{' '}
-									{configuratorStore.steps.final.additionalOptions.presentBox.choosen
-										? `да (+${configuratorStore.steps.final.additionalOptions.presentBox.price} ₽)`
-										: 'нет'}
-								</li>
-								<li>
-									Открытка:{' '}
-									{configuratorStore.steps.final.additionalOptions.postCard.choosen
-										? `да (+${configuratorStore.steps.final.additionalOptions.postCard.price} ₽)`
-										: 'нет'}
-								</li>
+							<li>
+								Инициалы:{' '}
+								{configuratorStore.steps.final.additionalOptions.initials.choosen
+									? `${configuratorStore.steps.final.additionalOptions.initials.text || 'А.А.'} (+390 ₽)`
+									: 'нет'}
+							</li>
+							<li>
+								Подарочная коробка:{' '}
+								{configuratorStore.steps.final.additionalOptions.presentBox.choosen
+									? 'да (+300 ₽)'
+									: 'нет'}
+							</li>
+							<li>
+								Открытка:{' '}
+								{configuratorStore.steps.final.additionalOptions.postCard.choosen
+									? `${configuratorStore.steps.final.additionalOptions.postCard.text || 'Надпись'} (+300 ₽)`
+									: 'нет'}
+							</li>
 							</ul>
 						</div>
 						<div className={s.productTotals}>
