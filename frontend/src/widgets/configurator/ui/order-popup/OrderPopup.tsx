@@ -686,6 +686,39 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 		setBuildingSuggestions([])
 	}
 
+	// Функция загрузки ПВЗ для города (вынесена отдельно для прямого вызова)
+	const loadPvzForCity = async (cityCode: number) => {
+		console.log('[Load PVZ] Starting to load PVZ for cityCode:', cityCode)
+		setPvzList([])
+		setTariffs([])
+		setIsPvzLoading(true)
+		setIsTariffsLoading(true)
+		
+		try {
+			// Загружаем ПВЗ
+			const points = await deliveryApi.getPvzList(cityCode)
+			console.log('[Load PVZ] PVZ loaded successfully:', points.length, 'points')
+			setPvzList(points)
+		} catch (error) {
+			console.error('[Load PVZ] Failed to load CDEK PVZ list', error)
+			setPvzList([])
+		} finally {
+			setIsPvzLoading(false)
+		}
+		
+		try {
+			// Загружаем тарифы
+			const items = await deliveryApi.calculateTariffs(cityCode)
+			console.log('[Load PVZ] Tariffs loaded successfully:', items.length, 'tariffs')
+			setTariffs(items)
+		} catch (error) {
+			console.error('[Load PVZ] Failed to calculate CDEK tariffs', error)
+			setTariffs([])
+		} finally {
+			setIsTariffsLoading(false)
+		}
+	}
+
 	// Обработчик выбора города из DaData (по аналогии с custom - используем postal_code)
 	const handleCitySelectFromDadata = async (dadataCity: DadataSuggestion) => {
 		console.log('[City Select] Starting city selection:', dadataCity)
@@ -694,11 +727,6 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 		const cityLon = dadataCity.data?.geo_lon ? parseFloat(dadataCity.data.geo_lon) : null
 		const postalCode = dadataCity.data?.postal_code || ''
 		const isDefaultCity = cityName.toLowerCase().includes('санкт') || cityName.toLowerCase().includes('петербург')
-		
-		// Очищаем список ПВЗ и тарифов сразу
-		setPvzList([])
-		setTariffs([])
-		setIsPvzLoading(true) // Включаем загрузку
 		
 		// Сначала ищем cityCode через CDEK API СИНХРОННО (по аналогии с custom)
 		let finalCityCode: number | null = isDefaultCity ? DEFAULT_CITY_CODE : null
@@ -728,7 +756,7 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 			console.error('[City Select] Failed to find cityCode for city:', cityName, error)
 		}
 		
-		// Обновляем форму ОДИН РАЗ со всеми данными (по аналогии с custom)
+		// Обновляем форму
 		updateForm(
 			(prev) => ({
 				...prev,
@@ -747,13 +775,12 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 			['city', 'pickupPoint', 'street', 'building', 'courierAddress', 'mailAddress']
 		)
 		
-		// Обновляем cityCode напрямую для триггера useEffect
-		setForm((prev) => ({
-			...prev,
-			cityCode: finalCityCode
-		}))
-		
 		console.log('[City Select] City updated, cityCode:', finalCityCode)
+		
+		// Загружаем ПВЗ напрямую, если cityCode найден
+		if (finalCityCode) {
+			await loadPvzForCity(finalCityCode)
+		}
 		
 		// Обновляем локацию карты
 		if (mapInstanceRef.current && cityLat && cityLon && !isNaN(cityLat) && !isNaN(cityLon)) {
@@ -1613,6 +1640,14 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 					<h4 className={s.sectionTitle}>Доставка</h4>
 					<div className={deliveryStyles.section}>
 						<div className={deliveryStyles.field}>
+							{(() => {
+								console.log('[City Selector] State:', {
+									isCityLoading,
+									citySuggestionsLength: citySuggestions.length,
+									showSkeleton: isCityLoading && citySuggestions.length <= 1
+								})
+								return null
+							})()}
 							{isCityLoading && citySuggestions.length <= 1 ? (
 								// Показываем скелетон, когда загружаются популярные города
 								<div className={`${deliveryStyles.skeleton} ${deliveryStyles.skeletonSelect}`} />
@@ -1627,15 +1662,19 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 											})?.value || (citySuggestions.length > 0 ? citySuggestions[0].value : '')
 											: (citySuggestions.length > 0 ? citySuggestions[0].value : '')
 										}
-										onChange={(event) => {
-											console.log('[City Select] MUI Select changed:', event.target.value)
-											const selectedValue = event.target.value as string
-											const city = citySuggestions.find((c) => c.value === selectedValue)
-											console.log('[City Select] Found city:', city)
-											if (city) {
-												handleCitySelectFromDadata(city)
-											}
-										}}
+									onChange={(event) => {
+										console.log('[MUI Select] onChange triggered!', event.target.value)
+										const selectedValue = event.target.value as string
+										console.log('[MUI Select] selectedValue:', selectedValue)
+										const city = citySuggestions.find((c) => c.value === selectedValue)
+										console.log('[MUI Select] Found city:', city)
+										if (city) {
+											console.log('[MUI Select] Calling handleCitySelectFromDadata...')
+											handleCitySelectFromDadata(city)
+										} else {
+											console.warn('[MUI Select] City not found in citySuggestions!')
+										}
+									}}
 										disabled={isLoading}
 										label="Город *"
 									>
