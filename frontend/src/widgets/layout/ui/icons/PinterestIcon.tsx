@@ -32,3 +32,5 @@ export const PinterestIcon = ({ color = '#424242', className }: PinterestIconPro
 	)
 }
 
+
+

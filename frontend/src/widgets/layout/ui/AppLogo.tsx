@@ -50,3 +50,5 @@ export const AppLogo = ({ color = '#fff', className }: AppLogoProps) => {
 	)
 }
 
+
+

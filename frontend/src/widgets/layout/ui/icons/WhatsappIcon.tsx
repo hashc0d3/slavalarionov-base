@@ -34,3 +34,5 @@ export const WhatsappIcon = ({ color = '#424242', className }: WhatsappIconProps
 	)
 }
 
+
+

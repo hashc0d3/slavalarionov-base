@@ -47,3 +47,5 @@ export const YandexDzenIcon = ({ color = '#424242', className }: YandexDzenIconP
 	)
 }
 
+
+

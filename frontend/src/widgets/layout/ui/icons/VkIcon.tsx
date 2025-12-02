@@ -30,3 +30,5 @@ export const VkIcon = ({ color = '#424242', className }: VkIconProps) => {
 	)
 }
 
+
+
