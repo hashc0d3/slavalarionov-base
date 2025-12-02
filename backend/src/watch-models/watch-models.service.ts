@@ -140,10 +140,11 @@ export class WatchModelsService {
     await this.prisma.watchModelStrap.deleteMany();
     await this.prisma.watchModel.deleteMany();
 
-    // Создаем модели из бэкапа
+    // Создаем модели из бэкапа с сохранением ID
     for (const modelData of backupData) {
       const createdModel = await this.prisma.watchModel.create({
         data: {
+          id: modelData.id, // Сохраняем оригинальный ID
           model_name: modelData.model_name,
           watch_model_name: modelData.watch_model_name,
           watch_model_manufacturer: modelData.watch_model_manufacturer,

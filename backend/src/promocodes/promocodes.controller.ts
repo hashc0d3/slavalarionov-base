@@ -27,6 +27,23 @@ export class PromocodesController {
     return this.promocodesService.findAll();
   }
 
+  // Специфичные роуты должны быть ПЕРЕД параметрическими
+  @Post('check')
+  checkPromo(@Body() checkPromoCodeDto: CheckPromoCodeDto) {
+    return this.promocodesService.checkPromoCode(checkPromoCodeDto);
+  }
+
+  @Get('backup')
+  backup() {
+    return this.promocodesService.backup();
+  }
+
+  @Post('restore')
+  restore(@Body() body: { data: any[] }) {
+    return this.promocodesService.restoreFromBackup(body.data);
+  }
+
+  // Параметрические роуты должны быть ПОСЛЕ специфичных
   @Get(':id')
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.promocodesService.findOne(id);
@@ -43,20 +60,5 @@ export class PromocodesController {
   @Delete(':id')
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.promocodesService.remove(id);
-  }
-
-  @Post('check')
-  checkPromo(@Body() checkPromoCodeDto: CheckPromoCodeDto) {
-    return this.promocodesService.checkPromoCode(checkPromoCodeDto);
-  }
-
-  @Get('backup')
-  backup() {
-    return this.promocodesService.backup();
-  }
-
-  @Post('restore')
-  restore(@Body() body: { data: any[] }) {
-    return this.promocodesService.restoreFromBackup(body.data);
   }
 }

@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Patch, Body } from '@nestjs/common';
 import { ConfiguratorService } from './configurator.service';
 
 @Controller('api/configurator')
@@ -8,6 +8,11 @@ export class ConfiguratorController {
   @Get('settings')
   async getSettings() {
     return this.configuratorService.getSettings();
+  }
+
+  @Patch('settings')
+  async updateSettings(@Body() data: { title?: string; description?: string; estimated_date?: string }) {
+    return this.configuratorService.updateSettings(data);
   }
 }
 

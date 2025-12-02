@@ -182,6 +182,7 @@ export class PromocodesService {
     for (const promoData of backupData) {
       await this.prisma.promoCode.create({
         data: {
+          id: promoData.id, // Сохраняем оригинальный ID
           code: promoData.code,
           discountPercent: promoData.discountPercent ?? null,
           discountAmount: promoData.discountAmount ?? null,

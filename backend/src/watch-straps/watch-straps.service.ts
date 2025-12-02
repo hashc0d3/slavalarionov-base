@@ -95,10 +95,11 @@ export class WatchStrapsService {
     await this.prisma.watchModelStrap.deleteMany();
     await this.prisma.watchStrap.deleteMany();
 
-    // Создаем ремешки из бэкапа
+    // Создаем ремешки из бэкапа с сохранением ID
     for (const strapData of backupData) {
       await this.prisma.watchStrap.create({
         data: {
+          id: strapData.id, // Сохраняем оригинальный ID
           strap_name: strapData.strap_name,
           strap_title: strapData.strap_title,
           strap_description: strapData.strap_description,
