@@ -8,7 +8,7 @@ services:
       NODE_ENV: production
       PORT: 8081
       DATABASE_URL: "file:./prisma/dev.db"
-      NEXT_PUBLIC_MEDIA_BASE_URL: "https://sl.cdn1.dev"
+      NEXT_PUBLIC_MEDIA_BASE_URL: "http://localhost:8081"
     env_file:
       - backend/.env
     ports:
