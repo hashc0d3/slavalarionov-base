@@ -621,7 +621,17 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 
 	// Считаем общую сумму всех товаров в корзине
 	const productsPrice = configuratorStore.cartItems.reduce((sum, item) => sum + (item.price || 0), 0)
-	const productsPriceWithDiscount = productsPrice // TODO: применить промокод ко всей корзине
+	
+	// Применяем промокод ко всей корзине (если есть)
+	let productsPriceWithDiscount = productsPrice
+	if (configuratorStore.promoAccepted && configuratorStore.usedPromo) {
+		const promo = configuratorStore.usedPromo
+		const discount = promo.type === 'percent'
+			? productsPrice * (promo.discountValue / 100)
+			: promo.discountValue
+		productsPriceWithDiscount = Math.max(0, productsPrice - discount)
+	}
+	
 	const totalPrice = productsPrice + (form.deliveryValue ? (currentDeliveryOption?.price || 0) : 0)
 	const totalPriceWithDiscount = productsPriceWithDiscount + (form.deliveryValue ? (currentDeliveryOption?.price || 0) : 0)
 	const selectedStrapName = configuratorStore.steps.strap.strapName
@@ -1563,16 +1573,23 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 
 			<section className={s.section}>
 				<h4 className={s.sectionTitle}>Ваш заказ ({configuratorStore.cartItems.length} {configuratorStore.cartItems.length === 1 ? 'товар' : 'товара'})</h4>
-				{configuratorStore.cartItems.map((item, index) => {
-					const itemStrapName = item.strapModel?.attributes?.watch_strap?.strap_title || 'Ремешок'
-					const itemLeatherColor = item.leatherColor?.color_title || ''
-					const itemStitchingColor = item.stitchingColor?.color_title || ''
-					const itemEdgeColor = item.edgeColor?.color_title || ''
-					const itemBuckleColor = item.buckleColor?.color_title || ''
-					const itemAdapterColor = item.adapterColor?.color_title || ''
-				const itemModelSize = item.watchModel?.watch_sizes?.find((s: any) => s.choosen)?.watch_size || ''
-				// Используем сохраненную цену из корзины (уже включает все опции и пряжку-бабочку)
-				const itemPrice = item.price || 0
+			{configuratorStore.cartItems.map((item, index) => {
+				const itemStrapName = item.strapModel?.attributes?.watch_strap?.strap_title || 'Ремешок'
+				const itemLeatherColor = item.leatherColor?.color_title || ''
+				const itemStitchingColor = item.stitchingColor?.color_title || ''
+				const itemEdgeColor = item.edgeColor?.color_title || ''
+				const itemBuckleColor = item.buckleColor?.color_title || ''
+				const itemAdapterColor = item.adapterColor?.color_title || ''
+			const itemModelSize = item.watchModel?.watch_sizes?.find((s: any) => s.choosen)?.watch_size || ''
+			// Используем сохраненную цену из корзины (уже включает все опции и пряжку-бабочку)
+			const itemPrice = item.price || 0
+			
+			// Вычисляем цену со скидкой для этого товара (пропорционально)
+			let itemPriceWithDiscount = itemPrice
+			if (configuratorStore.promoAccepted && configuratorStore.usedPromo && productsPrice > 0) {
+				const discountRatio = productsPriceWithDiscount / productsPrice
+				itemPriceWithDiscount = itemPrice * discountRatio
+			}
 					
 				return (
 					<div key={item.id || index} className={s.productCard} style={{ marginBottom: '16px' }}>
@@ -1632,20 +1649,46 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 								</li>
 							</ul>
 						</div>
-						<div className={s.productTotals}>
-							<span className={s.productTotalsTitle}>Цена</span>
-							<span className={s.productTotalsValue}>{formatCurrency(itemPrice)} ₽</span>
+					<div className={s.productTotals}>
+						<span className={s.productTotalsTitle}>Цена</span>
+						<div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+							{itemPriceWithDiscount < itemPrice ? (
+								<>
+									<span style={{ textDecoration: 'line-through', color: '#999', fontSize: '14px' }}>
+										{formatCurrency(itemPrice)} ₽
+									</span>
+									<span className={s.productTotalsValue} style={{ color: '#10b981' }}>
+										{formatCurrency(itemPriceWithDiscount)} ₽
+									</span>
+								</>
+							) : (
+								<span className={s.productTotalsValue}>{formatCurrency(itemPrice)} ₽</span>
+							)}
 						</div>
+					</div>
 					</div>
 				)
 				})}
 				
-				<div className={s.productCard}>
-					<div className={s.productTotals} style={{ width: '100%', justifyContent: 'flex-end' }}>
-						<span className={s.productTotalsTitle}>Итого за товары:</span>
-						<span className={s.productTotalsValue}>{formatCurrency(productsPrice)} ₽</span>
+			<div className={s.productCard}>
+				<div className={s.productTotals} style={{ width: '100%', justifyContent: 'flex-end', gap: '8px' }}>
+					<span className={s.productTotalsTitle}>Итого за товары:</span>
+					<div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+						{productsPriceWithDiscount < productsPrice ? (
+							<>
+								<span style={{ textDecoration: 'line-through', color: '#999', fontSize: '16px' }}>
+									{formatCurrency(productsPrice)} ₽
+								</span>
+								<span className={s.productTotalsValue} style={{ color: '#10b981' }}>
+									{formatCurrency(productsPriceWithDiscount)} ₽
+								</span>
+							</>
+						) : (
+							<span className={s.productTotalsValue}>{formatCurrency(productsPrice)} ₽</span>
+						)}
 					</div>
 				</div>
+			</div>
 			</section>
 
 				<section className={s.section}>
@@ -2089,35 +2132,41 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 					</label>
 				</section>
 
-			<section className={s.sectionTotals}>
-				<div className={s.totalsRow}>
-					<span>Товары ({configuratorStore.cartItems.length} {configuratorStore.cartItems.length === 1 ? 'шт' : 'шт'})</span>
-					<strong>{formatCurrency(productsPrice)} ₽</strong>
+		<section className={s.sectionTotals}>
+			<div className={s.totalsRow}>
+				<span>Товары ({configuratorStore.cartItems.length} {configuratorStore.cartItems.length === 1 ? 'шт' : 'шт'})</span>
+				<strong>{formatCurrency(productsPrice)} ₽</strong>
+			</div>
+			{configuratorStore.promoAccepted && configuratorStore.usedPromo && productsPriceWithDiscount < productsPrice && (
+				<div className={s.totalsRow} style={{ color: '#10b981' }}>
+					<span>Скидка по промокоду ({configuratorStore.usedPromo.code})</span>
+					<strong>-{formatCurrency(productsPrice - productsPriceWithDiscount)} ₽</strong>
 				</div>
-				<div className={s.totalsRow}>
-					<span>Доставка</span>
-					<strong>{formatCurrency(configuratorStore.deliveryPrice || 0)} ₽</strong>
+			)}
+			<div className={s.totalsRow}>
+				<span>Доставка</span>
+				<strong>{formatCurrency(configuratorStore.deliveryPrice || 0)} ₽</strong>
+			</div>
+			<div className={s.totalsSummary}>
+				<span>Итого</span>
+				<div className={s.totalValues}>
+					<span
+						className={`${s.totalDefault} ${
+							totalPriceWithDiscount !== totalPrice ? s.totalDefaultStriked : ''
+						}`}
+					>
+						{formatCurrency(totalPrice)} ₽
+					</span>
+					{totalPriceWithDiscount !== totalPrice && (
+						<span className={s.totalDiscount}>{formatCurrency(totalPriceWithDiscount)} ₽</span>
+					)}
 				</div>
-				<div className={s.totalsSummary}>
-					<span>Итого</span>
-					<div className={s.totalValues}>
-						<span
-							className={`${s.totalDefault} ${
-								totalPriceWithDiscount !== totalPrice ? s.totalDefaultStriked : ''
-							}`}
-						>
-							{formatCurrency(totalPrice)} ₽
-						</span>
-						{totalPriceWithDiscount !== totalPrice && (
-							<span className={s.totalDiscount}>{formatCurrency(totalPriceWithDiscount)} ₽</span>
-						)}
-					</div>
-				</div>
-				<p className={s.readyDate}>
-					Примерная дата готовности: <span>{configuratorStore.closestReadyDate}</span>
-				</p>
-				<p className={s.readyDate}>Перед отправкой пришлём подробный видеообзор вашего ремешка.</p>
-			</section>
+			</div>
+			<p className={s.readyDate}>
+				Примерная дата готовности: <span>{configuratorStore.closestReadyDate}</span>
+			</p>
+			<p className={s.readyDate}>Перед отправкой пришлём подробный видеообзор вашего ремешка.</p>
+		</section>
 
 				{errors.general && <div className={s.errorBanner}>{errors.general}</div>}
 

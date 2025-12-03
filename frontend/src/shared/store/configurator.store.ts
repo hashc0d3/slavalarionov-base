@@ -699,7 +699,7 @@ export class ConfiguratorStore {
 		buckleButterfly: this.steps.strapDesign.buckleButterflyChoosen,
 		additionalOptions: { ...this.steps.final.additionalOptions },
 		quantity: this.productAmount,
-		price: this.productsPriceWithDiscount, // Цена товара БЕЗ доставки
+		price: this.productsPrice, // Цена товара БЕЗ доставки и БЕЗ промокода
 		addedAt: new Date().toISOString()
 	}
 		
@@ -889,7 +889,7 @@ export class ConfiguratorStore {
 		buckleButterfly: this.steps.strapDesign.buckleButterflyChoosen,
 		additionalOptions: { ...this.steps.final.additionalOptions },
 		quantity: this.productAmount,
-		price: this.productsPriceWithDiscount, // Цена товара БЕЗ доставки
+		price: this.productsPrice, // Цена товара БЕЗ доставки и БЕЗ промокода
 		updatedAt: new Date().toISOString()
 	}
 		
