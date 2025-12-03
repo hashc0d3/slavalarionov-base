@@ -18,6 +18,7 @@ import {
 import deliveryStyles from './OrderPopupDelivery.module.css'
 import type { CDEKWidgetInstance, CDEKWidgetPoint, CDEKWidgetOptions } from '@/types/cdek-widget'
 import { Select, MenuItem, TextField, Button, FormControl, InputLabel, FormHelperText } from '@mui/material'
+import { resolveMediaUrl, getMediaBaseUrl } from '@/shared/lib/media'
 
 // Типы CDEK Widget импортируются из @/types/cdek-widget
 
@@ -664,6 +665,21 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 		configuratorStore.steps.strapDesign.edgeColor?.name ||
 		'в тон'
 
+
+	// Генерация URL для первого вида (view 1) товара
+	const getItemView1ImageUrl = (item: any) => {
+		const baseImageUrl = `${getMediaBaseUrl()}/uploads`
+		const strapData = item.strapModel?.attributes?.watch_strap
+		
+		if (!strapData) return null
+		
+		// Проверяем, есть ли динамическое изображение view1 в базе
+		const dynamicView1 = resolveMediaUrl(strapData.strap_params?.view_images?.view1)
+		if (dynamicView1) return dynamicView1
+		
+		// Fallback на legacy путь
+		return `${baseImageUrl}/base_${strapData.strap_name}_1_739ae2aa10.png`
+	}
 
 	const handleFieldChange =
 		(key: keyof FormState) =>
@@ -1599,30 +1615,162 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 				itemPriceWithDiscount = itemPrice * discountRatio
 			}
 					
-				return (
-					<div key={item.id || index} className={s.productCard} style={{ marginBottom: '16px' }}>
-						<div className={s.productPreview}>
-							{item.strapModel?.attributes?.watch_strap?.preview_image ? (
+			const itemView1Url = getItemView1ImageUrl(item)
+			const baseImageUrl = `${getMediaBaseUrl()}/uploads`
+			
+			// Генерируем URL для overlay слоев (цвета)
+			const getOverlayUrl = (color: any, type: string) => {
+				if (!color) return null
+				// Проверяем динамические изображения из базы
+				const dynamic = resolveMediaUrl(color.images?.view1)
+				if (dynamic) return dynamic
+				// Legacy путь
+				const colorName = (color.color_title || '').toLowerCase()
+				const strapName = item.strapModel?.attributes?.watch_strap?.strap_name || 'classic'
+				return `${baseImageUrl}/${type}_${strapName}_${colorName}_1.png`
+			}
+			
+			return (
+				<div key={item.id || index} className={s.productCard} style={{ marginBottom: '16px' }}>
+					<div className={s.productPreview} style={{ position: 'relative' }}>
+						{itemView1Url ? (
+							<>
 								<img 
-									src={item.strapModel.attributes.watch_strap.preview_image} 
+									src={itemView1Url} 
 									alt={itemStrapName}
-									className={s.productPreviewImage}
-									style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+									style={{ 
+										position: 'absolute',
+										top: '50%',
+										left: '50%',
+										transform: 'translate(-50%, -50%)',
+										width: '85%', 
+										height: '85%', 
+										objectFit: 'contain' 
+									}}
 								/>
-							) : (
-								<div style={{ 
-									width: '100%', 
-									height: '100%', 
-									display: 'flex', 
-									alignItems: 'center', 
-									justifyContent: 'center',
-									background: '#f5f5f5',
-									color: '#999'
-								}}>
-									Нет изображения
-								</div>
-							)}
-						</div>
+								{/* Frame color overlay */}
+								{item.frameColor && resolveMediaUrl(item.frameColor.view1Image) && (
+									<img 
+										src={resolveMediaUrl(item.frameColor.view1Image)!}
+										alt=""
+										style={{ 
+											position: 'absolute',
+											top: '50%',
+											left: '50%',
+											transform: 'translate(-50%, -50%)',
+											width: '85%', 
+											height: '85%', 
+											objectFit: 'contain',
+											zIndex: 1,
+											pointerEvents: 'none'
+										}}
+									/>
+								)}
+								{/* Leather color overlay */}
+								{item.leatherColor && getOverlayUrl(item.leatherColor, 'leather') && (
+									<img 
+										src={getOverlayUrl(item.leatherColor, 'leather')!}
+										alt=""
+										style={{ 
+											position: 'absolute',
+											top: '50%',
+											left: '50%',
+											transform: 'translate(-50%, -50%)',
+											width: '85%', 
+											height: '85%', 
+											objectFit: 'contain',
+											zIndex: 2,
+											pointerEvents: 'none'
+										}}
+									/>
+								)}
+								{/* Stitching color overlay */}
+								{item.stitchingColor && getOverlayUrl(item.stitchingColor, 'stitching') && (
+									<img 
+										src={getOverlayUrl(item.stitchingColor, 'stitching')!}
+										alt=""
+										style={{ 
+											position: 'absolute',
+											top: '50%',
+											left: '50%',
+											transform: 'translate(-50%, -50%)',
+											width: '85%', 
+											height: '85%', 
+											objectFit: 'contain',
+											zIndex: 2,
+											pointerEvents: 'none'
+										}}
+									/>
+								)}
+								{/* Edge color overlay */}
+								{item.edgeColor && getOverlayUrl(item.edgeColor, 'edge') && (
+									<img 
+										src={getOverlayUrl(item.edgeColor, 'edge')!}
+										alt=""
+										style={{ 
+											position: 'absolute',
+											top: '50%',
+											left: '50%',
+											transform: 'translate(-50%, -50%)',
+											width: '85%', 
+											height: '85%', 
+											objectFit: 'contain',
+											zIndex: 2,
+											pointerEvents: 'none'
+										}}
+									/>
+								)}
+								{/* Buckle color overlay */}
+								{item.buckleColor && getOverlayUrl(item.buckleColor, 'buckle') && (
+									<img 
+										src={getOverlayUrl(item.buckleColor, 'buckle')!}
+										alt=""
+										style={{ 
+											position: 'absolute',
+											top: '50%',
+											left: '50%',
+											transform: 'translate(-50%, -50%)',
+											width: '85%', 
+											height: '85%', 
+											objectFit: 'contain',
+											zIndex: 2,
+											pointerEvents: 'none'
+										}}
+									/>
+								)}
+								{/* Adapter color overlay */}
+								{item.adapterColor && getOverlayUrl(item.adapterColor, 'adapter') && (
+									<img 
+										src={getOverlayUrl(item.adapterColor, 'adapter')!}
+										alt=""
+										style={{ 
+											position: 'absolute',
+											top: '50%',
+											left: '50%',
+											transform: 'translate(-50%, -50%)',
+											width: '85%', 
+											height: '85%', 
+											objectFit: 'contain',
+											zIndex: 2,
+											pointerEvents: 'none'
+										}}
+									/>
+								)}
+							</>
+						) : (
+							<div style={{ 
+								width: '100%', 
+								height: '100%', 
+								display: 'flex', 
+								alignItems: 'center', 
+								justifyContent: 'center',
+								background: '#f5f5f5',
+								color: '#999'
+							}}>
+								Нет изображения
+							</div>
+						)}
+					</div>
 						<div className={s.productInfo}>
 							<p className={s.productName}>
 								{itemStrapName} / {itemLeatherColor}
