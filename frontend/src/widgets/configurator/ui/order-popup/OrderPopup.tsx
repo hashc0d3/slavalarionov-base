@@ -1598,12 +1598,13 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 			<section className={s.section}>
 				<h4 className={s.sectionTitle}>Ваш заказ ({configuratorStore.cartItems.length} {configuratorStore.cartItems.length === 1 ? 'товар' : 'товара'})</h4>
 			{configuratorStore.cartItems.map((item, index) => {
-				const itemStrapName = item.strapModel?.attributes?.watch_strap?.strap_title || 'Ремешок'
-				const itemLeatherColor = item.leatherColor?.color_title || ''
-				const itemStitchingColor = item.stitchingColor?.color_title || ''
-				const itemEdgeColor = item.edgeColor?.color_title || ''
-				const itemBuckleColor = item.buckleColor?.color_title || ''
-				const itemAdapterColor = item.adapterColor?.color_title || ''
+			const itemStrapName = item.strapModel?.attributes?.watch_strap?.strap_title || 'Ремешок'
+			const itemFrameColor = item.frameColor?.color_name || ''
+			const itemLeatherColor = item.leatherColor?.color_title || ''
+			const itemStitchingColor = item.stitchingColor?.color_title || ''
+			const itemEdgeColor = item.edgeColor?.color_title || ''
+			const itemBuckleColor = item.buckleColor?.color_title || ''
+			const itemAdapterColor = item.adapterColor?.color_title || ''
 			const itemModelSize = item.watchModel?.watch_sizes?.find((s: any) => s.choosen)?.watch_size || ''
 			// Используем сохраненную цену из корзины (уже включает все опции и пряжку-бабочку)
 			const itemPrice = item.price || 0
@@ -1775,12 +1776,13 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 							<p className={s.productName}>
 								{itemStrapName} / {itemLeatherColor}
 							</p>
-							<ul className={s.productDetails}>
-								<li>Размер корпуса: {itemModelSize} мм</li>
-								<li>Цвет адаптеров: {itemAdapterColor}</li>
-								<li>Цвет пряжки: {itemBuckleColor}</li>
-								<li>Цвет строчки: {itemStitchingColor}</li>
-								<li>Цвет края: {itemEdgeColor}</li>
+						<ul className={s.productDetails}>
+							<li>Размер корпуса: {itemModelSize} мм</li>
+							{itemFrameColor && <li>Цвет часов: {itemFrameColor}</li>}
+							<li>Цвет адаптеров: {itemAdapterColor}</li>
+							<li>Цвет пряжки: {itemBuckleColor}</li>
+							<li>Цвет строчки: {itemStitchingColor}</li>
+							<li>Цвет края: {itemEdgeColor}</li>
 								{item.strapModel?.attributes?.watch_strap?.strap_params?.has_buckle_butterfly && (
 									<li>
 										Вид пряжки:{' '}
