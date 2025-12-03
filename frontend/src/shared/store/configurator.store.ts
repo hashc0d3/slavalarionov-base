@@ -689,19 +689,19 @@ export class ConfiguratorStore {
 		const cartItem = {
 			id: Date.now().toString(),
 			watchModel: this.selectedWatchModel,
-			frameColor: this.selectedFrameColor,
-			strapModel: this.selectedStrapModel,
-			leatherColor: this.selectedLeatherColor,
-			stitchingColor: this.selectedStitchingColor,
-			edgeColor: this.selectedEdgeColor,
-			buckleColor: this.selectedBuckleColor,
-			adapterColor: this.selectedAdapterColor,
-			buckleButterfly: this.steps.strapDesign.buckleButterflyChoosen,
-			additionalOptions: { ...this.steps.final.additionalOptions },
-			quantity: this.productAmount,
-			price: this.totalPriceWithDiscount,
-			addedAt: new Date().toISOString()
-		}
+		frameColor: this.selectedFrameColor,
+		strapModel: this.selectedStrapModel,
+		leatherColor: this.selectedLeatherColor,
+		stitchingColor: this.selectedStitchingColor,
+		edgeColor: this.selectedEdgeColor,
+		buckleColor: this.selectedBuckleColor,
+		adapterColor: this.selectedAdapterColor,
+		buckleButterfly: this.steps.strapDesign.buckleButterflyChoosen,
+		additionalOptions: { ...this.steps.final.additionalOptions },
+		quantity: this.productAmount,
+		price: this.productsPriceWithDiscount, // Цена товара БЕЗ доставки
+		addedAt: new Date().toISOString()
+	}
 		
 		this.cartItems.push(cartItem)
 		if (resetAfter) {
@@ -879,19 +879,19 @@ export class ConfiguratorStore {
 		this.cartItems[itemIndex] = {
 			...this.cartItems[itemIndex],
 			watchModel: this.selectedWatchModel,
-			frameColor: this.selectedFrameColor,
-			strapModel: this.selectedStrapModel,
-			leatherColor: this.selectedLeatherColor,
-			stitchingColor: this.selectedStitchingColor,
-			edgeColor: this.selectedEdgeColor,
-			buckleColor: this.selectedBuckleColor,
-			adapterColor: this.selectedAdapterColor,
-			buckleButterfly: this.steps.strapDesign.buckleButterflyChoosen,
-			additionalOptions: { ...this.steps.final.additionalOptions },
-			quantity: this.productAmount,
-			price: this.totalPriceWithDiscount,
-			updatedAt: new Date().toISOString()
-		}
+		frameColor: this.selectedFrameColor,
+		strapModel: this.selectedStrapModel,
+		leatherColor: this.selectedLeatherColor,
+		stitchingColor: this.selectedStitchingColor,
+		edgeColor: this.selectedEdgeColor,
+		buckleColor: this.selectedBuckleColor,
+		adapterColor: this.selectedAdapterColor,
+		buckleButterfly: this.steps.strapDesign.buckleButterflyChoosen,
+		additionalOptions: { ...this.steps.final.additionalOptions },
+		quantity: this.productAmount,
+		price: this.productsPriceWithDiscount, // Цена товара БЕЗ доставки
+		updatedAt: new Date().toISOString()
+	}
 		
 		this.editingCartItemId = null
 	}
