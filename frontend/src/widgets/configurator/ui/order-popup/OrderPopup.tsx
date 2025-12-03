@@ -630,6 +630,14 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 			? productsPrice * (promo.discountValue / 100)
 			: promo.discountValue
 		productsPriceWithDiscount = Math.max(0, productsPrice - discount)
+		console.log('[OrderPopup] Promo applied:', {
+			productsPrice,
+			discount,
+			productsPriceWithDiscount,
+			promoCode: promo.code,
+			promoType: promo.type,
+			discountValue: promo.discountValue
+		})
 	}
 	
 	const totalPrice = productsPrice + (form.deliveryValue ? (currentDeliveryOption?.price || 0) : 0)

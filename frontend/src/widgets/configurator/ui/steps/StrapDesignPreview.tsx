@@ -2,7 +2,7 @@
 
 import { observer } from 'mobx-react-lite'
 import { configuratorStore, StrapParams } from '@/shared/store/configurator.store'
-import { resolveMediaUrl } from '@/shared/lib/media'
+import { resolveMediaUrl, getMediaBaseUrl } from '@/shared/lib/media'
 import styles from './StrapDesignPreview.module.css'
 
 interface StrapDesignPreviewProps {
@@ -26,7 +26,7 @@ export const StrapDesignPreview = observer(function StrapDesignPreview({ classNa
 
 	const strapData = selectedStrapModel.attributes.watch_strap
 
-	const baseImageUrl = 'https://api.slavalarionov.store/uploads'
+	const baseImageUrl = `${getMediaBaseUrl()}/uploads`
 
 	const pickImagePath = (value: any): string | undefined => {
 		if (!value) return undefined
