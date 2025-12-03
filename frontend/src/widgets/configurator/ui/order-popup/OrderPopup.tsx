@@ -1619,6 +1619,14 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 			const itemView1Url = getItemView1ImageUrl(item)
 			const baseImageUrl = `${getMediaBaseUrl()}/uploads`
 			
+			// Отладка frame color
+			console.log('[OrderPopup Item]', {
+				index,
+				frameColor: item.frameColor,
+				view1Image: item.frameColor?.view1Image,
+				resolvedFrameUrl: item.frameColor ? resolveMediaUrl(item.frameColor.view1Image) : null
+			})
+			
 			// Генерируем URL для overlay слоев (цвета)
 			const getOverlayUrl = (color: any, type: string) => {
 				if (!color) return null

@@ -36,6 +36,11 @@ export const ConfiguratorCart = observer(function ConfiguratorCart() {
 		setIsOpen(false)
 	}
 
+	// Не показываем корзину, если она пустая
+	if (configuratorStore.cartItems.length === 0) {
+		return null
+	}
+
 	return (
 		<>
 			{/* Кнопка корзины */}
@@ -44,7 +49,7 @@ export const ConfiguratorCart = observer(function ConfiguratorCart() {
 				onClick={() => setIsOpen(!isOpen)}
 			>
 				<div className={styles.cartButtonIcon}>
-					<svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+					<svg width="24" height="24" viewBox="0 0 24 24" fill="none" style={{ display: 'block' }}>
 						<path d="M3 3H5L5.4 5M7 13H17L21 5H5.4M7 13L5.4 5M7 13L4.7 15.3C4.3 15.7 4.6 16.5 5.1 16.5H17M17 13V17A2 2 0 0 1 15 19H9A2 2 0 0 1 7 17V13M9 21V19M15 21V19" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
 					</svg>
 				</div>
