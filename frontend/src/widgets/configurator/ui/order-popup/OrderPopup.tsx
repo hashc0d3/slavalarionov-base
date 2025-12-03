@@ -2089,39 +2089,35 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 					</label>
 				</section>
 
-				<section className={s.sectionTotals}>
-					<div className={s.totalsRow}>
-						<span>Стоимость ремешка</span>
-						<strong>{formatCurrency(configuratorStore.selectedStrapPrice)} ₽</strong>
+			<section className={s.sectionTotals}>
+				<div className={s.totalsRow}>
+					<span>Товары ({configuratorStore.cartItems.length} {configuratorStore.cartItems.length === 1 ? 'шт' : 'шт'})</span>
+					<strong>{formatCurrency(productsPrice)} ₽</strong>
+				</div>
+				<div className={s.totalsRow}>
+					<span>Доставка</span>
+					<strong>{formatCurrency(configuratorStore.deliveryPrice || 0)} ₽</strong>
+				</div>
+				<div className={s.totalsSummary}>
+					<span>Итого</span>
+					<div className={s.totalValues}>
+						<span
+							className={`${s.totalDefault} ${
+								totalPriceWithDiscount !== totalPrice ? s.totalDefaultStriked : ''
+							}`}
+						>
+							{formatCurrency(totalPrice)} ₽
+						</span>
+						{totalPriceWithDiscount !== totalPrice && (
+							<span className={s.totalDiscount}>{formatCurrency(totalPriceWithDiscount)} ₽</span>
+						)}
 					</div>
-					<div className={s.totalsRow}>
-						<span>Дополнительные опции</span>
-						<strong>{formatCurrency(configuratorStore.additionalOptionsSum)} ₽</strong>
-					</div>
-					<div className={s.totalsRow}>
-						<span>Доставка</span>
-						<strong>{formatCurrency(configuratorStore.deliveryPrice)} ₽</strong>
-					</div>
-					<div className={s.totalsSummary}>
-						<span>Итого</span>
-						<div className={s.totalValues}>
-							<span
-								className={`${s.totalDefault} ${
-									totalPriceWithDiscount !== totalPrice ? s.totalDefaultStriked : ''
-								}`}
-							>
-								{formatCurrency(totalPrice)} ₽
-							</span>
-							{totalPriceWithDiscount !== totalPrice && (
-								<span className={s.totalDiscount}>{formatCurrency(totalPriceWithDiscount)} ₽</span>
-							)}
-						</div>
-					</div>
-					<p className={s.readyDate}>
-						Примерная дата готовности: <span>{configuratorStore.closestReadyDate}</span>
-					</p>
-					<p className={s.readyDate}>Перед отправкой пришлём подробный видеообзор вашего ремешка.</p>
-				</section>
+				</div>
+				<p className={s.readyDate}>
+					Примерная дата готовности: <span>{configuratorStore.closestReadyDate}</span>
+				</p>
+				<p className={s.readyDate}>Перед отправкой пришлём подробный видеообзор вашего ремешка.</p>
+			</section>
 
 				{errors.general && <div className={s.errorBanner}>{errors.general}</div>}
 
