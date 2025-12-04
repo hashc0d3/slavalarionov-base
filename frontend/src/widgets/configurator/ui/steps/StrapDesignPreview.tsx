@@ -202,7 +202,7 @@ export const StrapDesignPreview = observer(function StrapDesignPreview({ classNa
 	const getBaseViewImage = (view: number) => {
 		const viewKey = `view${view}` as ViewImageKey
 		
-		// 1. Сначала используем универсальные изображения из view_images (будут базовым слоем)
+		// 1. Используем универсальные изображения из view_images (базовый слой)
 		const baseViews = strapData?.strap_params?.view_images
 		const dynamic = resolveMediaUrl(pickImagePath(baseViews?.[viewKey]))
 		if (dynamic) {
@@ -219,7 +219,7 @@ export const StrapDesignPreview = observer(function StrapDesignPreview({ classNa
 		return `${baseImageUrl}/base_${strapData.strap_name}_3_50228196b7.png`
 	}
 
-	// Функция для получения изображения цвета корпуса (приоритетнее универсальных)
+	// Функция для получения изображения цвета корпуса (приоритетнее универсальных, отображается поверх)
 	const getFrameColorImage = (view: number): string | undefined => {
 		const frameColorId = configuratorStore.selectedFrameColorId
 		if (!frameColorId || !strapData.base_images || !Array.isArray(strapData.base_images)) {
