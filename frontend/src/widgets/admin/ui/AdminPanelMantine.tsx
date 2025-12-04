@@ -6,6 +6,7 @@ import { AdminModelsMantine } from '@/widgets/admin/ui/AdminModelsMantine'
 import { AdminStrapsMantine } from '@/widgets/admin/ui/AdminStrapsMantine'
 import { AdminPromoCodesMantine } from '@/widgets/admin/ui/AdminPromoCodesMantine'
 import { AdminSettingsMantine } from '@/widgets/admin/ui/AdminSettingsMantine'
+import { AdminColorsMantine } from '@/widgets/admin/ui/AdminColorsMantine'
 import { configuratorStore } from '@/shared/store/configurator.store'
 import { notifications } from '@mantine/notifications'
 import { useState } from 'react'
@@ -110,6 +111,9 @@ export const AdminPanelMantine = observer(() => {
             <Tabs.Tab value="straps">
               ⌚ Ремешки
             </Tabs.Tab>
+            <Tabs.Tab value="colors">
+              🎨 Цвета
+            </Tabs.Tab>
             <Tabs.Tab value="promocodes">
               🎟️ Промокоды
             </Tabs.Tab>
@@ -124,6 +128,10 @@ export const AdminPanelMantine = observer(() => {
 
           <Tabs.Panel value="straps" pt="md">
             <AdminStrapsMantine />
+          </Tabs.Panel>
+
+          <Tabs.Panel value="colors" pt="md">
+            <AdminColorsMantine />
           </Tabs.Panel>
 
           <Tabs.Panel value="promocodes" pt="md">

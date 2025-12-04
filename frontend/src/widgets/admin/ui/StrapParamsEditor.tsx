@@ -19,6 +19,15 @@ import { StrapColor, StrapParams } from '@/shared/store/configurator.store'
 import { uploadStrapColorImage } from '@/shared/api/uploads.api'
 // import { IconPlus, IconTrash, IconEdit } from '@tabler/icons-react'
 
+interface FrameColorConfig {
+  color_name: string        // Наименование цвета (Red, Silver)
+  color_display: string     // Название для показа (Красный, Серебристый)
+  color_code: string        // HEX код (#FF0000)
+  view1?: string
+  view2?: string
+  view3?: string
+}
+
 interface StrapParamsEditorProps {
   strapParams: {
     leather_colors: StrapColor[]
@@ -28,6 +37,7 @@ interface StrapParamsEditorProps {
     adapter_colors: StrapColor[]
     has_buckle_butterfly?: boolean
     view_images?: StrapParams['view_images']
+    frame_color_configs?: FrameColorConfig[]
   }
   onUpdate: (updatedParams: any) => void
 }
@@ -48,6 +58,23 @@ const StrapParamsEditor = ({ strapParams, onUpdate }: StrapParamsEditorProps) =>
     choosen: false,
     images: { ...emptyImages }
   })
+  
+  // Для frame color configs
+  const [frameColorModalOpened, setFrameColorModalOpened] = useState(false)
+  const [editingFrameColorIndex, setEditingFrameColorIndex] = useState<number | null>(null)
+  const [frameColorForm, setFrameColorForm] = useState<FrameColorConfig>({
+    color_name: '',
+    color_display: '',
+    color_code: '#000000',
+    view1: '',
+    view2: '',
+    view3: ''
+  })
+  const [frameUploadLoading, setFrameUploadLoading] = useState<{
+    view1: boolean
+    view2: boolean
+    view3: boolean
+  }>({ view1: false, view2: false, view3: false })
 
   type ImageFieldKey = 'view1' | 'view2' | 'view3' | 'icon'
   type ViewImageKey = 'view1' | 'view2' | 'view3'
@@ -203,6 +230,9 @@ const StrapParamsEditor = ({ strapParams, onUpdate }: StrapParamsEditorProps) =>
     { key: 'buckle_colors', label: 'Цвета пряжки', color: 'violet' },
     { key: 'adapter_colors', label: 'Цвета адаптера', color: 'cyan' }
   ]
+  
+  console.log('[StrapParamsEditor] strapParams:', strapParams)
+  console.log('[StrapParamsEditor] frame_color_configs:', strapParams.frame_color_configs)
 
   const startEditColor = (type: string, index: number) => {
     const colors = strapParams[type as keyof typeof strapParams] as StrapColor[]
@@ -320,69 +350,181 @@ const StrapParamsEditor = ({ strapParams, onUpdate }: StrapParamsEditorProps) =>
     <Stack gap="lg">
       <Title order={3}>Параметры ремешка</Title>
       <Card shadow="sm" padding="md" radius="md" withBorder>
-        <Stack gap="xs">
-          <Text fw={600} size="lg">
-            Базовые изображения ремешка
-          </Text>
-          <Text size="sm" c="dimmed">
-            Эти изображения используются по умолчанию, пока не выбран конкретный цвет.
-          </Text>
-          <SimpleGrid cols={3} spacing="sm">
+        <Stack gap="md">
+          <Group justify="space-between">
+            <div>
+              <Text fw={600} size="lg">Базовое изображение ремешка</Text>
+              <Text size="sm" c="dimmed">
+                Для каждого цвета корпуса часов загрузите 3 вида изображений
+              </Text>
+            </div>
+            <Button
+              size="sm"
+              variant="light"
+              onClick={() => {
+                setFrameColorForm({
+                  color_name: '',
+                  color_display: '',
+                  color_code: '#000000',
+                  view1: '',
+                  view2: '',
+                  view3: ''
+                })
+                setEditingFrameColorIndex(null)
+                setFrameColorModalOpened(true)
+              }}
+            >
+              ➕ Добавить цвет
+            </Button>
+          </Group>
+          
+          {(strapParams.frame_color_configs || []).length > 0 ? (
+            <SimpleGrid cols={3}>
+              {(strapParams.frame_color_configs || []).map((config, index) => (
+                <Card key={index} withBorder p="sm">
+                  <Stack gap="xs">
+                    <Group gap="xs" align="center">
+                      <Box
+                        style={{
+                          width: 24,
+                          height: 24,
+                          borderRadius: '50%',
+                          backgroundColor: config.color_code,
+                          border: '2px solid #ddd'
+                        }}
+                      />
+                      <div>
+                        <Text fw={500} size="sm">{config.color_display}</Text>
+                        <Text size="xs" c="dimmed">{config.color_name}</Text>
+                      </div>
+                    </Group>
+                    <Group gap="xs">
+                      {config.view1 && <Badge size="xs" color="blue">V1</Badge>}
+                      {config.view2 && <Badge size="xs" color="blue">V2</Badge>}
+                      {config.view3 && <Badge size="xs" color="blue">V3</Badge>}
+                    </Group>
+                    <Group gap="xs">
+                      <Button
+                        size="xs"
+                        variant="light"
+                        onClick={() => {
+                          setFrameColorForm(config)
+                          setEditingFrameColorIndex(index)
+                          setFrameColorModalOpened(true)
+                        }}
+                      >
+                        ✏️
+                      </Button>
+                      <Button
+                        size="xs"
+                        variant="light"
+                        color="red"
+                        onClick={() => {
+                          const updated = (strapParams.frame_color_configs || []).filter((_, i) => i !== index)
+                          onUpdate({ ...strapParams, frame_color_configs: updated })
+                          notifications.show({
+                            title: 'Успешно',
+                            message: 'Цвет удален',
+                            color: 'green'
+                          })
+                        }}
+                      >
+                        🗑️
+                      </Button>
+                    </Group>
+                  </Stack>
+                </Card>
+              ))}
+            </SimpleGrid>
+          ) : (
+            <Text c="dimmed" ta="center" py="md">
+              Нет цветов. Нажмите "Добавить цвет" чтобы задать изображения для цвета корпуса часов.
+            </Text>
+          )}
+        </Stack>
+      </Card>
+
+      {/* Секция для загрузки базовых изображений ремешка (view_images) */}
+      <Card shadow="sm" padding="md" radius="md" withBorder>
+        <Stack gap="md">
+          <div>
+            <Text fw={600} size="lg">Базовые изображения ремешка (3 вида)</Text>
+            <Text size="sm" c="dimmed">
+              Универсальные изображения ремешка для всех цветов корпуса часов
+            </Text>
+          </div>
+          
+          <SimpleGrid cols={3}>
             {imageFields.map(({ key, label }) => {
               const value = strapParams.view_images?.[key] || ''
+              const hasImage = Boolean(value)
               const isUploading = uploadingBaseView === key
-
+              
               return (
-                <Card key={key} withBorder p="sm" radius="sm">
+                <Card key={key} withBorder p="sm" radius="md">
                   <Stack gap="xs">
                     <Group justify="space-between">
-                      <Text fw={500}>{label}</Text>
-                      {value && (
+                      <Text fw={500} size="sm">{label}</Text>
+                      {hasImage && (
                         <Button
                           size="xs"
                           variant="light"
                           color="red"
                           onClick={() => clearBaseViewImage(key)}
                         >
-                          Удалить
+                          Очистить
                         </Button>
                       )}
                     </Group>
-
-                    <Group gap="xs" align="flex-end">
-                      <Button
-                        component="label"
-                        variant="light"
-                        size="xs"
-                        leftSection={isUploading ? '⏳' : '📁'}
-                        disabled={isUploading}
-                      >
-                        {isUploading ? 'Загрузка...' : 'Загрузить'}
-                        <input
-                          type="file"
-                          accept="image/*"
-                          style={{ display: 'none' }}
-                          onChange={(event) => {
-                            const file = event.target.files?.[0] || null
-                            handleBaseViewUpload(key, file, () => {
-                              event.target.value = ''
-                            })
-                          }}
-                        />
-                      </Button>
-                      <TextInput
-                        label="или URL"
-                        placeholder="https://example.com/image.png"
-                        value={value}
-                        style={{ flex: 1 }}
-                        onChange={(e) => handleBaseViewUrlChange(key, e.target.value)}
+                    
+                    <Button
+                      component="label"
+                      size="xs"
+                      variant="light"
+                      loading={isUploading}
+                      fullWidth
+                    >
+                      📁 Загрузить
+                      <input
+                        type="file"
+                        accept="image/*"
+                        style={{ display: 'none' }}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          handleBaseViewUpload(key, file || null, () => {
+                            e.target.value = ''
+                          })
+                        }}
                       />
-                    </Group>
-
-                    {value && (
-                      <Text size="xs" c="dimmed">
-                        {value}
-                      </Text>
+                    </Button>
+                    
+                    <TextInput
+                      placeholder={`/uploads/...`}
+                      value={value}
+                      onChange={(e) => handleBaseViewUrlChange(key, e.currentTarget.value)}
+                      size="xs"
+                    />
+                    
+                    {hasImage && (
+                      <Box
+                        style={{
+                          width: '100%',
+                          height: 100,
+                          backgroundColor: '#f7f7f7',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          overflow: 'hidden',
+                          border: '1px solid #e0e0e0',
+                          borderRadius: 4
+                        }}
+                      >
+                        <img
+                          src={value}
+                          alt={`Preview ${label}`}
+                          style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                        />
+                      </Box>
                     )}
                   </Stack>
                 </Card>
@@ -680,6 +822,185 @@ const StrapParamsEditor = ({ strapParams, onUpdate }: StrapParamsEditorProps) =>
           </Group>
         </Stack>
       </Modal>
+      
+      {/* Модалка для добавления/редактирования цвета корпуса часов */}
+      <Modal
+        opened={frameColorModalOpened}
+        onClose={() => {
+          setFrameColorModalOpened(false)
+          setEditingFrameColorIndex(null)
+          setFrameUploadLoading({ view1: false, view2: false, view3: false })
+        }}
+        title={editingFrameColorIndex !== null ? 'Редактировать цвет' : 'Добавить цвет'}
+        size="lg"
+      >
+        <Stack gap="md">
+          <TextInput
+            label="Наименование цвета"
+            placeholder="Red, Silver, Black"
+            description="Техническое название (для сравнения с моделью часов)"
+            value={frameColorForm.color_name}
+            onChange={(e) => setFrameColorForm({ ...frameColorForm, color_name: e.currentTarget.value })}
+            required
+          />
+          
+          <TextInput
+            label="Название для пользователя"
+            placeholder="Красный, Серебристый, Черный"
+            description="Отображается на сайте"
+            value={frameColorForm.color_display}
+            onChange={(e) => setFrameColorForm({ ...frameColorForm, color_display: e.currentTarget.value })}
+            required
+          />
+          
+          <Stack gap="xs">
+            <TextInput
+              label="HEX код цвета"
+              placeholder="#FF0000"
+              value={frameColorForm.color_code}
+              onChange={(e) => setFrameColorForm({ ...frameColorForm, color_code: e.currentTarget.value })}
+              required
+            />
+            <Group>
+              <Text size="sm" c="dimmed">Предпросмотр:</Text>
+              <Box
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: '50%',
+                  backgroundColor: frameColorForm.color_code,
+                  border: '2px solid #ddd'
+                }}
+              />
+            </Group>
+          </Stack>
+          
+          <Divider label="Изображения для 3-х видов" />
+          
+          {(['view1', 'view2', 'view3'] as const).map((view, idx) => (
+            <Stack key={view} gap="xs">
+              <Text size="sm" fw={500}>Вид {idx + 1}</Text>
+              <Group gap="xs">
+                <Button
+                  component="label"
+                  size="xs"
+                  variant="light"
+                  loading={frameUploadLoading[view]}
+                >
+                  📁 Загрузить
+                  <input
+                    type="file"
+                    accept="image/*"
+                    style={{ display: 'none' }}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      
+                      try {
+                        setFrameUploadLoading(prev => ({ ...prev, [view]: true }))
+                        const response = await uploadStrapColorImage({
+                          file,
+                          group: 'frame',
+                          view,
+                          colorTitle: frameColorForm.color_name
+                        })
+                        setFrameColorForm({ ...frameColorForm, [view]: response.url })
+                        notifications.show({
+                          title: 'Успешно',
+                          message: 'Изображение загружено',
+                          color: 'green'
+                        })
+                      } catch (error: any) {
+                        notifications.show({
+                          title: 'Ошибка',
+                          message: error.message || 'Не удалось загрузить изображение',
+                          color: 'red'
+                        })
+                      } finally {
+                        setFrameUploadLoading(prev => ({ ...prev, [view]: false }))
+                        e.target.value = ''
+                      }
+                    }}
+                  />
+                </Button>
+                {frameColorForm[view] && (
+                  <Button
+                    size="xs"
+                    variant="light"
+                    color="red"
+                    onClick={() => setFrameColorForm({ ...frameColorForm, [view]: '' })}
+                  >
+                    Очистить
+                  </Button>
+                )}
+              </Group>
+              <TextInput
+                placeholder={`/uploads/strap-colors/frame/${view}/...`}
+                value={frameColorForm[view] || ''}
+                onChange={(e) => setFrameColorForm({ ...frameColorForm, [view]: e.currentTarget.value })}
+              />
+              {frameColorForm[view] && (
+                <Text size="xs" c="dimmed">{frameColorForm[view]}</Text>
+              )}
+            </Stack>
+          ))}
+          
+          <Group justify="flex-end" mt="md">
+            <Button
+              variant="light"
+              onClick={() => {
+                setFrameColorModalOpened(false)
+                setEditingFrameColorIndex(null)
+              }}
+            >
+              Отмена
+            </Button>
+            <Button
+              onClick={() => {
+                if (!frameColorForm.color_name || !frameColorForm.color_display || !frameColorForm.color_code) {
+                  notifications.show({
+                    title: 'Ошибка',
+                    message: 'Заполните все обязательные поля',
+                    color: 'red'
+                  })
+                  return
+                }
+                
+                const configs = strapParams.frame_color_configs || []
+                let updated: FrameColorConfig[]
+                
+                if (editingFrameColorIndex !== null) {
+                  // Редактирование
+                  updated = [...configs]
+                  updated[editingFrameColorIndex] = frameColorForm
+                } else {
+                  // Добавление
+                  updated = [...configs, frameColorForm]
+                }
+                
+                console.log('[StrapParamsEditor] Saving frame color config:', {
+                  configs,
+                  updated,
+                  frameColorForm,
+                  fullParams: { ...strapParams, frame_color_configs: updated }
+                })
+                
+                onUpdate({ ...strapParams, frame_color_configs: updated })
+                setFrameColorModalOpened(false)
+                setEditingFrameColorIndex(null)
+                notifications.show({
+                  title: 'Успешно',
+                  message: editingFrameColorIndex !== null ? 'Цвет обновлен' : 'Цвет добавлен',
+                  color: 'green'
+                })
+              }}
+            >
+              {editingFrameColorIndex !== null ? '💾 Сохранить' : '➕ Добавить'}
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
     </Stack>
   )
 }

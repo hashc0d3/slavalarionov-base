@@ -3,8 +3,7 @@ export class WatchSizeDto {
 }
 
 export class FrameColorDto {
-  color_name: string;
-  color_code?: string;
+  colorId: number;
   view_images?: {
     view1?: string;
     view2?: string;

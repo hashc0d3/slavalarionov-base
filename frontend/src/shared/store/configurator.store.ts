@@ -9,10 +9,12 @@ export type FrameColorViewImages = {
 }
 
 export type FrameColor = {
-	color_name: string
-	color_code?: string
+	colorId: number
 	choosen: boolean
 	view_images?: FrameColorViewImages
+	// Backward compatibility - populated from API response with color relation
+	color_name?: string
+	color_code?: string
 }
 export type WatchSize = { watch_size: string; choosen: boolean }
 export type WatchModel = {
@@ -60,6 +62,20 @@ export type StrapParams = {
 		view3?: string
 	}
 }
+export type StrapBaseImage = {
+	id: number
+	colorId: number
+	view1Image?: string
+	view2Image?: string
+	view3Image?: string
+	color?: {
+		id: number
+		technical_name: string
+		display_name: string
+		hex_code: string
+	}
+}
+
 export type Strap = {
 	choosen: boolean
 	dataFetched?: boolean
@@ -78,6 +94,7 @@ export type Strap = {
 			buckle_butterfly_price?: number
 			buckle_butterfly_image?: string
 			strap_params: StrapParams
+			base_images?: StrapBaseImage[]
 		}
 	}
 }
@@ -361,16 +378,69 @@ export class ConfiguratorStore {
 	get selectedFrameColor() {
 		return this.selectedWatchModelFrameColors?.find((c) => c.choosen) || null
 	}
+	
+	get selectedFrameColorId(): number | null {
+		const color = this.selectedFrameColor
+		return color?.colorId || null
+	}
+	
 	get selectedFrameColorImages() {
 		const color = this.selectedFrameColor
 		if (!color) {
 			return { view1: undefined as string | undefined, view2: undefined as string | undefined, view3: undefined as string | undefined }
 		}
+		
+		// Проверяем frame_color_configs в текущем ремешке
+		const strapParams = this.selectedStrapModel?.attributes?.watch_strap?.strap_params
+		if (strapParams && typeof strapParams === 'object' && 'frame_color_configs' in strapParams) {
+			const configs = (strapParams as any).frame_color_configs as Array<{
+				color_name: string
+				color_display: string
+				color_code: string
+				view1?: string
+				view2?: string
+				view3?: string
+			}>
+			
+			if (configs && Array.isArray(configs)) {
+				// Ищем конфигурацию для текущего цвета (по color_name)
+				const config = configs.find(c => 
+					c.color_name?.toLowerCase() === color.color_name?.toLowerCase()
+				)
+				
+				if (config && (config.view1 || config.view2 || config.view3)) {
+					// Используем изображения из конфигурации ремешка
+					return {
+						view1: config.view1 || undefined,
+						view2: config.view2 || undefined,
+						view3: config.view3 || undefined
+					}
+				}
+			}
+		}
+		
+		// Fallback на изображения из модели часов
 		return {
 			view1: color.view_images?.view1 || undefined,
 			view2: color.view_images?.view2 || undefined,
 			view3: color.view_images?.view3 || undefined
 		}
+	}
+	
+	// Получить базовое изображение ремешка для выбранного цвета корпуса
+	getStrapBaseImageForFrameColor(strap: Strap): string | null {
+		const frameColorId = this.selectedFrameColorId
+		if (!frameColorId) return null
+		
+		const baseImages = (strap.attributes.watch_strap as any).base_images
+		if (!baseImages || !Array.isArray(baseImages)) return null
+		
+		// Ищем base_image с colorId равным выбранному цвету корпуса
+		const matchingImage = baseImages.find((img: any) => img.colorId === frameColorId)
+		if (!matchingImage) return null
+		
+		// Возвращаем первое доступное изображение (view1 -> view2 -> view3)
+		return matchingImage.view1Image || matchingImage.view2Image || matchingImage.view3Image || null
 	}
 	
 	// Фильтрация ремешков по доступным для выбранной модели часов

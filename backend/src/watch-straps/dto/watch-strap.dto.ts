@@ -61,4 +61,11 @@ export class UpdateWatchStrapDto {
   strap_params?: StrapParamsDto;
 }
 
+export class StrapBaseImageDto {
+  colorId: number;
+  view1Image?: string;
+  view2Image?: string;
+  view3Image?: string;
+}
+
 

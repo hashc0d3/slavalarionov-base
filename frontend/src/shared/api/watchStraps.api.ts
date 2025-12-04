@@ -1,4 +1,4 @@
-import { Strap, StrapParams } from '../store/configurator.store'
+import { Strap, StrapParams, StrapBaseImage } from '../store/configurator.store'
 
 const API_URL = '/api/watch-straps'
 
@@ -15,6 +15,7 @@ export interface WatchStrapDB {
   buckle_butterfly_price: number
   buckle_butterfly_image?: string | null
   strap_params: StrapParams
+  base_images?: StrapBaseImage[]
   createdAt: string
   updatedAt: string
 }
@@ -55,7 +56,8 @@ export const mapDBToStore = (dbStrap: WatchStrapDB): Strap => ({
         ...dbStrap.strap_params,
         has_buckle_butterfly:
           dbStrap.strap_params?.has_buckle_butterfly ?? dbStrap.has_buckle_butterfly
-      }
+      },
+      base_images: dbStrap.base_images || []
     }
   }
 })

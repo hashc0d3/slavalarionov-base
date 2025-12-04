@@ -201,11 +201,15 @@ export const StrapDesignPreview = observer(function StrapDesignPreview({ classNa
 	type ViewImageKey = keyof NonNullable<StrapParams['view_images']>
 	const getBaseViewImage = (view: number) => {
 		const viewKey = `view${view}` as ViewImageKey
+		
+		// 1. Сначала используем универсальные изображения из view_images (будут базовым слоем)
 		const baseViews = strapData?.strap_params?.view_images
 		const dynamic = resolveMediaUrl(pickImagePath(baseViews?.[viewKey]))
 		if (dynamic) {
 			return dynamic
 		}
+		
+		// 2. Fallback на legacy хардкодные URL
 		if (view === 1) {
 			return `${baseImageUrl}/base_${strapData.strap_name}_1_739ae2aa10.png`
 		}
@@ -215,16 +219,38 @@ export const StrapDesignPreview = observer(function StrapDesignPreview({ classNa
 		return `${baseImageUrl}/base_${strapData.strap_name}_3_50228196b7.png`
 	}
 
+	// Функция для получения изображения цвета корпуса (приоритетнее универсальных)
+	const getFrameColorImage = (view: number): string | undefined => {
+		const frameColorId = configuratorStore.selectedFrameColorId
+		if (!frameColorId || !strapData.base_images || !Array.isArray(strapData.base_images)) {
+			return undefined
+		}
+		
+		// Ищем изображение для выбранного цвета корпуса
+		const matchingBaseImage = strapData.base_images.find((img: any) => img.colorId === frameColorId)
+		if (!matchingBaseImage) {
+			return undefined
+		}
+		
+		const imageUrl = view === 1 
+			? matchingBaseImage.view1Image 
+			: view === 2 
+				? matchingBaseImage.view2Image 
+				: matchingBaseImage.view3Image
+		
+		if (imageUrl) {
+			return resolveMediaUrl(imageUrl)
+		}
+		
+		return undefined
+	}
+
 	return (
 		<div className={`${variant === 'final' ? styles.previewFinal : styles.preview} ${className || ''}`}>
 			<div className={`${styles.previewContainer} ${layout === 'grid' ? styles.previewContainerGrid : styles.previewContainerFlex}`}>
 			{/* View 1 */}
 			<div className={styles.previewView}>
 				<img src={getBaseViewImage(1)} alt="Strap view 1" className={styles.baseImage} />
-				{(() => {
-					const url = resolveMediaUrl(frameColorImages?.view1)
-					return url ? <img src={url} alt="" className={`${styles.overlayImage} ${styles.frameOverlay}`} /> : null
-				})()}
 				{/* Overlay images for different parts */}
 				{selectedLeatherColor && (() => {
 					const url = getImageUrl('leather', 1)
@@ -246,15 +272,16 @@ export const StrapDesignPreview = observer(function StrapDesignPreview({ classNa
 					const url = getImageUrl('adapter', 1)
 					return url ? <img src={url} alt="" className={styles.overlayImage} /> : null
 				})()}
+				{/* Frame color overlay - поверх всех (приоритетнее универсальных) */}
+				{(() => {
+					const url = getFrameColorImage(1)
+					return url ? <img src={url} alt="" className={`${styles.overlayImage} ${styles.frameOverlay}`} /> : null
+				})()}
 			</div>
 
 			{/* View 2 */}
 			<div className={styles.previewView}>
 				<img src={getBaseViewImage(2)} alt="Strap view 2" className={styles.baseImage} />
-				{(() => {
-					const url = resolveMediaUrl(frameColorImages?.view2)
-					return url ? <img src={url} alt="" className={`${styles.overlayImage} ${styles.frameOverlay}`} /> : null
-				})()}
 				{selectedLeatherColor && (() => {
 					const url = getImageUrl('leather', 2)
 					return url ? <img src={url} alt="" className={styles.overlayImage} /> : null
@@ -275,15 +302,16 @@ export const StrapDesignPreview = observer(function StrapDesignPreview({ classNa
 					const url = getImageUrl('adapter', 2)
 					return url ? <img src={url} alt="" className={styles.overlayImage} /> : null
 				})()}
+				{/* Frame color overlay - поверх всех (приоритетнее универсальных) */}
+				{(() => {
+					const url = getFrameColorImage(2)
+					return url ? <img src={url} alt="" className={`${styles.overlayImage} ${styles.frameOverlay}`} /> : null
+				})()}
 			</div>
 
 			{/* View 3 */}
 			<div className={styles.previewView}>
 				<img src={getBaseViewImage(3)} alt="Strap view 3" className={styles.baseImage} />
-				{(() => {
-					const url = resolveMediaUrl(frameColorImages?.view3)
-					return url ? <img src={url} alt="" className={`${styles.overlayImage} ${styles.frameOverlay}`} /> : null
-				})()}
 				{selectedLeatherColor && (() => {
 					const url = getImageUrl('leather', 3)
 					return url ? <img src={url} alt="" className={styles.overlayImage} /> : null
@@ -303,6 +331,11 @@ export const StrapDesignPreview = observer(function StrapDesignPreview({ classNa
 				{selectedAdapterColor && (() => {
 					const url = getImageUrl('adapter', 3)
 					return url ? <img src={url} alt="" className={styles.overlayImage} /> : null
+				})()}
+				{/* Frame color overlay - поверх всех (приоритетнее универсальных) */}
+				{(() => {
+					const url = getFrameColorImage(3)
+					return url ? <img src={url} alt="" className={`${styles.overlayImage} ${styles.frameOverlay}`} /> : null
 				})()}
 			</div>
 			</div>

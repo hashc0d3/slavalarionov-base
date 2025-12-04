@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateWatchStrapDto, UpdateWatchStrapDto } from './dto/watch-strap.dto';
+import { CreateWatchStrapDto, UpdateWatchStrapDto, StrapBaseImageDto } from './dto/watch-strap.dto';
 
 @Injectable()
 export class WatchStrapsService {
@@ -8,6 +8,13 @@ export class WatchStrapsService {
 
   async findAll() {
     const straps = await this.prisma.watchStrap.findMany({
+      include: {
+        base_images: {
+          include: {
+            color: true,
+          },
+        },
+      },
       orderBy: {
         id: 'asc',
       },
@@ -23,6 +30,13 @@ export class WatchStrapsService {
   async findOne(id: number) {
     const strap = await this.prisma.watchStrap.findUnique({
       where: { id },
+      include: {
+        base_images: {
+          include: {
+            color: true,
+          },
+        },
+      },
     });
 
     if (!strap) return null;
@@ -116,6 +130,42 @@ export class WatchStrapsService {
     }
 
     return { success: true, restoredCount: backupData.length };
+  }
+
+  async addBaseImage(strapId: number, imageDto: StrapBaseImageDto) {
+    return this.prisma.strapBaseImage.create({
+      data: {
+        watchStrapId: strapId,
+        colorId: imageDto.colorId,
+        view1Image: imageDto.view1Image || null,
+        view2Image: imageDto.view2Image || null,
+        view3Image: imageDto.view3Image || null,
+      },
+      include: {
+        color: true,
+      },
+    });
+  }
+
+  async updateBaseImage(imageId: number, imageDto: StrapBaseImageDto) {
+    return this.prisma.strapBaseImage.update({
+      where: { id: imageId },
+      data: {
+        colorId: imageDto.colorId,
+        view1Image: imageDto.view1Image || null,
+        view2Image: imageDto.view2Image || null,
+        view3Image: imageDto.view3Image || null,
+      },
+      include: {
+        color: true,
+      },
+    });
+  }
+
+  async deleteBaseImage(imageId: number) {
+    return this.prisma.strapBaseImage.delete({
+      where: { id: imageId },
+    });
   }
 }
 

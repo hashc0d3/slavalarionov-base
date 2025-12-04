@@ -15,6 +15,7 @@ import { PromocodesModule } from './promocodes/promocodes.module';
 import { DeliveryModule } from './delivery/delivery.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { ConfiguratorModule } from './configurator/configurator.module';
+import { ColorsModule } from './colors/colors.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { ConfiguratorModule } from './configurator/configurator.module';
     DeliveryModule,
     UploadsModule,
     ConfiguratorModule,
+    ColorsModule,
   ],
   controllers: [AppController, LegacyController],
   providers: [AppService],

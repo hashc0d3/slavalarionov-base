@@ -38,10 +38,24 @@ model WatchSize {
   @@map("watch_sizes")
 }
 
+model Color {
+  id                Int           @id @default(autoincrement())
+  technical_name    String        @unique  // Техническое название (например, "silver", "black")
+  display_name      String                 // Наименование для клиента (например, "Серебристый", "Чёрный")
+  hex_code          String                 // HEX цвет (например, "#C0C0C0")
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  
+  frame_colors      FrameColor[]
+  strap_base_images StrapBaseImage[]
+  
+  @@map("colors")
+}
+
 model FrameColor {
   id            Int         @id @default(autoincrement())
-  color_name    String
-  color_code    String?
+  colorId       Int
+  color         Color       @relation(fields: [colorId], references: [id], onDelete: Cascade)
   view1Image    String?
   view2Image    String?
   view3Image    String?
@@ -49,6 +63,19 @@ model FrameColor {
   watchModel    WatchModel  @relation(fields: [watchModelId], references: [id], onDelete: Cascade)
   
   @@map("frame_colors")
+}
+
+model StrapBaseImage {
+  id            Int         @id @default(autoincrement())
+  colorId       Int
+  color         Color       @relation(fields: [colorId], references: [id], onDelete: Cascade)
+  view1Image    String?
+  view2Image    String?
+  view3Image    String?
+  watchStrapId  Int
+  watchStrap    WatchStrap  @relation(fields: [watchStrapId], references: [id], onDelete: Cascade)
+  
+  @@map("strap_base_images")
 }
 
 model WatchStrap {
@@ -68,6 +95,7 @@ model WatchStrap {
   updatedAt               DateTime  @updatedAt
   
   compatible_models       WatchModelStrap[]
+  base_images             StrapBaseImage[]
   
   @@map("watch_straps")
 }

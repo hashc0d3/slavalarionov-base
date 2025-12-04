@@ -9,6 +9,7 @@ import {
 } from '@mantine/core'
 import { notifications } from '@mantine/notifications'
 import StrapParamsEditor from './StrapParamsEditor'
+import { StrapBaseImagesEditor } from './StrapBaseImagesEditor'
 import { uploadStrapColorImage } from '@/shared/api/uploads.api'
 
 export const AdminStrapsMantine = observer(() => {
@@ -96,6 +97,29 @@ export const AdminStrapsMantine = observer(() => {
     setOpened(false)
     setEditingIndex(null)
     setIsAdding(false)
+  }
+  
+  const startCopy = (index: number) => {
+    const strap = configuratorStore.watchStraps[index]
+    // Глубокое копирование всех данных ремешка
+    const copiedStrap = JSON.parse(JSON.stringify(strap.attributes.watch_strap))
+    
+    // Изменяем название, чтобы отличить копию
+    copiedStrap.strap_name = `${copiedStrap.strap_name}_copy_${Date.now()}`
+    copiedStrap.strap_title = `${copiedStrap.strap_title} (копия)`
+    copiedStrap.id = 0 // Новый ID будет присвоен при сохранении
+    
+    setFormData({ attributes: { watch_strap: copiedStrap } })
+    setIsAdding(true)
+    setEditingIndex(null)
+    setOpened(true)
+    
+    notifications.show({
+      title: 'Копирование',
+      message: 'Ремешок скопирован. Измените название и сохраните.',
+      color: 'blue',
+      autoClose: 3000
+    })
   }
 
   const saveStrap = async () => {
@@ -243,6 +267,9 @@ export const AdminStrapsMantine = observer(() => {
                 <Button size="sm" variant="light" onClick={() => startEdit(index)}>
                   ✏️ Изменить
                 </Button>
+                <Button size="sm" variant="light" color="blue" onClick={() => startCopy(index)}>
+                  📋 Копировать
+                </Button>
                 <Button size="sm" variant="light" color="red" onClick={() => deleteStrap(index)}>
                   🗑️ Удалить
                 </Button>
@@ -256,6 +283,7 @@ export const AdminStrapsMantine = observer(() => {
         <Tabs defaultValue="basic" variant="outline">
           <Tabs.List>
             <Tabs.Tab value="basic">Основные параметры</Tabs.Tab>
+            <Tabs.Tab value="base-images">Базовые изображения</Tabs.Tab>
             <Tabs.Tab value="design">Параметры дизайна</Tabs.Tab>
           </Tabs.List>
 
@@ -505,6 +533,26 @@ export const AdminStrapsMantine = observer(() => {
             </Stack>
           </Tabs.Panel>
 
+          <Tabs.Panel value="base-images" pt="md">
+            {!isAdding && editingIndex !== null && formData.attributes?.watch_strap.id ? (
+              <StrapBaseImagesEditor
+                strapId={formData.attributes.watch_strap.id}
+                strapName={formData.attributes.watch_strap.strap_name}
+                baseImages={(formData.attributes.watch_strap as any).base_images || []}
+                onUpdate={() => {
+                  // Reload strap data
+                  configuratorStore.loadWatchStrapsFromAPI()
+                  if (editingIndex !== null) {
+                    const strap = configuratorStore.watchStraps[editingIndex]
+                    setFormData({ attributes: { watch_strap: { ...strap.attributes.watch_strap } } })
+                  }
+                }}
+              />
+            ) : (
+              <Text c="dimmed">Сохраните ремешок, чтобы добавить базовые изображения</Text>
+            )}
+          </Tabs.Panel>
+
           <Tabs.Panel value="design" pt="md">
             <StrapParamsEditor
               strapParams={{
@@ -514,16 +562,20 @@ export const AdminStrapsMantine = observer(() => {
                 buckle_colors: formData.attributes?.watch_strap.strap_params?.buckle_colors ?? [],
                 adapter_colors: formData.attributes?.watch_strap.strap_params?.adapter_colors ?? [],
                 has_buckle_butterfly: formData.attributes?.watch_strap.strap_params?.has_buckle_butterfly ?? false,
-                view_images: formData.attributes?.watch_strap.strap_params?.view_images
+                view_images: formData.attributes?.watch_strap.strap_params?.view_images,
+                frame_color_configs: (formData.attributes?.watch_strap.strap_params as any)?.frame_color_configs ?? []
               }}
-              onUpdate={(updatedParams) => setFormData({
-                attributes: {
-                  watch_strap: {
-                    ...formData.attributes!.watch_strap,
-                    strap_params: updatedParams
+              onUpdate={(updatedParams) => {
+                console.log('[AdminStrapsMantine] onUpdate called with:', updatedParams)
+                setFormData({
+                  attributes: {
+                    watch_strap: {
+                      ...formData.attributes!.watch_strap,
+                      strap_params: updatedParams
+                    }
                   }
-                }
-              })}
+                })
+              }}
             />
           </Tabs.Panel>
         </Tabs>

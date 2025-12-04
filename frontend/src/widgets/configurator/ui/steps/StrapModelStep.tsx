@@ -33,6 +33,16 @@ export const StrapModelStep = observer(function StrapModelStep() {
 		})
 	}, [])
 	
+	// Функция для получения изображения ремешка
+	const getStrapImage = (strap: any): string => {
+		// Используем preview_image для отображения карточки ремешка на втором шаге
+		if (!isUltra) {
+			return strap.attributes.watch_strap.preview_image || '/window.svg'
+		} else {
+			return strap.attributes.watch_strap.ultra_preview_image || '/window.svg'
+		}
+	}
+	
 	return (
 		<div className={styles.step}>
 			<div className={styles.stepWrapper}>
@@ -43,19 +53,15 @@ export const StrapModelStep = observer(function StrapModelStep() {
 						className={[styles.item, strap.choosen ? styles.choosen : ''].join(' ')}
 						onClick={() => configuratorStore.chooseStrapModel(strap.attributes.watch_strap.id)}
 					>
-						<div className={styles.itemImageInner}>
-							<img
-								src={
-									!isUltra
-										? strap.attributes.watch_strap.preview_image || '/window.svg'
-										: strap.attributes.watch_strap.ultra_preview_image || '/window.svg'
-								}
-								width={150}
-								height={185}
-								alt=""
-								className={styles.itemImage}
-							/>
-						</div>
+					<div className={styles.itemImageInner}>
+						<img
+							src={getStrapImage(strap)}
+							width={150}
+							height={185}
+							alt=""
+							className={styles.itemImage}
+						/>
+					</div>
 					<h4 className={styles.itemTitle}>
 						{strap.attributes.watch_strap.strap_title}
 					</h4>

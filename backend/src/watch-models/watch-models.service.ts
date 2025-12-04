@@ -10,7 +10,11 @@ export class WatchModelsService {
     return this.prisma.watchModel.findMany({
       include: {
         watch_sizes: true,
-        frame_colors: true,
+        frame_colors: {
+          include: {
+            color: true,
+          },
+        },
         available_straps: {
           include: {
             watchStrap: true,
@@ -28,7 +32,11 @@ export class WatchModelsService {
       where: { id },
       include: {
         watch_sizes: true,
-        frame_colors: true,
+        frame_colors: {
+          include: {
+            color: true,
+          },
+        },
         available_straps: {
           include: {
             watchStrap: true,
@@ -66,7 +74,11 @@ export class WatchModelsService {
       },
       include: {
         watch_sizes: true,
-        frame_colors: true,
+        frame_colors: {
+          include: {
+            color: true,
+          },
+        },
         available_straps: {
           include: {
             watchStrap: true,
@@ -96,8 +108,7 @@ export class WatchModelsService {
         frame_colors: {
           create:
             data.frame_colors?.map((color) => ({
-              color_name: color.color_name,
-              color_code: color.color_code,
+              colorId: color.colorId,
               view1Image: color.view_images?.view1 || null,
               view2Image: color.view_images?.view2 || null,
               view3Image: color.view_images?.view3 || null,
@@ -111,7 +122,11 @@ export class WatchModelsService {
       },
       include: {
         watch_sizes: true,
-        frame_colors: true,
+        frame_colors: {
+          include: {
+            color: true,
+          },
+        },
         available_straps: {
           include: {
             watchStrap: true,
@@ -156,8 +171,7 @@ export class WatchModelsService {
           },
           frame_colors: {
             create: modelData.frame_colors.map((c: any) => ({
-              color_name: c.color_name,
-              color_code: c.color_code,
+              colorId: c.colorId,
               view1Image: c.view1Image ?? c.view_images?.view1 ?? null,
               view2Image: c.view2Image ?? c.view_images?.view2 ?? null,
               view3Image: c.view3Image ?? c.view_images?.view3 ?? null,

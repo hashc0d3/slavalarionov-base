@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, ParseIntPipe } from '@nestjs/common';
 import { WatchStrapsService } from './watch-straps.service';
-import { CreateWatchStrapDto, UpdateWatchStrapDto } from './dto/watch-strap.dto';
+import { CreateWatchStrapDto, UpdateWatchStrapDto, StrapBaseImageDto } from './dto/watch-strap.dto';
 
 @Controller('api/watch-straps')
 export class WatchStrapsController {
@@ -42,6 +42,31 @@ export class WatchStrapsController {
   @Delete(':id')
   async delete(@Param('id', ParseIntPipe) id: number) {
     return this.watchStrapsService.delete(id);
+  }
+
+  @Post(':id/base-images')
+  async addBaseImage(
+    @Param('id', ParseIntPipe) strapId: number,
+    @Body() imageDto: StrapBaseImageDto,
+  ) {
+    return this.watchStrapsService.addBaseImage(strapId, imageDto);
+  }
+
+  @Put(':strapId/base-images/:imageId')
+  async updateBaseImage(
+    @Param('strapId', ParseIntPipe) strapId: number,
+    @Param('imageId', ParseIntPipe) imageId: number,
+    @Body() imageDto: StrapBaseImageDto,
+  ) {
+    return this.watchStrapsService.updateBaseImage(imageId, imageDto);
+  }
+
+  @Delete(':strapId/base-images/:imageId')
+  async deleteBaseImage(
+    @Param('strapId', ParseIntPipe) strapId: number,
+    @Param('imageId', ParseIntPipe) imageId: number,
+  ) {
+    return this.watchStrapsService.deleteBaseImage(imageId);
   }
 }
 

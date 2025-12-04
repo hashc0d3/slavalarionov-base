@@ -9,8 +9,26 @@ async function main() {
   await prisma.configuratorAdditionalOption.deleteMany()
   await prisma.configuratorSettings.deleteMany()
   await prisma.watchModelStrap.deleteMany()
+  await prisma.frameColor.deleteMany()
+  await prisma.strapBaseImage.deleteMany()
   await prisma.watchModel.deleteMany()
   await prisma.watchStrap.deleteMany()
+  await prisma.color.deleteMany()
+
+  // Создаём базовые цвета
+  const colors = await Promise.all([
+    prisma.color.create({ data: { technical_name: 'silver', display_name: 'Серебристый', hex_code: '#C0C0C0' } }),
+    prisma.color.create({ data: { technical_name: 'black', display_name: 'Чёрный', hex_code: '#000000' } }),
+    prisma.color.create({ data: { technical_name: 'titanium', display_name: 'Титановый', hex_code: '#8A8D8F' } }),
+    prisma.color.create({ data: { technical_name: 'white', display_name: 'Белый', hex_code: '#ffffff' } }),
+    prisma.color.create({ data: { technical_name: 'brown', display_name: 'Коричневый', hex_code: '#7b4b2a' } }),
+  ])
+
+  const silverColor = colors[0]
+  const blackColor = colors[1]
+  const titaniumColor = colors[2]
+
+  console.log('✓ Colors seeded!')
 
   // Добавляем начальные модели
   const models = [
@@ -27,8 +45,8 @@ async function main() {
       },
       frame_colors: {
         create: [
-          { color_name: 'Silver', color_code: '#C0C0C0' },
-          { color_name: 'Black', color_code: '#000000' }
+          { colorId: silverColor.id },
+          { colorId: blackColor.id }
         ]
       }
     },
@@ -45,8 +63,8 @@ async function main() {
       },
       frame_colors: {
         create: [
-          { color_name: 'Silver', color_code: '#C0C0C0' },
-          { color_name: 'Black', color_code: '#000000' }
+          { colorId: silverColor.id },
+          { colorId: blackColor.id }
         ]
       }
     },
@@ -63,8 +81,8 @@ async function main() {
       },
       frame_colors: {
         create: [
-          { color_name: 'Silver', color_code: '#C0C0C0' },
-          { color_name: 'Black', color_code: '#000000' }
+          { colorId: silverColor.id },
+          { colorId: blackColor.id }
         ]
       }
     },
@@ -80,8 +98,8 @@ async function main() {
       },
       frame_colors: {
         create: [
-          { color_name: 'Titanium', color_code: '#8A8D8F' },
-          { color_name: 'Black', color_code: '#000000' }
+          { colorId: titaniumColor.id },
+          { colorId: blackColor.id }
         ]
       }
     }
