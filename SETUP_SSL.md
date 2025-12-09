@@ -81,21 +81,29 @@ server {
 }
 ```
 
-### Альтернативный способ: Получить сертификат в standalone режиме
+### Альтернативный способ: Получить сертификат в standalone режиме (РЕКОМЕНДУЕТСЯ)
 
-Если nginx плагин certbot не работает:
+Если nginx плагин certbot не работает (ошибка "AttributeError: can't set attribute"):
 
 ```bash
-# Остановить nginx временно
+# Использовать готовый скрипт
+chmod +x get-ssl-cert.sh
+./get-ssl-cert.sh
+
+# Или вручную:
+# 1. Остановить nginx временно
 sudo systemctl stop nginx
 
-# Получить сертификат в standalone режиме
-sudo certbot certonly --standalone -d custom.slavalarionov.com
+# 2. Получить сертификат в standalone режиме
+sudo certbot certonly --standalone -d custom.slavalarionov.com --non-interactive --agree-tos --email your-email@example.com
 
-# Запустить nginx обратно
+# 3. Запустить nginx обратно
 sudo systemctl start nginx
 
-# Затем вручную добавить SSL конфигурацию
+# 4. Применить SSL конфигурацию
+sudo cp /opt/slavalarionov-base/nginx-custom.slavalarionov.com-ssl.conf /etc/nginx/sites-available/custom.slavalarionov.com
+sudo nginx -t
+sudo systemctl reload nginx
 ```
 
 ## Проверка
