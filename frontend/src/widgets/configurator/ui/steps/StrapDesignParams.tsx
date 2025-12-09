@@ -173,6 +173,8 @@ const StrapDesignParamItem = observer(function StrapDesignParamItem({
 						src={butterflyImageSrc}
 						alt="Butterfly buckle"
 						className={styles.paramBuckleButterflyImage}
+						loading="lazy"
+						decoding="async"
 					/>
 				</div>
 			)}
@@ -190,6 +192,8 @@ const StrapDesignParamItem = observer(function StrapDesignParamItem({
 									src={getAdapterImageUrl(color)}
 									alt={color.color_title}
 									className={styles.paramOptionPreviewImg}
+									loading="lazy"
+									decoding="async"
 								/>
 							</div>
 							<span className={styles.paramOptionTitle}>

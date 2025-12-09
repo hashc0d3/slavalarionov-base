@@ -250,92 +250,110 @@ export const StrapDesignPreview = observer(function StrapDesignPreview({ classNa
 			<div className={`${styles.previewContainer} ${layout === 'grid' ? styles.previewContainerGrid : styles.previewContainerFlex}`}>
 			{/* View 1 */}
 			<div className={styles.previewView}>
-				<img src={getBaseViewImage(1)} alt="Strap view 1" className={styles.baseImage} />
+				<img 
+					src={getBaseViewImage(1)} 
+					alt="Strap view 1" 
+					className={styles.baseImage}
+					loading="eager"
+					decoding="async"
+				/>
 				{/* Overlay images for different parts */}
 				{selectedLeatherColor && (() => {
 					const url = getImageUrl('leather', 1)
-					return url ? <img src={url} alt="" className={styles.overlayImage} /> : null
+					return url ? <img src={url} alt="" className={styles.overlayImage} loading="eager" decoding="async" /> : null
 				})()}
 				{selectedStitchingColor && (() => {
 					const url = getImageUrl('stitching', 1)
-					return url ? <img src={url} alt="" className={styles.overlayImage} /> : null
+					return url ? <img src={url} alt="" className={styles.overlayImage} loading="eager" decoding="async" /> : null
 				})()}
 				{selectedEdgeColor && (() => {
 					const url = getImageUrl('edge', 1)
-					return url ? <img src={url} alt="" className={styles.overlayImage} /> : null
+					return url ? <img src={url} alt="" className={styles.overlayImage} loading="eager" decoding="async" /> : null
 				})()}
 				{selectedBuckleColor && (() => {
 					const url = getImageUrl('buckle', 1)
-					return url ? <img src={url} alt="" className={styles.overlayImage} /> : null
+					return url ? <img src={url} alt="" className={styles.overlayImage} loading="eager" decoding="async" /> : null
 				})()}
 				{selectedAdapterColor && (() => {
 					const url = getImageUrl('adapter', 1)
-					return url ? <img src={url} alt="" className={styles.overlayImage} /> : null
+					return url ? <img src={url} alt="" className={styles.overlayImage} loading="eager" decoding="async" /> : null
 				})()}
 				{/* Frame color overlay - поверх всех (приоритетнее универсальных) */}
 				{(() => {
 					const url = getFrameColorImage(1)
-					return url ? <img src={url} alt="" className={`${styles.overlayImage} ${styles.frameOverlay}`} /> : null
+					return url ? <img src={url} alt="" className={`${styles.overlayImage} ${styles.frameOverlay}`} loading="eager" decoding="async" /> : null
 				})()}
 			</div>
 
 			{/* View 2 */}
 			<div className={styles.previewView}>
-				<img src={getBaseViewImage(2)} alt="Strap view 2" className={styles.baseImage} />
+				<img 
+					src={getBaseViewImage(2)} 
+					alt="Strap view 2" 
+					className={styles.baseImage}
+					loading="lazy"
+					decoding="async"
+				/>
 				{selectedLeatherColor && (() => {
 					const url = getImageUrl('leather', 2)
-					return url ? <img src={url} alt="" className={styles.overlayImage} /> : null
+					return url ? <img src={url} alt="" className={styles.overlayImage} loading="lazy" decoding="async" /> : null
 				})()}
 				{selectedStitchingColor && (() => {
 					const url = getImageUrl('stitching', 2)
-					return url ? <img src={url} alt="" className={styles.overlayImage} /> : null
+					return url ? <img src={url} alt="" className={styles.overlayImage} loading="lazy" decoding="async" /> : null
 				})()}
 				{selectedEdgeColor && (() => {
 					const url = getImageUrl('edge', 2)
-					return url ? <img src={url} alt="" className={styles.overlayImage} /> : null
+					return url ? <img src={url} alt="" className={styles.overlayImage} loading="lazy" decoding="async" /> : null
 				})()}
 				{selectedBuckleColor && (() => {
 					const url = getImageUrl('buckle', 2)
-					return url ? <img src={url} alt="" className={styles.overlayImage} /> : null
+					return url ? <img src={url} alt="" className={styles.overlayImage} loading="lazy" decoding="async" /> : null
 				})()}
 				{selectedAdapterColor && (() => {
 					const url = getImageUrl('adapter', 2)
-					return url ? <img src={url} alt="" className={styles.overlayImage} /> : null
+					return url ? <img src={url} alt="" className={styles.overlayImage} loading="lazy" decoding="async" /> : null
 				})()}
 				{/* Frame color overlay - поверх всех (приоритетнее универсальных) */}
 				{(() => {
 					const url = getFrameColorImage(2)
-					return url ? <img src={url} alt="" className={`${styles.overlayImage} ${styles.frameOverlay}`} /> : null
+					return url ? <img src={url} alt="" className={`${styles.overlayImage} ${styles.frameOverlay}`} loading="lazy" decoding="async" /> : null
 				})()}
 			</div>
 
 			{/* View 3 */}
 			<div className={styles.previewView}>
-				<img src={getBaseViewImage(3)} alt="Strap view 3" className={styles.baseImage} />
+				<img 
+					src={getBaseViewImage(3)} 
+					alt="Strap view 3" 
+					className={styles.baseImage}
+					loading="lazy"
+					decoding="async"
+				/>
 				{selectedLeatherColor && (() => {
 					const url = getImageUrl('leather', 3)
-					return url ? <img src={url} alt="" className={styles.overlayImage} /> : null
+					return url ? <img src={url} alt="" className={styles.overlayImage} loading="lazy" decoding="async" /> : null
 				})()}
 				{selectedStitchingColor && (() => {
 					const url = getImageUrl('stitching', 3)
-					return url ? <img src={url} alt="" className={styles.overlayImage} /> : null
+					return url ? <img src={url} alt="" className={styles.overlayImage} loading="lazy" decoding="async" /> : null
 				})()}
 				{selectedEdgeColor && (() => {
 					const url = getImageUrl('edge', 3)
-					return url ? <img src={url} alt="" className={styles.overlayImage} /> : null
+					return url ? <img src={url} alt="" className={styles.overlayImage} loading="lazy" decoding="async" /> : null
 				})()}
 				{selectedBuckleColor && (() => {
 					const url = getImageUrl('buckle', 3)
-					return url ? <img src={url} alt="" className={styles.overlayImage} /> : null
+					return url ? <img src={url} alt="" className={styles.overlayImage} loading="lazy" decoding="async" /> : null
 				})()}
 				{selectedAdapterColor && (() => {
 					const url = getImageUrl('adapter', 3)
-					return url ? <img src={url} alt="" className={styles.overlayImage} /> : null
+					return url ? <img src={url} alt="" className={styles.overlayImage} loading="lazy" decoding="async" /> : null
 				})()}
 				{/* Frame color overlay - поверх всех (приоритетнее универсальных) */}
 				{(() => {
 					const url = getFrameColorImage(3)
-					return url ? <img src={url} alt="" className={`${styles.overlayImage} ${styles.frameOverlay}`} /> : null
+					return url ? <img src={url} alt="" className={`${styles.overlayImage} ${styles.frameOverlay}`} loading="lazy" decoding="async" /> : null
 				})()}
 			</div>
 			</div>

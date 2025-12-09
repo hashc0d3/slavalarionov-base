@@ -60,6 +60,8 @@ export const StrapModelStep = observer(function StrapModelStep() {
 							height={185}
 							alt=""
 							className={styles.itemImage}
+							loading="lazy"
+							decoding="async"
 						/>
 					</div>
 					<h4 className={styles.itemTitle}>

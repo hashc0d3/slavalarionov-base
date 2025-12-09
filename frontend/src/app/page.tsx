@@ -1,22 +1,11 @@
-'use client'
+import { ConfiguratorClient } from '@/widgets/configurator/ui/ConfiguratorClient'
+import type { Metadata } from 'next'
 
-import { SectionConfigurator } from '@/widgets/configurator/ui/SectionConfigurator'
-import { configuratorStore } from '@/shared/store/configurator.store'
-import { AdminButton } from '@/features/admin/ui/AdminButton'
-import { useEffect } from 'react'
+export const metadata: Metadata = {
+	title: 'Создай уникальный ремешок для своих Apple Watch | Slava Larionov',
+	description: 'Конфигуратор ремешков для Apple Watch. Выберите модель часов, ремешок и персонализируйте его по своему вкусу.',
+}
 
 export default function Home() {
-	useEffect(() => {
-		// Загружаем данные из API при старте
-		configuratorStore.loadWatchModelsFromAPI()
-		configuratorStore.loadWatchStrapsFromAPI()
-		configuratorStore.loadConfiguratorSettings()
-	}, [])
-
-	return (
-		<>
-			<AdminButton />
-			<SectionConfigurator />
-		</>
-	)
+	return <ConfiguratorClient />
 }

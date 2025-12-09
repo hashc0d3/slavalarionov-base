@@ -80,7 +80,7 @@ export const ImageUploader = ({ onImageUpload, currentImage, fallbackUrl }: Imag
       >
         {displayImage ? (
           <div className={styles.imagePreview}>
-            <img src={displayImage} alt="Preview" />
+            <img src={displayImage} alt="Preview" loading="lazy" decoding="async" />
             <div className={styles.overlay}>
               <span>Нажмите или перетащите новое изображение</span>
             </div>

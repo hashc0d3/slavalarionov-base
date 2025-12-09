@@ -37,3 +37,4 @@ echo ""
 echo "🌐 DEV доступен по адресу: https://sl.cdn1.dev"
 echo "📝 Для просмотра логов: docker compose -f docker-compose.dev.yml logs -f backend-dev"
 
+

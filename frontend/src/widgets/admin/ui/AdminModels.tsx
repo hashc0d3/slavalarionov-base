@@ -439,7 +439,13 @@ export const AdminModels = observer(() => {
           <div key={index} className={styles.modelCard}>
             <div className={styles.modelHeader}>
               {model.main_image && (
-                <img src={model.main_image} alt={model.watch_model_name} className={styles.modelImage} />
+                <img 
+                  src={model.main_image} 
+                  alt={model.watch_model_name} 
+                  className={styles.modelImage}
+                  loading="lazy"
+                  decoding="async"
+                />
               )}
               <div className={styles.modelInfo}>
                 <h3>{model.watch_model_name}</h3>

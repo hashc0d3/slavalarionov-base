@@ -23,9 +23,24 @@ const nextConfig = {
   },
   // Отключаем генерацию source maps для ускорения сборки
   productionBrowserSourceMaps: false,
-  // Оптимизация изображений (можно отключить если не используется)
+  // Оптимизация изображений
   images: {
     unoptimized: false,
+    // Разрешаем загрузку изображений с внешних доменов
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
+      {
+        protocol: 'http',
+        hostname: '**',
+      },
+    ],
+    // Кэширование изображений
+    minimumCacheTTL: 60,
+    // Форматы изображений
+    formats: ['image/avif', 'image/webp'],
   },
   // Уменьшаем количество оптимизаций во время сборки
   experimental: {

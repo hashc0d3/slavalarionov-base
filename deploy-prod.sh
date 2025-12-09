@@ -37,3 +37,4 @@ echo ""
 echo "🌐 PROD доступен по адресу: https://custom.slavalarionov.com"
 echo "📝 Для просмотра логов: docker compose -f docker-compose.prod.yml logs -f backend-prod"
 
+

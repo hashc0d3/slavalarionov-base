@@ -33,3 +33,4 @@ echo ""
 echo "🌐 DEV: https://sl.cdn1.dev"
 echo "🌐 PROD: https://custom.slavalarionov.com"
 
+
