@@ -14,7 +14,7 @@
 .choosen.stepItem, .stepItem.choosen { border-color: #5078DF; background: #fff; }
 .stepItemImage { pointer-events: none; width: 100%; max-width: 140px; margin-bottom: 30px; object-fit: contain; object-position: center; height: auto; }
 .stepItemInfo { margin-top: auto; width: 100%; display: flex; flex-direction: column; align-items: center; }
-.stepItemTitle { text-align: center; font-size: 16px; font-weight: 200; line-height: 24px; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+.stepItemTitle { text-align: center; font-size: 16px; font-weight: 200; font-family: 'TildaSans', 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 24px; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
 .stepItemTitlePart { display: block; }
 .stepItemSizes { width: 100%; max-width: 180px; display: flex; justify-content: center; margin-top: 14px; }
 .stepItemSizesItem { display: flex; align-items: center; justify-content: center; flex: 1 1 auto; max-width: 85px; padding: 12px 20px; margin-right: 10px; border-radius: 50px; background: #e9e9e9; border: 1px solid transparent; cursor: pointer; transition: .2s ease; }

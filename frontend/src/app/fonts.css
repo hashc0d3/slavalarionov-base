@@ -1,0 +1,38 @@
+@font-face {
+    font-display: swap;
+    font-family: "TildaSans";
+    src: url(/fonts/TildaSans-Semi-Bold.woff2) format('woff2'),
+        url(/fonts/TildaSans-Semi-Bold.woff) format('woff');
+    font-weight: 600;
+}
+@font-face {
+    font-display: swap;
+    font-family: "TildaSans";
+    src: url(/fonts/TildaSans-Medium.woff2) format('woff2'),
+        url(/fonts/TildaSans-Medium.woff) format('woff');
+    font-weight: 500;
+}
+@font-face {
+    font-display: swap;
+    font-family: "TildaSans";
+    src: url(/fonts/TildaSans-Regular.woff2) format('woff2'),
+        url(/fonts/TildaSans-Regular.woff) format('woff');
+    font-weight: 400;
+}
+@font-face {
+    font-display: swap;
+    font-family: "TildaSans";
+    src: url(/fonts/TildaSans-Light.woff2) format('woff2'),
+        url(/fonts/TildaSans-Light.woff) format('woff');
+    font-weight: 300;
+}
+
+/* Use Light (300) for font-weight 200 since TildaSans doesn't have 200 */
+@font-face {
+    font-display: swap;
+    font-family: "TildaSans";
+    src: url(/fonts/TildaSans-Light.woff2) format('woff2'),
+        url(/fonts/TildaSans-Light.woff) format('woff');
+    font-weight: 200;
+}
+

@@ -37,6 +37,7 @@
 	color: #333;
 	flex: 1;
 	font-weight: 200;
+	font-family: 'TildaSans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
 }

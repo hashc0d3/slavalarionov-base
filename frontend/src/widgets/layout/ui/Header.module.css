@@ -7,6 +7,7 @@
 	align-items: center;
 	position: relative;
 	overflow: visible;
+	font-family: 'TildaSans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 }
 
 .headerContainer {
@@ -143,6 +144,7 @@
 .mobileNav .navListItem {
 	margin-right: 0;
 	font-size: 16px;
+	font-family: 'TildaSans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 	width: 100%;
 }
 

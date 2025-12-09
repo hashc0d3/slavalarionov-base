@@ -8,8 +8,12 @@ import { StepsProgress } from './steps/StepsProgress'
 import { OrderPopup } from './order-popup/OrderPopup'
 import { ConfiguratorCart } from './cart/ConfiguratorCart'
 import { configuratorStore } from '@/shared/store/configurator.store'
+import { useConfiguratorRouting } from '@/shared/hooks/useConfiguratorRouting'
 
 export const SectionConfigurator = observer(function SectionConfigurator() {
+	// Инициализация синхронизации URL с состоянием конфигуратора
+	useConfiguratorRouting()
+
 	return (
 		<section className={styles.configuratorSection}>
 			<div className={["container", styles.container, styles.configuratorSectionContainer].join(' ')}>

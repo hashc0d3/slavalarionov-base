@@ -4,6 +4,7 @@ import { ColorSchemeScript } from '@mantine/core';
 import { Providers } from "./providers";
 import { Header } from "@/widgets/layout/ui/Header";
 import { Footer } from "@/widgets/layout/ui/Footer";
+import "./fonts.css";
 import "./globals.css";
 
 const manrope = Manrope({

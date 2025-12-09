@@ -3,14 +3,20 @@
 import s from './StepsProgress.module.css'
 import { observer } from 'mobx-react-lite'
 import { configuratorStore } from '@/shared/store/configurator.store'
+import { useConfiguratorRouting } from '@/shared/hooks/useConfiguratorRouting'
 
 export const StepsProgress = observer(function StepsProgress() {
 	const steps = configuratorStore.steps
 	const current = configuratorStore.currentStepNum
 	const stepsAmount = configuratorStore.stepsAmount
+	const { navigateToStep } = useConfiguratorRouting()
 
 	const canGoTo = (id: number) => id <= configuratorStore.currentAvailableStep
-	const navigate = (id: number) => { if (canGoTo(id)) configuratorStore.currentStepNum = id }
+	const navigate = (id: number) => { 
+		if (canGoTo(id)) {
+			navigateToStep(id)
+		}
+	}
 
 	return (
 		<div className={s.progress}>

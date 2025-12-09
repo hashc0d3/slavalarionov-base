@@ -57,6 +57,7 @@
 .additionalOptionTitle {
 	font-size: 24px;
 	font-weight: 200;
+	font-family: 'TildaSans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 	line-height: normal;
 	color: #656565;
 	-webkit-font-smoothing: antialiased;
@@ -66,6 +67,7 @@
 .additionalOptionPrice {
 	font-size: 20px;
 	font-weight: 200;
+	font-family: 'TildaSans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
 	line-height: 25px;
 	color: #656565;
 	margin-top: 5px;

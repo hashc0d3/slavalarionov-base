@@ -2,12 +2,28 @@
 
 import styles from './ConfiguratorControls.module.css'
 import { observer } from 'mobx-react-lite'
+import { useRouter } from 'next/navigation'
 import { configuratorStore } from '@/shared/store/configurator.store'
 import { StrapDesignSelectors } from '../steps/StrapDesignSelectors'
 
 export const ConfiguratorControls = observer(function ConfiguratorControls() {
+	const router = useRouter()
 	const isFinal = configuratorStore.currentStepNum === configuratorStore.stepsAmount
 	const currentStep = configuratorStore.currentStepNum
+	
+	const handlePrevStep = () => {
+		const prevStepQuery = configuratorStore.prevStepQuery
+		if (prevStepQuery) {
+			router.push(`?step=${prevStepQuery}`, { scroll: false })
+		}
+	}
+	
+	const handleNextStep = () => {
+		const nextStepQuery = configuratorStore.nextStepQuery
+		if (nextStepQuery && configuratorStore.nextStepReady) {
+			router.push(`?step=${nextStepQuery}`, { scroll: false })
+		}
+	}
 	
 	return (
 		<div className={styles.configuratorControls}>
@@ -103,11 +119,26 @@ export const ConfiguratorControls = observer(function ConfiguratorControls() {
 				)}
 			</div>
 			<nav className={styles.configuratorControlsNav}>
-				<button className={[styles.btn, styles.btnGhost].join(' ')} onClick={() => configuratorStore.prevStep()} disabled={configuratorStore.currentStepNum === 1}>Назад</button>
+				<button 
+					className={[styles.btn, styles.btnGhost].join(' ')} 
+					onClick={handlePrevStep} 
+					disabled={configuratorStore.currentStepNum === 1}
+				>
+					Назад
+				</button>
 				{!isFinal ? (
-					<button className={[styles.btn, styles.btnPrimary].join(' ')} onClick={() => configuratorStore.nextStep()} disabled={!configuratorStore.nextStepReady}>Далее</button>
+					<button 
+						className={[styles.btn, styles.btnPrimary].join(' ')} 
+						onClick={handleNextStep} 
+						disabled={!configuratorStore.nextStepReady}
+					>
+						Далее
+					</button>
 				) : (
-					<button className={[styles.btn, styles.btnPrimary].join(' ')} onClick={() => configuratorStore.showOrderPopup()}>
+					<button 
+						className={[styles.btn, styles.btnPrimary].join(' ')} 
+						onClick={() => configuratorStore.showOrderPopup()}
+					>
 						Перейти к оформлению
 					</button>
 				)}
