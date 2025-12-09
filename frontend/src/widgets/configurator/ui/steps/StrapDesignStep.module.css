@@ -31,17 +31,21 @@
 
 .stepTitle {
 	font-size: 36px;
-	font-weight: 300;
+	font-weight: 200;
 	line-height: 1.4em;
 	margin: 0;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }
 
 .stepPrice {
 	font-size: 24px;
-	font-weight: 300;
+	font-weight: 200;
 	line-height: 1.25em;
 	margin-top: 12px;
 	margin: 12px 0 0 0;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }
 
 .stepDescription {
@@ -52,9 +56,11 @@
 
 .stepDescriptionText {
 	font-size: 16px;
-	font-weight: 300;
+	font-weight: 200;
 	line-height: 1.5em;
 	margin: 0;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }
 
 .stepNextStepBtn {

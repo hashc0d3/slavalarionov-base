@@ -191,7 +191,7 @@ export class ConfiguratorStore {
 	},
 	final: {
 		id: 4,
-		title: 'Добавьте надпись на ремешок',
+		title: 'Персонализируйте ремешок',
 		queryParam: 'final',
 		isChoosen: false,
 		additionalOptions: {

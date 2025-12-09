@@ -78,7 +78,7 @@ export const FinalStepTotal = observer(function FinalStepTotal({
 			
 			<div className={styles.stepPayDescription}>
 				<p className={styles.stepPayDescriptionReadyDate}>
-					Примерная дата готовности {readyDate}.
+					Дата отправки вашего заказа: {readyDate}.
 				</p>
 				<p className={styles.stepPayDescriptionText}>
 					Перед отправкой мы пришлём Вам подробный видеообзор вашего ремешка.

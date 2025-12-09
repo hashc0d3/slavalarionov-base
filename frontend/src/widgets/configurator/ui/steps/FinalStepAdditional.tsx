@@ -36,6 +36,7 @@ export const FinalStepAdditional = observer(function FinalStepAdditional({ class
 	// Всегда используем статичные опции
 	const additionalOptions = DEFAULT_OPTIONS
 	const imagesRef = useRef<(HTMLDivElement | null)[]>([])
+	const containerRef = useRef<HTMLDivElement>(null)
 
 	// Анимация при монтировании компонента
 	useEffect(() => {
@@ -58,6 +59,37 @@ export const FinalStepAdditional = observer(function FinalStepAdditional({ class
 			ease: 'power2.out',
 			delay: 0.2
 		})
+	}, [])
+
+	// Обработчик клика вне карточки для снятия выбора, если поле пустое
+	useEffect(() => {
+		const handleClickOutside = (event: MouseEvent) => {
+			if (!containerRef.current) return
+			
+			// Проверяем, был ли клик вне контейнера
+			if (!containerRef.current.contains(event.target as Node)) {
+				// Проверяем инициалы
+				const initialsChosen = configuratorStore.steps.final.additionalOptions.initials.choosen
+				const initialsText = configuratorStore.steps.final.additionalOptions.initials.text
+				if (initialsChosen && (!initialsText || initialsText.trim() === '')) {
+					configuratorStore.setInitialsText('')
+					configuratorStore.toggleInitials(false)
+				}
+
+				// Проверяем открытку
+				const postCardChosen = configuratorStore.steps.final.additionalOptions.postCard.choosen
+				const postCardText = configuratorStore.steps.final.additionalOptions.postCard.text
+				if (postCardChosen && (!postCardText || postCardText.trim() === '')) {
+					configuratorStore.setPostCardText('')
+					configuratorStore.togglePostCard(false)
+				}
+			}
+		}
+
+		document.addEventListener('mousedown', handleClickOutside)
+		return () => {
+			document.removeEventListener('mousedown', handleClickOutside)
+		}
 	}, [])
 
 	// Локальные изображения для опций
@@ -93,10 +125,11 @@ export const FinalStepAdditional = observer(function FinalStepAdditional({ class
 				if (initialsChosen && initialsText) {
 					configuratorStore.setInitialsText('')
 					configuratorStore.toggleInitials(false)
-				} else {
-					// Если опция не выбрана или нет текста - включаем
+				} else if (!initialsChosen) {
+					// Если опция не выбрана - включаем (фокус перейдет на поле ввода)
 					configuratorStore.toggleInitials(true)
 				}
+				// Если опция выбрана, но текста нет - ничего не делаем (onBlur снимет выбор)
 				break
 			case 'present_box':
 				configuratorStore.togglePresentBox(!configuratorStore.steps.final.additionalOptions.presentBox.choosen)
@@ -108,10 +141,11 @@ export const FinalStepAdditional = observer(function FinalStepAdditional({ class
 				if (postCardChosen && postCardText) {
 					configuratorStore.setPostCardText('')
 					configuratorStore.togglePostCard(false)
-				} else {
-					// Если опция не выбрана или нет текста - включаем
+				} else if (!postCardChosen) {
+					// Если опция не выбрана - включаем (фокус перейдет на поле ввода)
 					configuratorStore.togglePostCard(true)
 				}
+				// Если опция выбрана, но текста нет - ничего не делаем (onBlur снимет выбор)
 				break
 		}
 	}
@@ -143,6 +177,27 @@ export const FinalStepAdditional = observer(function FinalStepAdditional({ class
 		}
 	}
 
+	const handleInputBlur = (optionId: string) => {
+		switch (optionId) {
+			case 'initials':
+				// При потере фокуса, если поле пустое - снимаем выбор
+				const initialsText = configuratorStore.steps.final.additionalOptions.initials.text
+				if (!initialsText || initialsText.trim() === '') {
+					configuratorStore.setInitialsText('')
+					configuratorStore.toggleInitials(false)
+				}
+				break
+			case 'postcard':
+				// При потере фокуса, если поле пустое - снимаем выбор
+				const postCardText = configuratorStore.steps.final.additionalOptions.postCard.text
+				if (!postCardText || postCardText.trim() === '') {
+					configuratorStore.setPostCardText('')
+					configuratorStore.togglePostCard(false)
+				}
+				break
+		}
+	}
+
 	// Проверяем, есть ли текст в опции
 	const hasText = (optionName: string) => {
 		switch (optionName) {
@@ -156,7 +211,7 @@ export const FinalStepAdditional = observer(function FinalStepAdditional({ class
 	}
 
 	return (
-		<div className={`${styles.additional} ${className || ''}`}>
+		<div ref={containerRef} className={`${styles.additional} ${className || ''}`}>
 			{additionalOptions.map((option: any, index: number) => {
 				const isChoosen = getOptionChoosen(option.option_name)
 				const hasValue = hasText(option.option_name) || (option.option_name === 'present_box' && isChoosen)
@@ -185,6 +240,7 @@ export const FinalStepAdditional = observer(function FinalStepAdditional({ class
 								maxLength={4}
 								value={configuratorStore.steps.final.additionalOptions.initials.text || ''}
 								onChange={(e) => handleInputChange(option.option_name, e.target.value)}
+								onBlur={() => handleInputBlur(option.option_name)}
 								onClick={(e) => e.stopPropagation()}
 							/>
 						)}
@@ -195,6 +251,7 @@ export const FinalStepAdditional = observer(function FinalStepAdditional({ class
 								placeholder="Надпись"
 								value={configuratorStore.steps.final.additionalOptions.postCard.text || ''}
 								onChange={(e) => handleInputChange(option.option_name, e.target.value)}
+								onBlur={() => handleInputBlur(option.option_name)}
 								onClick={(e) => e.stopPropagation()}
 							/>
 						)}

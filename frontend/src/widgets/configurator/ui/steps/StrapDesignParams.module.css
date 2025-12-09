@@ -28,7 +28,9 @@
 }
 
 .paramTitleText {
-	font-weight: 500;
+	font-weight: 200;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }
 
 .paramContent {
@@ -49,11 +51,13 @@
 	border-radius: 50px;
 	max-width: fit-content;
 	background: #f5f5f5;
-	font-weight: 300;
+	font-weight: 200;
 	line-height: normal;
 	border: 1px solid transparent;
 	cursor: pointer;
 	transition: all 0.2s ease;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }
 
 .paramOption:hover {
@@ -115,14 +119,19 @@
 	line-height: normal;
 	letter-spacing: 0.8px;
 	margin: 0 0 6px 0;
+	font-weight: 200;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }
 
 .paramBuckleButterflyPrice {
 	font-size: 16px;
-	font-weight: 300;
+	font-weight: 200;
 	line-height: 20px;
 	color: #7a7a7a;
 	margin: 0;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }
 
 .paramBuckleButterflyImage {

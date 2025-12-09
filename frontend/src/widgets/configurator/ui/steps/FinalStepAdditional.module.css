@@ -56,17 +56,21 @@
 
 .additionalOptionTitle {
 	font-size: 24px;
-	font-weight: 300;
+	font-weight: 200;
 	line-height: normal;
 	color: #656565;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }
 
 .additionalOptionPrice {
 	font-size: 20px;
-	font-weight: 300;
+	font-weight: 200;
 	line-height: 25px;
 	color: #656565;
 	margin-top: 5px;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }
 
 .captionOptionInput {
@@ -90,11 +94,13 @@
 
 .additionalOptionPlus {
 	font-size: 34px;
-	font-weight: 300;
+	font-weight: 200;
 	line-height: 1;
 	color: #949494;
 	transition: all 0.3s ease;
 	user-select: none;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }
 
 .additionalOptionImageInner {

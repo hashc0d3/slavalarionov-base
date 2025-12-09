@@ -2235,10 +2235,6 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 								</div>
 							</>
 						)}
-
-						{currentDeliveryOption.note && (
-							<p className={deliveryStyles.deliveryOptionNote}>{currentDeliveryOption.note}</p>
-						)}
 					</div>
 				</section>
 
@@ -2329,7 +2325,7 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 				</div>
 			</div>
 			<p className={s.readyDate}>
-				Примерная дата готовности: <span>{configuratorStore.closestReadyDate}</span>
+				Дата отправки вашего заказа: <span>{configuratorStore.closestReadyDate}</span>
 			</p>
 			<p className={s.readyDate}>Перед отправкой пришлём подробный видеообзор вашего ремешка.</p>
 		</section>

@@ -60,7 +60,7 @@ export const ConfiguratorSteps = observer(function ConfiguratorSteps() {
 								className={[styles.stepItem, model.choosen ? styles.choosen : ''].join(' ')}
 								onClick={() => !model.choosen && configuratorStore.chooseWatchModel(idx)}
 							>
-								<img src={model.main_image || '/window.svg'} width={150} height={270} alt="" className={styles.stepItemImage} />
+								<img src={model.main_image || '/window.svg'} alt="" className={styles.stepItemImage} />
 								<div className={styles.stepItemInfo}>
 									<div className={styles.stepItemTitle}>
 										<p className={styles.stepItemTitlePart}>{model.watch_model_manufacturer}</p>

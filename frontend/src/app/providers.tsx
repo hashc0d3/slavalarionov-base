@@ -10,7 +10,7 @@ import '@mantine/dropzone/styles.css'
 
 const mantineTheme = createTheme({
   primaryColor: 'blue',
-  fontFamily: 'Inter, sans-serif',
+  fontFamily: 'var(--font-manrope), sans-serif',
 })
 
 const muiTheme = createMuiTheme({

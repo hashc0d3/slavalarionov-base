@@ -100,7 +100,7 @@ export const AdminSettingsMantine = observer(() => {
           />
           
           <TextInput
-            label="Примерная дата готовности заказа"
+            label="Дата отправки вашего заказа:"
             placeholder="например: 15-20 февраля"
             value={estimatedDate}
             onChange={(e) => setEstimatedDate(e.target.value)}

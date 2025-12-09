@@ -9,8 +9,10 @@
 	margin-left: auto;
 	font-size: 28px;
 	line-height: 1.3em;
-	font-weight: 400;
+	font-weight: 300;
 	color: #333;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }
 
 .totalAdditional {
@@ -144,8 +146,10 @@
 
 .stepPayDescription {
 	margin-top: 18px;
-	font-weight: 300;
+	font-weight: 200;
 	text-align: center;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
 }
 
 .stepPayDescriptionReadyDate {

@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Manrope } from "next/font/google";
 import { ColorSchemeScript } from '@mantine/core';
 import { Providers } from "./providers";
 import { Header } from "@/widgets/layout/ui/Header";
 import { Footer } from "@/widgets/layout/ui/Footer";
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
+const manrope = Manrope({
+  variable: "--font-manrope",
+  subsets: ["latin", "cyrillic"],
+  weight: ["200", "300", "400", "500", "600", "700", "800"],
 });
 
 export const metadata: Metadata = {
@@ -27,7 +28,7 @@ export default function RootLayout({
         <ColorSchemeScript />
       </head>
       <body
-        className={`${inter.variable} antialiased`}
+        className={`${manrope.variable} antialiased`}
       >
         <Providers>
           <Header />
