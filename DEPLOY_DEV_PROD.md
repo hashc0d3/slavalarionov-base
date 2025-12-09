@@ -32,83 +32,37 @@ docker compose -f docker-compose.dev.yml -f docker-compose.prod.yml up -d --buil
 
 ### Конфигурация для DEV (sl.cdn1.dev)
 
-Создайте файл `/etc/nginx/sites-available/sl.cdn1.dev`:
+Скопируйте готовую конфигурацию из файла `nginx-sl.cdn1.dev.conf`:
 
-```nginx
-server {
-    listen 80;
-    server_name sl.cdn1.dev;
-
-    location / {
-        proxy_pass http://127.0.0.1:8081;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_cache_bypass $http_upgrade;
-    }
-}
-
-# SSL версия (после получения сертификата)
-server {
-    listen 443 ssl http2;
-    server_name sl.cdn1.dev;
-
-    ssl_certificate /etc/letsencrypt/live/sl.cdn1.dev/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/sl.cdn1.dev/privkey.pem;
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers HIGH:!aNULL:!MD5;
-
-    location / {
-        proxy_pass http://127.0.0.1:8081;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_cache_bypass $http_upgrade;
-    }
-}
+```bash
+sudo cp nginx-sl.cdn1.dev.conf /etc/nginx/sites-available/sl.cdn1.dev
 ```
+
+Или создайте файл `/etc/nginx/sites-available/sl.cdn1.dev` вручную (см. файл `nginx-sl.cdn1.dev.conf` в репозитории).
+
+Конфигурация включает:
+- Проксирование на localhost:8081 (DEV backend)
+- Кэширование для `/uploads/` и `/_next/static`
+- SSL настройки
+- Таймауты и лимиты
 
 ### Конфигурация для PROD (custom.slavalarionov.com)
 
-Обновите файл `/etc/nginx/sites-available/custom.slavalarionov.com`:
+Скопируйте готовую конфигурацию из файла `nginx-custom.slavalarionov.com.conf`:
 
-```nginx
-server {
-    listen 80;
-    server_name custom.slavalarionov.com;
-    return 301 https://$server_name$request_uri;
-}
-
-server {
-    listen 443 ssl http2;
-    server_name custom.slavalarionov.com;
-
-    ssl_certificate /etc/letsencrypt/live/custom.slavalarionov.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/custom.slavalarionov.com/privkey.pem;
-    ssl_protocols TLSv1.2 TLSv1.3;
-    ssl_ciphers HIGH:!aNULL:!MD5;
-
-    location / {
-        proxy_pass http://127.0.0.1:8082;  # Важно: порт 8082 для PROD
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_cache_bypass $http_upgrade;
-    }
-}
+```bash
+sudo cp nginx-custom.slavalarionov.com.conf /etc/nginx/sites-available/custom.slavalarionov.com
 ```
+
+Или обновите существующий файл `/etc/nginx/sites-available/custom.slavalarionov.com` вручную (см. файл `nginx-custom.slavalarionov.com.conf` в репозитории).
+
+**Важно**: Измените `proxy_pass` с внешнего IP на `http://127.0.0.1:8082` (порт 8082 для PROD).
+
+Конфигурация включает:
+- Проксирование на localhost:8082 (PROD backend)
+- Кэширование для `/uploads/` и `/_next/static`
+- SSL настройки
+- Таймауты и лимиты
 
 ### Активация конфигураций Nginx
 
