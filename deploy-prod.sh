@@ -11,10 +11,24 @@ cd "$(dirname "$0")"
 # Остановить существующий контейнер, если запущен
 echo "📦 Остановка существующих контейнеров..."
 docker compose -f docker-compose.prod.yml down 2>/dev/null || true
+docker stop slavalarionov-backend-prod 2>/dev/null || true
+docker stop slavalarionov-backend 2>/dev/null || true
+
+# Освободить порт 8082, если занят
+if sudo lsof -ti:8082 >/dev/null 2>&1; then
+    echo "🔍 Освобождение порта 8082..."
+    sudo fuser -k 8082/tcp 2>/dev/null || true
+    sleep 2
+fi
 
 # Обновить код (если используется git)
 if [ -d .git ]; then
     echo "📥 Обновление кода из репозитория..."
+    # Сохранить локальные изменения в скриптах деплоя, если есть
+    if git status --porcelain | grep -q "deploy.*\.sh"; then
+        echo "💾 Сохранение локальных изменений в скриптах деплоя..."
+        git stash push -m "Auto-stash deploy scripts before pull" deploy-*.sh 2>/dev/null || true
+    fi
     git pull || echo "⚠️  Не удалось обновить код (возможно, не используется git)"
 fi
 
