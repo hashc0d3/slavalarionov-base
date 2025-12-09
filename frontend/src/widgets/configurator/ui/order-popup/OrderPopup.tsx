@@ -1478,6 +1478,11 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 			// Способ оплаты будет выбран на странице оплаты
 			const paymentType = 'Будет выбран на странице оплаты'
 
+			// Актуальная итоговая сумма для оплаты (то, что отображается в поле "Итого" на которое указывает стрелка)
+			// Если есть скидка - показывается totalPriceWithDiscount (актуальная цена со скидкой)
+			// Если нет скидки - показывается totalPrice (они равны, но используем то, что реально видно)
+			const finalTotalPrice = totalPriceWithDiscount !== totalPrice ? totalPriceWithDiscount : totalPrice
+
 			const retailCrmOrderData = {
 				orderNumber,
 				items: retailCrmItems,
@@ -1499,7 +1504,7 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 					discountValueFull:
 						promo.type === 'percent' ? `${promo.discountValue}%` : `${promo.discountValue} руб`
 				},
-				totalPrice: totalPriceWithDiscount,
+				totalPrice: finalTotalPrice,
 				paymentType
 			}
 
