@@ -1,0 +1,25 @@
+services:
+  backend-prod:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: slavalarionov-backend-prod
+    environment:
+      NODE_ENV: production
+      PORT: 8082
+      DATABASE_URL: "file:./prisma/prod.db"
+      NEXT_PUBLIC_MEDIA_BASE_URL: "https://custom.slavalarionov.com"
+    env_file:
+      - backend/.env
+    ports:
+      - "8082:8081"
+    working_dir: /app/backend
+    volumes:
+      - backend_db_prod:/app/backend/prisma
+      - backend_uploads_prod:/app/backend/uploads
+    restart: unless-stopped
+
+volumes:
+  backend_db_prod:
+  backend_uploads_prod:
+

@@ -1,0 +1,25 @@
+services:
+  backend-dev:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: slavalarionov-backend-dev
+    environment:
+      NODE_ENV: development
+      PORT: 8081
+      DATABASE_URL: "file:./prisma/dev.db"
+      NEXT_PUBLIC_MEDIA_BASE_URL: "https://sl.cdn1.dev"
+    env_file:
+      - backend/.env
+    ports:
+      - "8081:8081"
+    working_dir: /app/backend
+    volumes:
+      - backend_db_dev:/app/backend/prisma
+      - backend_uploads_dev:/app/backend/uploads
+    restart: unless-stopped
+
+volumes:
+  backend_db_dev:
+  backend_uploads_dev:
+
