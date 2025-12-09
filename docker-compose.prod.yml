@@ -6,7 +6,7 @@ services:
     container_name: slavalarionov-backend-prod
     environment:
       NODE_ENV: production
-      PORT: 8082
+      PORT: 8081
       DATABASE_URL: "file:./prisma/prod.db"
       NEXT_PUBLIC_MEDIA_BASE_URL: "https://custom.slavalarionov.com"
     env_file:
