@@ -12,14 +12,21 @@ interface NavItem {
 interface AppNavProps {
 	navItems: NavItem[]
 	className?: string
+	onItemClick?: () => void
 }
 
-export const AppNav = ({ navItems, className }: AppNavProps) => {
+export const AppNav = ({ navItems, className, onItemClick }: AppNavProps) => {
+	const handleClick = () => {
+		if (onItemClick) {
+			onItemClick()
+		}
+	}
+
 	return (
 		<nav className={`${styles.nav} ${className || ''}`}>
 			<ul className={styles.navList}>
 				{navItems.map((item, idx) => (
-					<li key={idx} className={styles.navListItem}>
+					<li key={idx} className={styles.navListItem} onClick={handleClick}>
 						{item.type === 'anchor' ? (
 							<a href={item.href}>{item.text}</a>
 						) : (

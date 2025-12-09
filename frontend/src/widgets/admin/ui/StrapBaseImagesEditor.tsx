@@ -96,7 +96,7 @@ export const StrapBaseImagesEditor = ({ strapId, strapName, baseImages, onUpdate
       setUploadLoading((prev) => ({ ...prev, [view]: true }))
       const response = await uploadStrapColorImage({
         file,
-        group: strapName,
+        group: 'common', // Используем 'common' для базовых изображений ремешков
         view,
         colorTitle: selectedColor.technical_name
       })
