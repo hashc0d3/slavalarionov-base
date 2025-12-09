@@ -24,6 +24,7 @@ export const AdminStrapsMantine = observer(() => {
         strap_name: '',
         strap_title: '',
         strap_description: '',
+        strap_short_description: '',
         price: 0,
         preview_image: '',
         has_buckle_butterfly: false,
@@ -66,6 +67,7 @@ export const AdminStrapsMantine = observer(() => {
           strap_name: '',
           strap_title: '',
           strap_description: '',
+          strap_short_description: '',
           preview_image: '',
           ultra_preview_image: '',
           price: 0,
@@ -317,6 +319,16 @@ export const AdminStrapsMantine = observer(() => {
                   attributes: { watch_strap: { ...formData.attributes!.watch_strap, strap_description: e.target.value } }
                 })}
                 rows={3}
+              />
+
+              <TextInput
+                label="Краткое описание (для второго шага)"
+                placeholder="Краткое описание ремешка"
+                description="Отображается на втором шаге конфигуратора при выборе ремешка"
+                value={formData.attributes?.watch_strap.strap_short_description || ''}
+                onChange={(e) => setFormData({
+                  attributes: { watch_strap: { ...formData.attributes!.watch_strap, strap_short_description: e.target.value } }
+                })}
               />
 
               <NumberInput
