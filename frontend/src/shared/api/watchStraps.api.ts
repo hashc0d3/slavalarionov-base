@@ -112,7 +112,6 @@ export const watchStrapsApi = {
     const payload = mapStoreToAPI(strap)
     if (process.env.NODE_ENV !== 'production') {
       // eslint-disable-next-line no-console
-      console.debug('watchStrapsApi.update payload', id, payload)
     }
     const response = await fetch(`${API_URL}/${id}`, {
       method: 'PUT',

@@ -37,9 +37,6 @@
 	margin-right: 0;
 }
 
-.headerNavOther {
-	margin-left: auto;
-}
 
 /* Mobile Menu Button */
 .mobileMenuButton {
@@ -122,6 +119,7 @@
 	overflow: hidden;
 	transition: max-height 0.3s ease, opacity 0.3s ease;
 	opacity: 0;
+	visibility: hidden;
 }
 
 .mobileMenuOpen {
@@ -177,6 +175,7 @@
 
 	.mobileMenu {
 		display: block;
+		visibility: visible;
 	}
 }
 

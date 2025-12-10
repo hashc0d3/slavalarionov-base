@@ -28,7 +28,7 @@ export const ConfiguratorCart = observer(function ConfiguratorCart() {
 
 	const getSelectedOptionsCount = () => {
 		// Считаем только количество товаров в корзине (без текущего)
-		return configuratorStore.cartItemsCount
+		return configuratorStore.cartItems.length
 	}
 
 	const handleOrderClick = () => {
@@ -286,9 +286,9 @@ export const ConfiguratorCart = observer(function ConfiguratorCart() {
 						<div className={styles.cartFooter}>
 							<div className={styles.cartTotal}>
 								<div className={styles.cartTotalLabel}>
-									Итого ({configuratorStore.cartItemsCount} товаров):
+									Итого ({configuratorStore.cartItems.length} товаров):
 								</div>
-								<div className={styles.cartTotalPrice}>{configuratorStore.cartTotalPrice}₽</div>
+								<div className={styles.cartTotalPrice}>{configuratorStore.totalPrice}₽</div>
 							</div>
 							
 							<div className={styles.cartButtons}>
@@ -327,7 +327,7 @@ export const ConfiguratorCart = observer(function ConfiguratorCart() {
 										<button 
 											className={styles.cartOrderButton}
 											onClick={handleOrderClick}
-											disabled={configuratorStore.cartItemsCount === 0}
+											disabled={configuratorStore.cartItems.length === 0}
 										>
 											Оформить заказ
 										</button>

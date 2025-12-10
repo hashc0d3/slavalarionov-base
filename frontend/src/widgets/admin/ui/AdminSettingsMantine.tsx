@@ -39,13 +39,11 @@ export const AdminSettingsMantine = observer(() => {
   const handleSave = async () => {
     try {
       setIsSaving(true)
-      console.log('[Admin Settings] Saving settings:', { title, description, estimated_date: estimatedDate })
       const result = await configuratorApi.updateSettings({ 
         title, 
         description, 
         estimated_date: estimatedDate 
       })
-      console.log('[Admin Settings] Save result:', result)
       notifications.show({
         title: 'Успешно',
         message: 'Настройки сохранены',

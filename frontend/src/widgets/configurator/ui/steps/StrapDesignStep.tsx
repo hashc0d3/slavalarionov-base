@@ -4,14 +4,36 @@ import { observer } from 'mobx-react-lite'
 import { configuratorStore } from '@/shared/store/configurator.store'
 import styles from './StrapDesignStep.module.css'
 import { StrapDesignPreview } from './StrapDesignPreview'
-import { StrapDesignParams } from './StrapDesignParams'
+import { StrapDesignParams } from './strap-design-params/StrapDesignParams'
 
 export const StrapDesignStep = observer(function StrapDesignStep() {
 	const selectedStrapModel = configuratorStore.selectedStrapModel
 	const selectedStrapModelParams = configuratorStore.selectedStrapModelParams
 
-	if (!selectedStrapModel || !selectedStrapModelParams) {
-		return null
+	if (!selectedStrapModel) {
+		return (
+			<div className={styles.step}>
+				<div style={{ textAlign: 'center', padding: '40px' }}>
+					<p>Пожалуйста, выберите модель ремешка на предыдущем шаге.</p>
+					<button
+						onClick={() => configuratorStore.currentStepNum = 2}
+						style={{ marginTop: '20px', padding: '10px 20px', cursor: 'pointer' }}
+					>
+						Вернуться к выбору ремешка
+					</button>
+				</div>
+			</div>
+		)
+	}
+
+	if (!selectedStrapModelParams) {
+		return (
+			<div className={styles.step}>
+				<div style={{ textAlign: 'center', padding: '40px' }}>
+					<p>Загрузка параметров ремешка...</p>
+				</div>
+			</div>
+		)
 	}
 
 	const strapData = selectedStrapModel.attributes.watch_strap

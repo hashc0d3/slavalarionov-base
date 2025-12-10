@@ -489,10 +489,7 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 
 	// Загрузка ПВЗ и тарифов при изменении города (включая дефолтный)
 	useEffect(() => {
-		console.log('[PVZ Load] useEffect triggered:', { cityCode: form.cityCode, visible, city: form.city })
-		
 		if (!form.cityCode) {
-			console.log('[PVZ Load] No cityCode, clearing PVZ list')
 			setPvzList([])
 			setTariffs([])
 			return
@@ -500,11 +497,8 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 
 		// Загружаем ПВЗ только если модальное окно видимо
 		if (!visible) {
-			console.log('[PVZ Load] Modal not visible, skipping')
 			return
 		}
-
-		console.log('[PVZ Load] Loading PVZ for cityCode:', form.cityCode)
 		setIsPvzLoading(true)
 		setForm((prev) => ({ ...prev, deliveryPointData: null, pickupPoint: '' }))
 		setErrors((prev) => {
@@ -522,10 +516,7 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 				// Проверяем, что cityCode не изменился во время загрузки
 				setForm((currentForm) => {
 					if (currentForm.cityCode === currentCityCode) {
-						console.log('[PVZ Load] PVZ loaded successfully:', points.length, 'points')
 						setPvzList(points)
-					} else {
-						console.log('[PVZ Load] CityCode changed during load, ignoring results')
 					}
 					return currentForm
 				})
@@ -557,7 +548,6 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 			.calculateTariffs(form.cityCode)
 			.then((items) => {
 				if (currentCityCode === form.cityCode) {
-					console.log('[PVZ Load] Tariffs loaded successfully:', items.length, 'tariffs')
 					setTariffs(items)
 				}
 			})
@@ -631,14 +621,6 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 			? productsPrice * (promo.discountValue / 100)
 			: promo.discountValue
 		productsPriceWithDiscount = Math.max(0, productsPrice - discount)
-		console.log('[OrderPopup] Promo applied:', {
-			productsPrice,
-			discount,
-			productsPriceWithDiscount,
-			promoCode: promo.code,
-			promoType: promo.type,
-			discountValue: promo.discountValue
-		})
 	}
 	
 	const totalPrice = productsPrice + (form.deliveryValue ? (currentDeliveryOption?.price || 0) : 0)
@@ -725,7 +707,6 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 
 	// Функция загрузки ПВЗ по postalCode (по аналогии с custom)
 	const loadPvzByPostalCode = async (postalCode: string) => {
-		console.log('[Load PVZ] Starting to load PVZ for postalCode:', postalCode)
 		setPvzList([])
 		setTariffs([])
 		setIsPvzLoading(true)
@@ -734,7 +715,6 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 		try {
 			// Загружаем ПВЗ по postalCode (по аналогии с custom)
 			const points = await deliveryApi.getPvzListByPostalCode(postalCode)
-			console.log('[Load PVZ] PVZ loaded successfully:', points.length, 'points')
 			setPvzList(points)
 		} catch (error) {
 			console.error('[Load PVZ] Failed to load CDEK PVZ list', error)
@@ -746,7 +726,6 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 		try {
 			// Загружаем тарифы по postalCode (по аналогии с custom)
 			const items = await deliveryApi.calculateTariffsByPostalCode(postalCode)
-			console.log('[Load PVZ] Tariffs loaded successfully:', items.length, 'tariffs')
 			setTariffs(items)
 		} catch (error) {
 			console.error('[Load PVZ] Failed to calculate CDEK tariffs', error)
@@ -758,23 +737,18 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 
 	// Обработчик выбора города из DaData (по аналогии с custom - используем postal_code)
 	const handleCitySelectFromDadata = async (dadataCity: DadataSuggestion) => {
-		console.log('[City Select] Starting city selection:', dadataCity)
 		const cityName = dadataCity.data?.city || dadataCity.data?.settlement || dadataCity.value || ''
 		const cityLat = dadataCity.data?.geo_lat ? parseFloat(dadataCity.data.geo_lat) : null
 		const cityLon = dadataCity.data?.geo_lon ? parseFloat(dadataCity.data.geo_lon) : null
 		const postalCode = dadataCity.data?.postal_code || ''
 		const isDefaultCity = cityName.toLowerCase().includes('санкт') || cityName.toLowerCase().includes('петербург')
 		
-		console.log('[City Select] City data:', { cityName, postalCode, isDefaultCity })
-		
 		// Сначала ищем cityCode через CDEK API (для совместимости, хотя будем использовать postalCode)
 		let finalCityCode: number | null = isDefaultCity ? DEFAULT_CITY_CODE : null
 		let finalCityUuid: string | null = isDefaultCity ? DEFAULT_CITY_UUID : null
 		
 		try {
-			console.log('[City Select] Searching CDEK cities for:', cityName, 'postalCode:', postalCode)
 			const cdekCities = await deliveryApi.searchCdekCities(cityName, postalCode)
-			console.log('[City Select] CDEK cities found:', cdekCities)
 			
 			if (cdekCities && cdekCities.length > 0) {
 				const cdekCity = cdekCities.find(c => 
@@ -783,7 +757,6 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 				) || cdekCities[0]
 				
 				if (cdekCity.cityCode) {
-					console.log('[City Select] Found cityCode via CDEK API:', cdekCity.cityCode)
 					finalCityCode = cdekCity.cityCode
 					finalCityUuid = cdekCity.cityUuid || null
 				}
@@ -812,19 +785,13 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 			['city', 'pickupPoint', 'street', 'building', 'courierAddress', 'mailAddress']
 		)
 		
-		console.log('[City Select] City updated, postalCode:', postalCode, 'cityCode:', finalCityCode)
-		
 		// Загружаем ПВЗ по postalCode (по аналогии с custom), если он есть
 		if (postalCode) {
-			console.log('[City Select] Loading PVZ by postalCode:', postalCode)
 			await loadPvzByPostalCode(postalCode)
-		} else {
-			console.warn('[City Select] No postalCode, cannot load PVZ')
 		}
 		
 		// Обновляем локацию карты
 		if (mapInstanceRef.current && cityLat && cityLon && !isNaN(cityLat) && !isNaN(cityLon)) {
-			console.log('[CDEK Map] Updating location:', [cityLon, cityLat])
 			try {
 				mapInstanceRef.current.updateLocation([cityLon, cityLat])
 			} catch (error) {
@@ -852,16 +819,12 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 	// Загрузка скрипта CDEK Widget
 	useEffect(() => {
 		if (!visible || !currentDeliveryOption.requiresPvz) {
-			console.log('[CDEK Map] Skipping script load:', { visible, requiresPvz: currentDeliveryOption.requiresPvz })
 			setMapReady(false)
 			return
 		}
 
-		console.log('[CDEK Map] Starting script load...')
-
 		// Используем тот же URL, что и в старом проекте (через jsdelivr CDN)
 		if (window.CDEKWidget && typeof window.CDEKWidget === 'function') {
-			console.log('[CDEK Map] Widget already loaded')
 			setMapReady(true)
 			return
 		}
@@ -894,7 +857,6 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 			
 			script.onload = () => {
 				if (!isMounted) return
-				console.log('[CDEK Map] Script loaded successfully, CDEKWidget available:', !!window.CDEKWidget)
 				// Небольшая задержка для гарантии, что виджет полностью инициализирован
 				setTimeout(() => {
 					if (isMounted && window.CDEKWidget && typeof window.CDEKWidget === 'function') {
@@ -910,7 +872,6 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 			}
 			
 			document.body.appendChild(script)
-			console.log('[CDEK Map] Script element added to DOM:', script.src)
 		}
 
 		loadScript()
@@ -923,12 +884,11 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 		}
 	}, [visible, currentDeliveryOption.requiresPvz])
 
-	// Инициализация карты
+	// Инициализация карты CDEK
 	useEffect(() => {
 		// Если модальное окно закрыто или не требуется ПВЗ, уничтожаем виджет
 		if (!visible || !currentDeliveryOption.requiresPvz) {
 			if (mapInstanceRef.current && typeof mapInstanceRef.current.destroy === 'function') {
-				console.log('[CDEK Map] Destroying widget - modal closed or PVZ not required')
 				try {
 					mapInstanceRef.current.destroy()
 				} catch (error) {
@@ -939,34 +899,17 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 			return
 		}
 
-		console.log('[CDEK Map] Init effect triggered:', {
-			visible,
-			mapReady,
-			hasWidget: !!window.CDEKWidget,
-			city: form.city,
-			cityCode: form.cityCode,
-			requiresPvz: currentDeliveryOption.requiresPvz,
-			hasContainer: !!mapContainerRef.current
-		})
-
 		// Виджет CDEK работает с названием города, не требует cityCode (по аналогии с custom)
 		if (!mapReady || !window.CDEKWidget || !form.city || !form.city.trim()) {
-			console.log('[CDEK Map] Skipping map init - conditions not met', {
-				mapReady,
-				hasWidget: !!window.CDEKWidget,
-				city: form.city
-			})
 			return
 		}
 
 		if (!mapContainerRef.current) {
-			console.log('[CDEK Map] Container ref not available')
 			return
 		}
 
 		// Уничтожаем предыдущий экземпляр карты перед созданием нового
 		if (mapInstanceRef.current && typeof mapInstanceRef.current.destroy === 'function') {
-			console.log('[CDEK Map] Destroying previous map instance')
 			try {
 				mapInstanceRef.current.destroy()
 			} catch (error) {
@@ -1031,15 +974,12 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 					},
 					onChoose: (_mode: any, _tarif: any, address: CDEKWidgetPoint) => {
 						if (!isMounted) return
-						console.log('[CDEK Map] Point chosen:', address)
 						if (address && address.code) {
 							// Находим пункт выдачи по коду
 							const pvz = pvzList.find((p) => p.code === address.code)
 							if (pvz) {
-								console.log('[CDEK Map] Found PVZ in list:', pvz)
 								handlePvzSelect(pvz)
 							} else {
-								console.log('[CDEK Map] PVZ not in list, creating from widget data')
 								// Если пункт не найден в списке, создаем объект из данных виджета
 								const widgetPvz: CdekPvz = {
 									code: address.code || '',
@@ -1064,14 +1004,8 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 					},
 					onReady: () => {
 						if (!isMounted) return
-						console.log('[CDEK Map] Widget ready callback fired')
 					}
 				}
-
-				console.log('[CDEK Map] Initializing widget with options:', {
-					...widgetOptions,
-					apiKey: widgetOptions.apiKey ? `${widgetOptions.apiKey.substring(0, 10)}...` : 'missing'
-				})
 
 				// Создаем виджет с обработкой ошибок
 				// Используем setTimeout для выполнения в следующем тике event loop,
@@ -1126,7 +1060,6 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 				}
 
 				mapInstanceRef.current = widgetInstance
-				console.log('[CDEK Map] Widget instance created:', widgetInstance)
 			} catch (error: any) {
 				// Обрабатываем CanceledError и другие ошибки
 				if (error?.name === 'CanceledError' || error?.message?.includes('canceled')) {
@@ -1148,7 +1081,6 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 				clearTimeout(initTimeout)
 			}
 			if (mapInstanceRef.current && typeof mapInstanceRef.current.destroy === 'function') {
-				console.log('[CDEK Map] Cleaning up map instance')
 				try {
 					mapInstanceRef.current.destroy()
 				} catch (cleanupError) {
@@ -1180,7 +1112,6 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 		const timeoutId = setTimeout(() => {
 			if (!mapInstanceRef.current || !form.city) return
 			
-			console.log('[CDEK Map] Updating location:', { city: form.city })
 			// Находим координаты города из списка городов DaData или используем координаты первого ПВЗ
 			const cityCoords = citySuggestions.find((c) => 
 				(c.data?.city || c.data?.settlement || c.value) === form.city
@@ -1189,7 +1120,6 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 				const lat = parseFloat(cityCoords.data.geo_lat)
 				const lon = parseFloat(cityCoords.data.geo_lon)
 				if (!isNaN(lat) && !isNaN(lon)) {
-					console.log('[CDEK Map] Using city coordinates:', [lon, lat])
 					try {
 						mapInstanceRef.current.updateLocation([lon, lat])
 					} catch (error) {
@@ -1197,14 +1127,11 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 					}
 				}
 			} else if (pvzList.length > 0 && pvzList[0].coordX && pvzList[0].coordY) {
-				console.log('[CDEK Map] Using PVZ coordinates:', [pvzList[0].coordX, pvzList[0].coordY])
 				try {
 					mapInstanceRef.current.updateLocation([pvzList[0].coordX, pvzList[0].coordY])
 				} catch (error) {
 					console.warn('[CDEK Map] Error updating location:', error)
 				}
-			} else {
-				console.log('[CDEK Map] No coordinates available for update')
 			}
 		}, 300) // Debounce 300ms
 
@@ -1624,14 +1551,6 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 			const itemView1Url = getItemView1ImageUrl(item)
 			const baseImageUrl = `${getMediaBaseUrl()}/uploads`
 			
-			// Отладка frame color
-			console.log('[OrderPopup Item]', {
-				index,
-				frameColor: item.frameColor,
-				view1Image: item.frameColor?.view1Image,
-				resolvedFrameUrl: item.frameColor ? resolveMediaUrl(item.frameColor.view1Image) : null
-			})
-			
 			// Генерируем URL для overlay слоев (цвета)
 			const getOverlayUrl = (color: any, type: string) => {
 				if (!color) return null
@@ -1898,15 +1817,6 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 					<h4 className={s.sectionTitle}>Доставка</h4>
 					<div className={deliveryStyles.section}>
 						<div className={deliveryStyles.field}>
-							{(() => {
-								console.log('[City Selector] State:', {
-									isCityLoading,
-									citySuggestionsLength: citySuggestions.length,
-									formCity: form.city,
-									showSkeleton: isCityLoading && citySuggestions.length <= 1
-								})
-								return null
-							})()}
 							<FormControl fullWidth error={!!errors.city} size="small">
 								<InputLabel>Город *</InputLabel>
 								<Select
@@ -1918,13 +1828,9 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 											: (citySuggestions.length > 0 ? citySuggestions[0].value : '')
 										}
 									onChange={(event) => {
-										console.log('[MUI Select] onChange triggered!', event.target.value)
 										const selectedValue = event.target.value as string
-										console.log('[MUI Select] selectedValue:', selectedValue)
 										const city = citySuggestions.find((c) => c.value === selectedValue)
-										console.log('[MUI Select] Found city:', city)
 										if (city) {
-											console.log('[MUI Select] Calling handleCitySelectFromDadata...')
 											handleCitySelectFromDadata(city)
 										} else {
 											console.warn('[MUI Select] City not found in citySuggestions!')
@@ -2037,17 +1943,6 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 							<>
 								<div className={deliveryStyles.sectionDivider} />
 								<div className={deliveryStyles.field}>
-									{(() => {
-										console.log('[PVZ Selector] State:', {
-											city: form.city,
-											cityCode: form.cityCode,
-											isPvzLoading,
-											pvzListLength: pvzList.length,
-											firstPvz: pvzList[0]?.name,
-											showSkeleton: (isPvzLoading && pvzList.length === 0) || (!form.cityCode && form.city)
-										})
-										return null
-									})()}
 									{form.city ? (
 										<FormControl fullWidth error={!!errors.pickupPoint} size="small">
 											<InputLabel>Пункт выдачи *</InputLabel>

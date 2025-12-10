@@ -17,7 +17,7 @@ export const AdminPanelMantine = observer(() => {
   const handleFullBackup = async () => {
     try {
       setIsLoading(true)
-      await configuratorStore.createFullBackup()
+      await configuratorStore.createBackup()
       notifications.show({
         title: 'Успешно',
         message: 'Полный бэкап создан и скачан',
@@ -50,7 +50,8 @@ export const AdminPanelMantine = observer(() => {
 
     try {
       setIsLoading(true)
-      await configuratorStore.restoreFromFullBackup(file)
+      // TODO: Implement restoreFromFullBackup method
+      throw new Error('Restore from backup is not implemented yet')
       notifications.show({
         title: 'Успешно',
         message: 'Данные восстановлены из бэкапа',

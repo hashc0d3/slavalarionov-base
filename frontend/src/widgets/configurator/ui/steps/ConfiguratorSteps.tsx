@@ -4,7 +4,7 @@ import styles from './ConfiguratorSteps.module.css'
 import { observer } from 'mobx-react-lite'
 import { configuratorStore } from '@/shared/store/configurator.store'
 import { StepsFrameColors } from './StepsFrameColors'
-import { StrapModelStep } from './StrapModelStep'
+import { StrapModelStep } from './strap-model-step/StrapModelStep'
 import { StrapDesignStep } from './StrapDesignStep'
 import { FinalStep } from './FinalStep'
 import { useEffect, useRef, useState } from 'react'
@@ -25,35 +25,51 @@ export const ConfiguratorSteps = observer(function ConfiguratorSteps() {
 
 	// Анимация для карточек моделей часов на первом шаге
 	useEffect(() => {
-		if (step === 1) {
-			const cards = watchModelCardsRef.current.filter(Boolean)
-			
-			// Начальное состояние
-			gsap.set(cards, { 
-				opacity: 0, 
-				y: 40,
-				scale: 0.9
-			})
+		if (step === 1 && configuratorStore.watchModels.length > 0) {
+			// Небольшая задержка, чтобы убедиться, что DOM обновлен
+			const timeoutId = setTimeout(() => {
+				const cards = watchModelCardsRef.current.filter(Boolean)
+				
+				if (cards.length === 0) return
+				
+				// Начальное состояние
+				gsap.set(cards, { 
+					opacity: 0, 
+					y: 40,
+					scale: 0.9
+				})
 
-			// Анимация появления
-			gsap.to(cards, {
-				opacity: 1,
-				y: 0,
-				scale: 1,
-				duration: 0.7,
-				stagger: 0.12,
-				ease: 'power3.out',
-				delay: 0.1
-			})
+				// Анимация появления
+				gsap.to(cards, {
+					opacity: 1,
+					y: 0,
+					scale: 1,
+					duration: 0.7,
+					stagger: 0.12,
+					ease: 'power3.out',
+					delay: 0.1
+				})
+			}, 100)
+			
+			return () => clearTimeout(timeoutId)
 		}
-	}, [step])
+	}, [step, configuratorStore.watchModels.length])
 
 	return (
 		<div className={styles.configuratorSteps}>
 			{step === 1 && (
 				<section className={[styles.section, animClass].join(' ')}>
-					<div className={styles.stepInner}>
-						{configuratorStore.watchModels.map((model, idx) => (
+					{configuratorStore.isLoading && configuratorStore.watchModels.length === 0 ? (
+						<div style={{ textAlign: 'center', padding: '40px' }}>
+							<p>Загрузка моделей часов...</p>
+						</div>
+					) : configuratorStore.watchModels.length === 0 ? (
+						<div style={{ textAlign: 'center', padding: '40px' }}>
+							<p>Модели часов не найдены. Проверьте подключение к серверу.</p>
+						</div>
+					) : (
+						<div className={styles.stepInner}>
+							{configuratorStore.watchModels.map((model, idx) => (
 							<div
 								key={model.watch_model_name}
 								ref={(el) => { watchModelCardsRef.current[idx] = el }}
@@ -95,9 +111,10 @@ export const ConfiguratorSteps = observer(function ConfiguratorSteps() {
 									</div>
 								)}
 							</div>
-						))}
-					</div>
-					<StepsFrameColors />
+							))}
+						</div>
+					)}
+					{configuratorStore.watchModels.length > 0 && <StepsFrameColors />}
 				</section>
 			)}
 

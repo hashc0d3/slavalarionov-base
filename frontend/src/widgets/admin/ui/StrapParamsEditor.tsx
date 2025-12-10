@@ -17,7 +17,6 @@ import {
 import { notifications } from '@mantine/notifications'
 import { StrapColor, StrapParams } from '@/shared/store/configurator.store'
 import { uploadStrapColorImage } from '@/shared/api/uploads.api'
-// import { IconPlus, IconTrash, IconEdit } from '@tabler/icons-react'
 
 interface FrameColorConfig {
   color_name: string        // Наименование цвета (Red, Silver)
@@ -213,9 +212,6 @@ const StrapParamsEditor = ({ strapParams, onUpdate }: StrapParamsEditorProps) =>
     { key: 'buckle_colors', label: 'Цвета пряжки', color: 'violet' },
     { key: 'adapter_colors', label: 'Цвета адаптера', color: 'cyan' }
   ]
-  
-  console.log('[StrapParamsEditor] strapParams:', strapParams)
-  console.log('[StrapParamsEditor] frame_color_configs:', strapParams.frame_color_configs)
 
   const startEditColor = (type: string, index: number) => {
     const colors = strapParams[type as keyof typeof strapParams] as StrapColor[]

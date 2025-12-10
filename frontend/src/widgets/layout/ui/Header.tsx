@@ -49,12 +49,8 @@ export const Header = () => {
 				{/* Desktop Navigation */}
 				<div className={styles.headerNavInner}>
 					<AppNav
-						className={`${styles.headerNav} ${styles.headerNavGeneral}`}
-						navItems={generalNavItems}
-					/>
-					<AppNav
-						className={`${styles.headerNav} ${styles.headerNavOther}`}
-						navItems={otherNavItems}
+						className={styles.headerNav}
+						navItems={[...generalNavItems, ...otherNavItems]}
 					/>
 				</div>
 				{/* Mobile Menu Button */}
