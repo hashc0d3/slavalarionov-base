@@ -18,23 +18,22 @@ async function getInitialData() {
 		
 		const [modelsResponse, strapsResponse, settingsResponse] = await Promise.allSettled([
 			fetch(`${baseUrl}/api/watch-models`, { 
-				cache: 'no-store', // Отключаем кэш для актуальных данных
+				// Кэшируем на 60 секунд для ускорения, затем ревалидируем в фоне
+				next: { revalidate: 60 },
 				headers: {
 					'Accept': 'application/json',
-				},
-				// В production можно добавить timeout
-				...(process.env.NODE_ENV === 'production' ? { 
-					next: { revalidate: 0 } 
-				} : {})
+				}
 			}),
 			fetch(`${baseUrl}/api/watch-straps`, { 
-				cache: 'no-store',
+				// Кэшируем на 60 секунд
+				next: { revalidate: 60 },
 				headers: {
 					'Accept': 'application/json',
 				}
 			}),
 			fetch(`${baseUrl}/api/configurator/settings`, { 
-				cache: 'no-store',
+				// Настройки могут меняться чаще, кэшируем на 30 секунд
+				next: { revalidate: 30 },
 				headers: {
 					'Accept': 'application/json',
 				}

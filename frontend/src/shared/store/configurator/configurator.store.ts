@@ -627,7 +627,41 @@ export class ConfiguratorStore {
 		try {
 			const { watchStrapsApi } = await import('@/shared/api/watchStraps.api')
 			const straps = await watchStrapsApi.getAll()
+			
+			// Сохраняем ID выбранного ремешка перед загрузкой новых данных
+			const selectedStrapId = this.selectedStrapModel?.attributes.watch_strap.id
+			
+			// Загружаем новые данные
 			this.watchStraps = straps.map(s => ({ ...s, choosen: false }))
+			
+			// Восстанавливаем выбор ремешка, если он был выбран
+			if (selectedStrapId) {
+				const strapToSelect = this.watchStraps.find(s => s.attributes.watch_strap.id === selectedStrapId)
+				if (strapToSelect) {
+					this.chooseStrapModel(strapToSelect.attributes.watch_strap.id)
+				}
+			} else {
+				// Пытаемся восстановить из localStorage
+				try {
+					const stored = localStorage.getItem('watchStraps')
+					if (stored) {
+						const storedStraps = JSON.parse(stored) as any[]
+						const chosenStrap = storedStraps.find((s: any) => s.choosen === true)
+						if (chosenStrap) {
+							const strapId = chosenStrap.attributes?.watch_strap?.id
+							if (strapId) {
+								const strapToSelect = this.watchStraps.find(s => s.attributes.watch_strap.id === strapId)
+								if (strapToSelect) {
+									this.chooseStrapModel(strapToSelect.attributes.watch_strap.id)
+								}
+							}
+						}
+					}
+				} catch (error) {
+					console.warn('Failed to restore watch strap from localStorage:', error)
+				}
+			}
+			
 			this.updateStrapStepState()
 			this.updateStrapDesignStepState()
 		} catch (error) {

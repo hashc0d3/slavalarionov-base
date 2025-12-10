@@ -140,19 +140,12 @@ export function ConfiguratorClient({ initialData }: ConfiguratorClientProps) {
 						const storedStraps = JSON.parse(stored) as any[]
 						// Находим выбранный ремешок в сохраненных данных
 						const chosenStrap = storedStraps.find((s: any) => {
-							// Проверяем разные варианты структуры данных
-							if (s.choosen) return true
-							if (s.attributes?.watch_strap?.id) {
-								// Проверяем, есть ли этот ремешок в загруженных данных
-								return configuratorStore.watchStraps.some(ws => 
-									ws.attributes.watch_strap.id === s.attributes.watch_strap.id
-								)
-							}
-							return false
+							// Проверяем, выбран ли ремешок
+							return s.choosen === true
 						})
 						
 						if (chosenStrap) {
-							// Получаем ID ремешка
+							// Получаем ID ремешка из сохраненных данных
 							const strapId = chosenStrap.attributes?.watch_strap?.id
 							if (strapId) {
 								// Находим соответствующий ремешок в загруженных данных
