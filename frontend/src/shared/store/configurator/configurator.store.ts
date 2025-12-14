@@ -507,26 +507,31 @@ export class ConfiguratorStore {
 	chooseStrapLeatherColor(title: string) {
 		this.selectedStrapModelParams?.leather_colors?.forEach(c => c.choosen = c.color_title === title)
 		this.updateStrapDesignStepState()
+		this.saveWatchStrapsToStorage() // Сохраняем изменения параметров
 	}
 
 	chooseStitchingColor(title: string) {
 		this.selectedStrapModelParams?.stitching_colors?.forEach(c => c.choosen = c.color_title === title)
 		this.updateStrapDesignStepState()
+		this.saveWatchStrapsToStorage() // Сохраняем изменения параметров
 	}
 
 	chooseEdgeColor(title: string) {
 		this.selectedStrapModelParams?.edge_colors?.forEach(c => c.choosen = c.color_title === title)
 		this.updateStrapDesignStepState()
+		this.saveWatchStrapsToStorage() // Сохраняем изменения параметров
 	}
 
 	chooseBuckleColor(title: string) {
 		this.selectedStrapModelParams?.buckle_colors?.forEach(c => c.choosen = c.color_title === title)
 		this.updateStrapDesignStepState()
+		this.saveWatchStrapsToStorage() // Сохраняем изменения параметров
 	}
 
 	chooseAdapterColor(title: string) {
 		this.selectedStrapModelParams?.adapter_colors?.forEach(c => c.choosen = c.color_title === title)
 		this.updateStrapDesignStepState()
+		this.saveWatchStrapsToStorage() // Сохраняем изменения параметров
 	}
 
 	chooseBuckleButterfly() {
@@ -534,6 +539,7 @@ export class ConfiguratorStore {
 		if (strap && strap.attributes.watch_strap.has_buckle_butterfly) {
 			this.steps.strapDesign.buckleButterflyChoosen = !this.steps.strapDesign.buckleButterflyChoosen
 			this.updateStrapDesignStepState()
+			this.saveWatchStrapsToStorage() // Сохраняем изменения параметров
 		}
 	}
 

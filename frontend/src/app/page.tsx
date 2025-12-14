@@ -16,22 +16,35 @@ async function getInitialData() {
 				? 'http://localhost:8081' 
 				: 'http://localhost:8081')
 		
+		// Создаем AbortController для таймаута
+		const createFetchWithTimeout = (url: string, options: RequestInit, timeout = 5000) => {
+			const controller = new AbortController()
+			const timeoutId = setTimeout(() => controller.abort(), timeout)
+			
+			return fetch(url, {
+				...options,
+				signal: controller.signal,
+			}).finally(() => {
+				clearTimeout(timeoutId)
+			})
+		}
+		
 		const [modelsResponse, strapsResponse, settingsResponse] = await Promise.allSettled([
-			fetch(`${baseUrl}/api/watch-models`, { 
+			createFetchWithTimeout(`${baseUrl}/api/watch-models`, { 
 				// Кэшируем на 60 секунд для ускорения, затем ревалидируем в фоне
 				next: { revalidate: 60 },
 				headers: {
 					'Accept': 'application/json',
 				}
 			}),
-			fetch(`${baseUrl}/api/watch-straps`, { 
+			createFetchWithTimeout(`${baseUrl}/api/watch-straps`, { 
 				// Кэшируем на 60 секунд
 				next: { revalidate: 60 },
 				headers: {
 					'Accept': 'application/json',
 				}
 			}),
-			fetch(`${baseUrl}/api/configurator/settings`, { 
+			createFetchWithTimeout(`${baseUrl}/api/configurator/settings`, { 
 				// Настройки могут меняться чаще, кэшируем на 30 секунд
 				next: { revalidate: 30 },
 				headers: {
@@ -59,6 +72,7 @@ async function getInitialData() {
 		}
 	} catch (error) {
 		// В SSR ошибки логируем, но не прерываем рендеринг
+		// Важно: не выбрасываем ошибку, чтобы Next.js не деоптимизировал страницу
 		console.error('[SSR] Error fetching initial data:', error)
 		return {
 			models: [],
@@ -67,6 +81,10 @@ async function getInitialData() {
 		}
 	}
 }
+
+// Разрешаем Next.js автоматически выбирать стратегию рендеринга (ISR/SSR)
+// Это предотвратит деоптимизацию в клиентский рендеринг при ошибках
+export const dynamic = 'auto'
 
 export default async function Home() {
 	// Загружаем данные на сервере для SSR

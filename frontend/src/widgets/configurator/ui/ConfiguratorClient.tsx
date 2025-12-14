@@ -155,6 +155,69 @@ export function ConfiguratorClient({ initialData }: ConfiguratorClientProps) {
 								if (strapToSelect) {
 									// Восстанавливаем выбор ремешка через метод, чтобы инициализировать параметры
 									configuratorStore.chooseStrapModel(strapToSelect.attributes.watch_strap.id)
+									
+									// Восстанавливаем выбранные параметры из сохраненных данных
+									const savedParams = chosenStrap.attributes?.watch_strap?.strap_params
+									if (savedParams && strapToSelect.attributes.watch_strap.strap_params) {
+										// Восстанавливаем выбранные цвета
+										if (savedParams.leather_colors) {
+											savedParams.leather_colors.forEach((savedColor: any) => {
+												if (savedColor.choosen) {
+													const color = strapToSelect.attributes.watch_strap.strap_params.leather_colors?.find(
+														(c: any) => c.color_title === savedColor.color_title
+													)
+													if (color) color.choosen = true
+												}
+											})
+										}
+										if (savedParams.stitching_colors) {
+											savedParams.stitching_colors.forEach((savedColor: any) => {
+												if (savedColor.choosen) {
+													const color = strapToSelect.attributes.watch_strap.strap_params.stitching_colors?.find(
+														(c: any) => c.color_title === savedColor.color_title
+													)
+													if (color) color.choosen = true
+												}
+											})
+										}
+										if (savedParams.edge_colors) {
+											savedParams.edge_colors.forEach((savedColor: any) => {
+												if (savedColor.choosen) {
+													const color = strapToSelect.attributes.watch_strap.strap_params.edge_colors?.find(
+														(c: any) => c.color_title === savedColor.color_title
+													)
+													if (color) color.choosen = true
+												}
+											})
+										}
+										if (savedParams.buckle_colors) {
+											savedParams.buckle_colors.forEach((savedColor: any) => {
+												if (savedColor.choosen) {
+													const color = strapToSelect.attributes.watch_strap.strap_params.buckle_colors?.find(
+														(c: any) => c.color_title === savedColor.color_title
+													)
+													if (color) color.choosen = true
+												}
+											})
+										}
+										if (savedParams.adapter_colors) {
+											savedParams.adapter_colors.forEach((savedColor: any) => {
+												if (savedColor.choosen) {
+													const color = strapToSelect.attributes.watch_strap.strap_params.adapter_colors?.find(
+														(c: any) => c.color_title === savedColor.color_title
+													)
+													if (color) color.choosen = true
+												}
+											})
+										}
+										// Восстанавливаем выбор бабочки
+										if (savedParams.has_buckle_butterfly !== undefined) {
+											configuratorStore.steps.strapDesign.buckleButterflyChoosen = !!chosenStrap.attributes?.watch_strap?.buckle_butterfly_choosen
+										}
+									}
+									
+									// Обновляем состояние шагов после восстановления параметров
+									configuratorStore.updateStrapDesignStepState()
 								}
 							}
 						}
