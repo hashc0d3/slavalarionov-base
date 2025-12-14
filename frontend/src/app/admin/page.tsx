@@ -11,9 +11,15 @@ export default function AdminPage() {
 
   useEffect(() => {
     const checkAccess = () => {
-      const access = isAdmin()
-      setHasAccess(access)
-      setIsLoading(false)
+      try {
+        const access = isAdmin()
+        setHasAccess(access)
+      } catch (error) {
+        console.error('Error checking admin access:', error)
+        setHasAccess(false)
+      } finally {
+        setIsLoading(false)
+      }
     }
     
     checkAccess()

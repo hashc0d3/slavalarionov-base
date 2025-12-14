@@ -1,16 +1,29 @@
 export const isAdmin = (): boolean => {
-  if (typeof window === 'undefined') return false
-  const role = localStorage.getItem('ROLE')
-  return role === 'ADMIN'
+  try {
+    if (typeof window === 'undefined') return false
+    const role = localStorage.getItem('ROLE')
+    return role === 'ADMIN'
+  } catch (error) {
+    console.error('Error checking admin role:', error)
+    return false
+  }
 }
 
 export const setAdminRole = () => {
-  if (typeof window === 'undefined') return
-  localStorage.setItem('ROLE', 'ADMIN')
+  try {
+    if (typeof window === 'undefined') return
+    localStorage.setItem('ROLE', 'ADMIN')
+  } catch (error) {
+    console.error('Error setting admin role:', error)
+  }
 }
 
 export const removeAdminRole = () => {
-  if (typeof window === 'undefined') return
-  localStorage.removeItem('ROLE')
+  try {
+    if (typeof window === 'undefined') return
+    localStorage.removeItem('ROLE')
+  } catch (error) {
+    console.error('Error removing admin role:', error)
+  }
 }
 
