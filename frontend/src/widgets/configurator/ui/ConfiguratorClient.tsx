@@ -153,12 +153,25 @@ export function ConfiguratorClient({ initialData }: ConfiguratorClientProps) {
 									s.attributes.watch_strap.id === strapId
 								)
 								if (strapToSelect) {
-									// Восстанавливаем выбор ремешка через метод, чтобы инициализировать параметры
-									configuratorStore.chooseStrapModel(strapToSelect.attributes.watch_strap.id)
-									
-									// Восстанавливаем выбранные параметры из сохраненных данных
+									// Сначала восстанавливаем выбранные параметры из сохраненных данных
+									// ДО вызова chooseStrapModel, чтобы они не были сброшены
 									const savedParams = chosenStrap.attributes?.watch_strap?.strap_params
+									
+									// Восстанавливаем параметры напрямую в объекте ремешка
 									if (savedParams && strapToSelect.attributes.watch_strap.strap_params) {
+										// Сбрасываем все выбранные цвета перед восстановлением
+										const resetColors = (colors: any[]) => {
+											if (Array.isArray(colors)) {
+												colors.forEach(c => c.choosen = false)
+											}
+										}
+										
+										resetColors(strapToSelect.attributes.watch_strap.strap_params.leather_colors)
+										resetColors(strapToSelect.attributes.watch_strap.strap_params.stitching_colors)
+										resetColors(strapToSelect.attributes.watch_strap.strap_params.edge_colors)
+										resetColors(strapToSelect.attributes.watch_strap.strap_params.buckle_colors)
+										resetColors(strapToSelect.attributes.watch_strap.strap_params.adapter_colors)
+										
 										// Восстанавливаем выбранные цвета
 										if (savedParams.leather_colors) {
 											savedParams.leather_colors.forEach((savedColor: any) => {
@@ -210,10 +223,20 @@ export function ConfiguratorClient({ initialData }: ConfiguratorClientProps) {
 												}
 											})
 										}
+										
 										// Восстанавливаем выбор бабочки
 										if (savedParams.has_buckle_butterfly !== undefined) {
-											configuratorStore.steps.strapDesign.buckleButterflyChoosen = !!chosenStrap.attributes?.watch_strap?.buckle_butterfly_choosen
+											strapToSelect.attributes.watch_strap.buckle_butterfly_choosen = !!chosenStrap.attributes?.watch_strap?.buckle_butterfly_choosen
 										}
+									}
+									
+									// Теперь выбираем ремешок (это установит choosen = true и обновит состояние)
+									// Но параметры уже восстановлены, поэтому ensureStrapParamsDefaults не сбросит их
+									configuratorStore.chooseStrapModel(strapToSelect.attributes.watch_strap.id)
+									
+									// Восстанавливаем выбор бабочки в стор
+									if (savedParams?.has_buckle_butterfly !== undefined) {
+										configuratorStore.steps.strapDesign.buckleButterflyChoosen = !!chosenStrap.attributes?.watch_strap?.buckle_butterfly_choosen
 									}
 									
 									// Обновляем состояние шагов после восстановления параметров

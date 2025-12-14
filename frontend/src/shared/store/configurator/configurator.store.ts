@@ -566,9 +566,14 @@ export class ConfiguratorStore {
 		this.normalizeStrap(strap)
 		if (!strap) return
 		const params = strap.attributes.watch_strap.strap_params
+		// Убеждаемся, что хотя бы один цвет выбран в каждой категории
+		// НО только если ни один цвет не выбран - не перезаписываем уже выбранные
 		const ensure = (list?: StrapColor[]) => {
 			if (!Array.isArray(list) || list.length === 0) return
-			if (!list.some((item) => item.choosen)) {
+			// Проверяем, есть ли уже выбранный цвет
+			const hasChosen = list.some((item) => item.choosen)
+			// Если ни один не выбран, выбираем первый
+			if (!hasChosen) {
 				list.forEach((item, index) => {
 					item.choosen = index === 0
 				})
