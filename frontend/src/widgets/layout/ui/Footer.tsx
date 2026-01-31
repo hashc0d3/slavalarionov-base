@@ -260,7 +260,7 @@ export const Footer = () => {
 				</div>
 				<div ref={bottomRef} className={styles.footerBottom}>
 					<p className={styles.footerOwner}>
-						©2025 ИП Ларионов Вячеслав Владимирович
+						©2026 ИП Ларионов Вячеслав Владимирович
 					</p>
 					<div className={styles.footerBottomInner}>
 						<div className={styles.footerBottomCol}>

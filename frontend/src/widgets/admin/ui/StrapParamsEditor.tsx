@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import {
   Card,
   Text,
@@ -42,6 +42,7 @@ interface StrapParamsEditorProps {
 }
 
 const StrapParamsEditor = ({ strapParams, onUpdate }: StrapParamsEditorProps) => {
+  const colorPickerInputRef = useRef<HTMLInputElement>(null)
   const [editingColor, setEditingColor] = useState<{ type: string; index: number } | null>(null)
   const [isAddingColor, setIsAddingColor] = useState<{ type: string } | null>(null)
   const emptyImages: StrapColor['images'] = {
@@ -530,14 +531,33 @@ const StrapParamsEditor = ({ strapParams, onUpdate }: StrapParamsEditorProps) =>
             />
             <Box>
               <Text size="sm" fw={500} mb="xs">Предпросмотр цвета:</Text>
+              <input
+                ref={colorPickerInputRef}
+                type="color"
+                value={colorForm.color_code.startsWith('#') ? colorForm.color_code : '#000000'}
+                onChange={(e) => setColorForm({ ...colorForm, color_code: e.target.value })}
+                style={{
+                  position: 'absolute',
+                  width: 0,
+                  height: 0,
+                  opacity: 0,
+                  pointerEvents: 'none'
+                }}
+                aria-hidden
+              />
               <Box
+                component="button"
+                type="button"
+                onClick={() => colorPickerInputRef.current?.click()}
                 style={{
                   width: 60,
                   height: 60,
-                  backgroundColor: colorForm.color_code,
-                  borderRadius: '50%',
+                  padding: 0,
                   border: '2px solid #ddd',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                  borderRadius: '50%',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                  cursor: 'pointer',
+                  backgroundColor: colorForm.color_code || '#000000'
                 }}
               />
             </Box>

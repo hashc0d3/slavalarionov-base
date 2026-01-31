@@ -113,7 +113,7 @@ export const AdminPanelMantine = observer(() => {
               ⌚ Ремешки
             </Tabs.Tab>
             <Tabs.Tab value="colors">
-              🎨 Цвета
+              🎨 Цвета устройства
             </Tabs.Tab>
             <Tabs.Tab value="promocodes">
               🎟️ Промокоды

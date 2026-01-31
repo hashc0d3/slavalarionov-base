@@ -86,7 +86,7 @@ export const StrapBaseImagesEditor = ({ strapId, strapName, baseImages, onUpdate
     if (!selectedColor) {
       notifications.show({
         title: 'Ошибка',
-        message: 'Сначала выберите цвет',
+        message: 'Сначала выберите цвет устройства',
         color: 'red'
       })
       return
@@ -125,7 +125,7 @@ export const StrapBaseImagesEditor = ({ strapId, strapName, baseImages, onUpdate
     if (!formData.colorId) {
       notifications.show({
         title: 'Ошибка',
-        message: 'Выберите цвет',
+        message: 'Выберите цвет устройства',
         color: 'red'
       })
       return
@@ -221,7 +221,7 @@ export const StrapBaseImagesEditor = ({ strapId, strapName, baseImages, onUpdate
       <Group justify="space-between">
         <Text size="sm" fw={500}>Базовые изображения ремешка ({baseImages.length})</Text>
         <Button onClick={startAdd} size="xs" variant="light">
-          ➕ Добавить цвет
+          ➕ Добавить цвет устройства
         </Button>
       </Group>
 
@@ -245,7 +245,7 @@ export const StrapBaseImagesEditor = ({ strapId, strapName, baseImages, onUpdate
                   )}
                   <Stack gap={4}>
                     <Text size="sm" fw={500}>
-                      {color?.display_name || 'Неизвестный цвет'}
+                      {color?.display_name || 'Неизвестный цвет устройства'}
                     </Text>
                     <Group gap="xs">
                       {image.view1Image && <Badge size="xs" color="blue">Вид 1</Badge>}
@@ -276,8 +276,8 @@ export const StrapBaseImagesEditor = ({ strapId, strapName, baseImages, onUpdate
       >
         <Stack gap="md">
           <Select
-            label="Цвет"
-            placeholder="Выберите цвет"
+            label="Цвет устройства"
+            placeholder="Выберите цвет устройства"
             data={colors.map(c => ({
               value: String(c.id),
               label: `${c.display_name} (${c.hex_code})`

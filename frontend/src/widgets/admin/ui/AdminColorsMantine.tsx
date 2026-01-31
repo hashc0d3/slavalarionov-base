@@ -132,7 +132,7 @@ export const AdminColorsMantine = () => {
   return (
     <Stack>
       <Group justify="space-between">
-        <Title order={2}>Цвета ({colors.length})</Title>
+        <Title order={2}>Цвета устройства ({colors.length})</Title>
         <Button onClick={startAdd}>
           ➕ Добавить цвет
         </Button>

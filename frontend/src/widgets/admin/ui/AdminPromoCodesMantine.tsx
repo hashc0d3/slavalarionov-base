@@ -213,7 +213,7 @@ export const AdminPromoCodesMantine = () => {
         <Stack gap="md">
           <TextInput
             label="Код"
-            placeholder="PROMO2025"
+            placeholder="PROMO2026"
             value={formState.code}
             onChange={(event) => {
               const value =

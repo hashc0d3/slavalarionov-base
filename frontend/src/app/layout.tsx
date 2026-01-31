@@ -16,6 +16,9 @@ const manrope = Manrope({
 export const metadata: Metadata = {
   title: "Slava Larionov - Ремешки для Apple Watch",
   description: "Создай уникальный ремешок для своих Apple Watch. Конфигуратор ремешков с персонализацией.",
+  icons: {
+    icon: "/logo.png",
+  },
 };
 
 export default function RootLayout({
