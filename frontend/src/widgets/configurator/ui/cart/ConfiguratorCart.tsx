@@ -8,8 +8,6 @@ import styles from './ConfiguratorCart.module.css'
 export const ConfiguratorCart = observer(function ConfiguratorCart() {
 	const [isOpen, setIsOpen] = useState(false)
 
-	const totalPrice = configuratorStore.totalPriceWithDiscount
-	const productAmount = configuratorStore.productAmount
 	const selectedWatchModel = configuratorStore.selectedWatchModel
 	const selectedFrameColor = configuratorStore.selectedFrameColor
 	const selectedStrapModel = configuratorStore.selectedStrapModel
@@ -288,7 +286,9 @@ export const ConfiguratorCart = observer(function ConfiguratorCart() {
 								<div className={styles.cartTotalLabel}>
 									Итого ({configuratorStore.cartItems.length} товаров):
 								</div>
-								<div className={styles.cartTotalPrice}>{configuratorStore.totalPrice}₽</div>
+								<div className={styles.cartTotalPrice}>
+									{configuratorStore.cartItemsTotalPrice.toLocaleString('ru-RU')}₽
+								</div>
 							</div>
 							
 							<div className={styles.cartButtons}>

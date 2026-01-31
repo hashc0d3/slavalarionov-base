@@ -46,30 +46,50 @@ export interface CreateWatchModelData {
 }
 
 // Преобразование из формата БД в формат store
-export const mapDBToStore = (dbModel: WatchModelDB): WatchModel => ({
-  id: dbModel.id, // Включаем ID для возможности удаления и обновления
-  model_name: dbModel.model_name,
-  watch_model_name: dbModel.watch_model_name,
-  watch_model_manufacturer: dbModel.watch_model_manufacturer || undefined,
-  main_image: dbModel.main_image || undefined,
-  choosen: false,
-  watch_sizes: dbModel.watch_sizes.map(s => ({
-    watch_size: s.watch_size,
-    choosen: false
-  })),
-  frame_colors: dbModel.frame_colors.map(c => ({
-    colorId: c.colorId,
-    color_name: c.color.display_name,
-    color_code: c.color.hex_code,
-    choosen: false,
-    view_images: {
-      view1: c.view1Image || undefined,
-      view2: c.view2Image || undefined,
-      view3: c.view3Image || undefined
+export const mapDBToStore = (dbModel: WatchModelDB): WatchModel => {
+  // Проверяем наличие color в frame_colors
+  const frameColors = dbModel.frame_colors.map(c => {
+    if (!c.color) {
+      return {
+        colorId: c.colorId,
+        color_name: 'Неизвестный цвет',
+        color_code: '#000000',
+        choosen: false,
+        view_images: {
+          view1: c.view1Image || undefined,
+          view2: c.view2Image || undefined,
+          view3: c.view3Image || undefined
+        }
+      }
     }
-  })),
-  available_strap_ids: dbModel.available_straps?.map(s => s.watchStrapId) || []
-})
+    return {
+      colorId: c.colorId,
+      color_name: c.color.display_name,
+      color_code: c.color.hex_code,
+      choosen: false,
+      view_images: {
+        view1: c.view1Image || undefined,
+        view2: c.view2Image || undefined,
+        view3: c.view3Image || undefined
+      }
+    }
+  })
+  
+  return {
+    id: dbModel.id, // Включаем ID для возможности удаления и обновления
+    model_name: dbModel.model_name,
+    watch_model_name: dbModel.watch_model_name,
+    watch_model_manufacturer: dbModel.watch_model_manufacturer || undefined,
+    main_image: dbModel.main_image || undefined,
+    choosen: false,
+    watch_sizes: dbModel.watch_sizes.map(s => ({
+      watch_size: s.watch_size,
+      choosen: false
+    })),
+    frame_colors: frameColors,
+    available_strap_ids: dbModel.available_straps?.map(s => s.watchStrapId) || []
+  }
+}
 
 // Преобразование из формата store в формат для API
 export const mapStoreToAPI = (storeModel: WatchModel): CreateWatchModelData => ({

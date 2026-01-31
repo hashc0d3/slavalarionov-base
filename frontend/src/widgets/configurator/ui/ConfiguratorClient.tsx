@@ -27,7 +27,7 @@ export function ConfiguratorClient({ initialData }: ConfiguratorClientProps) {
 			// Проверяем текущий шаг - если мы на шаге > 1, нужно восстановить выбранную модель
 			const currentStep = configuratorStore.currentStepNum
 			// Инициализируем стор с данными из SSR
-			if (initialData.models.length > 0) {
+			if (initialData.models && initialData.models.length > 0) {
 				const mappedModels = initialData.models.map(mapModelDBToStore)
 				// Убеждаемся, что у всех моделей есть необходимые данные
 				mappedModels.forEach(model => {
@@ -53,10 +53,11 @@ export function ConfiguratorClient({ initialData }: ConfiguratorClientProps) {
 						// Находим выбранную модель в сохраненных данных
 						const chosenModel = storedModels.find(m => m.choosen)
 						if (chosenModel) {
-							// Находим соответствующую модель в загруженных данных (теперь из стора)
+							// Находим соответствующую модель по id или по уникальному watch_model_name
+							// (model_name у всех Apple Watch одинаковый — "Apple Watch", поэтому не используем его)
 							const modelToSelect = configuratorStore.watchModels.find(m => 
 								m.id === chosenModel.id || 
-								m.model_name === chosenModel.model_name
+								m.watch_model_name === chosenModel.watch_model_name
 							)
 							if (modelToSelect) {
 								// Восстанавливаем выбор модели

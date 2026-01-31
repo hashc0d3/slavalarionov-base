@@ -9,8 +9,9 @@ export const metadata: Metadata = {
 // Server Component - загружаем данные на сервере для SSR
 async function getInitialData() {
 	try {
-		// В серверном компоненте Next.js используем абсолютный URL
+		// В серверном компоненте Next.js используем относительный путь
 		// Так как Next.js работает через NestJS middleware, API доступно на том же хосте
+		// Для SSR используем абсолютный URL только если он явно указан
 		const baseUrl = process.env.NEXT_PUBLIC_API_URL || 
 			(process.env.NODE_ENV === 'production' 
 				? 'http://localhost:8081' 

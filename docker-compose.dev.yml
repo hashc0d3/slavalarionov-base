@@ -15,12 +15,12 @@ services:
       - "8081:8081"
     working_dir: /app/backend
     volumes:
-      - backend_db_dev:/app/backend/prisma
+      # Монтируем папку с хоста, чтобы импорт (prisma:import-backup) и админка использовали один и тот же dev.db
+      - ./backend/prisma:/app/backend/prisma
       - backend_uploads_dev:/app/backend/uploads
     restart: unless-stopped
 
 volumes:
-  backend_db_dev:
   backend_uploads_dev:
 
 

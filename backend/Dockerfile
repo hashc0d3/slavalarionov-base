@@ -72,6 +72,13 @@ RUN --mount=type=cache,target=/app/backend/node_modules/.cache \
     node node_modules/@nestjs/cli/bin/nest.js build
 
 # ============================================
+# ШАГ 6b: Компиляция скрипта импорта бэкапа (для применения bd.json на проде)
+# ============================================
+RUN cd backend && \
+    npx tsc prisma/import-backup.ts --outDir prisma \
+      --module commonjs --target ES2020 --esModuleInterop --skipLibCheck --resolveJsonModule
+
+# ============================================
 # ШАГ 7: Очистка dev зависимостей
 # ============================================
 RUN cd backend && npm prune --omit=dev

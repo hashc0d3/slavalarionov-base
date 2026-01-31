@@ -66,6 +66,10 @@ export class ConfiguratorStore {
 		return this.totalPrice
 	}
 
+	get cartItemsTotalPrice() {
+		return this.cartStore.cartItems.reduce((sum, item) => sum + (item.price || 0), 0)
+	}
+
 	get editingCartItemId() {
 		return this.cartStore.editingCartItemId
 	}

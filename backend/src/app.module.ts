@@ -19,7 +19,10 @@ import { ColorsModule } from './colors/colors.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot(),
+    ConfigModule.forRoot({
+      envFilePath: '.env',
+      isGlobal: true,
+    }),
     HttpModule,
     PrismaModule,
     WatchModelsModule,
