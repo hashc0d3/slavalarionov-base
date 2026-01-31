@@ -1,6 +1,7 @@
 .step {
 	width: 100%;
-	padding-top: 80px;
+	padding-top: 48px;
+	padding-bottom: 60px;
 	background: #ffffff;
 }
 
@@ -22,13 +23,15 @@
 
 @media (max-width: 1200px) {
 	.step {
-		padding-top: 60px;
+		padding-top: 40px;
+		padding-bottom: 48px;
 	}
 }
 
 @media (max-width: 750px) {
 	.step {
-		padding-top: 30px;
+		padding-top: 24px;
+		padding-bottom: 40px;
 	}
 }
 

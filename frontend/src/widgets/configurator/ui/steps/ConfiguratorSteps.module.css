@@ -1,4 +1,5 @@
 .configuratorSteps { position: relative; min-height: 480px; }
+.configuratorStepsFinal { min-height: 0; }
 .section { margin: 24px 0; }
 .list { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
 .item { display: flex; gap: 8px; align-items: center; padding: 10px 12px; border: 1px solid #eee; border-radius: 8px; cursor: pointer; }

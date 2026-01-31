@@ -3,7 +3,7 @@
 	display: flex;
 	align-items: stretch;
 	justify-content: space-between;
-	margin-top: 120px;
+	margin-top: 48px;
 }
 
 .additionalOption {
@@ -124,7 +124,7 @@
 	.additional {
 		flex-direction: column;
 		max-width: 700px;
-		margin: 70px auto 0;
+		margin: 40px auto 0;
 	}
 	
 	.additionalOption {

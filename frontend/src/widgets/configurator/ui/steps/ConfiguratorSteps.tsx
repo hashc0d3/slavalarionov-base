@@ -56,7 +56,7 @@ export const ConfiguratorSteps = observer(function ConfiguratorSteps() {
 	}, [step, configuratorStore.watchModels.length])
 
 	return (
-		<div className={styles.configuratorSteps}>
+		<div className={`${styles.configuratorSteps} ${step === 4 ? styles.configuratorStepsFinal : ''}`}>
 			{step === 1 && (
 				<section className={[styles.section, animClass].join(' ')}>
 					{configuratorStore.isLoading && configuratorStore.watchModels.length === 0 ? (

@@ -188,46 +188,92 @@
 }
 
 @media (max-width: 1100px) {
+	.params {
+		width: 100%;
+	}
+	
+	.paramHead {
+		padding-right: 16px;
+	}
+	
+	.paramTitle {
+		font-size: 15px;
+		line-height: 1.3;
+	}
+	
 	.paramContent {
-		gap: 10px;
+		gap: 12px;
+		flex-wrap: nowrap;
+		overflow-x: auto;
+		overflow-y: hidden;
+		-webkit-overflow-scrolling: touch;
+		padding: 0 16px 8px;
+		margin-left: -16px;
+		margin-right: -16px;
+		width: calc(100% + 32px);
+		box-sizing: content-box;
+	}
+	
+	.paramContent::-webkit-scrollbar {
+		height: 4px;
 	}
 	
 	.paramOption {
-		padding: 12px;
-		min-height: 48px;
+		flex: 0 0 auto;
+		padding: 10px;
+		min-width: 44px;
+		min-height: 44px;
+		justify-content: center;
 	}
 	
 	.paramOption.choosen {
-		padding: 12px 16px 12px 12px;
+		padding: 10px;
 	}
 	
 	.paramOptionColorPreview {
-		min-width: 22px;
-		min-height: 22px;
+		min-width: 28px;
+		width: 28px;
+		height: 28px;
 		margin-right: 0;
 	}
 	
+	/* На мобильной только кружок цвета, без названия */
 	.paramOptionTitle {
-		max-width: 0;
-		overflow: hidden;
-		margin-left: 0;
-		white-space: nowrap;
-		opacity: 0;
-		transition: all 0.3s ease;
+		display: none;
 	}
 	
 	.paramOption.choosen .paramOptionTitle {
-		max-width: 150px;
-		opacity: 1;
-		margin-left: 12px;
+		display: none;
 	}
 	
 	.adapterParamContent {
 		max-width: none;
+		flex-wrap: nowrap;
+		overflow-x: auto;
+		overflow-y: hidden;
+		-webkit-overflow-scrolling: touch;
+		padding: 0 16px 8px;
+		margin-left: -16px;
+		margin-right: -16px;
+		width: calc(100% + 32px);
+		box-sizing: content-box;
+	}
+	
+	.adapterParamContent::-webkit-scrollbar {
+		height: 4px;
+	}
+	
+	.adapterParamOption {
+		flex: 0 0 auto;
 	}
 	
 	.adapterParamOption.choosen {
 		padding: 0;
+	}
+	
+	/* Адаптеры на мобильной — только картинка, подпись скрыта */
+	.adapterParamOption .paramOptionTitle {
+		display: none;
 	}
 }
 
