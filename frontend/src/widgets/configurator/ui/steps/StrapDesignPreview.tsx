@@ -1,9 +1,60 @@
 "use client"
 
 import { observer } from 'mobx-react-lite'
+import { useRef, useState, useEffect } from 'react'
 import { configuratorStore, StrapParams } from '@/shared/store/configurator.store'
 import { resolveMediaUrl, getMediaBaseUrl } from '@/shared/lib/media'
 import styles from './StrapDesignPreview.module.css'
+
+/** Плавный переход при смене цвета (как в custom Vue: transition name="fade-delay" — новая 0.1s, старая уходит с задержкой 0.2s за 0.4s) */
+function FadingOverlayImage({
+	url,
+	loading = 'lazy',
+	decoding = 'async',
+	className = ''
+}: { url: string | undefined; loading?: 'lazy' | 'eager'; decoding?: 'async' | 'sync'; className?: string }) {
+	const prevUrlRef = useRef<string | undefined>(undefined)
+	const [exitUrl, setExitUrl] = useState<string | undefined>(undefined)
+	const [activeUrl, setActiveUrl] = useState<string | undefined>(url)
+
+	// При смене url: запоминаем старый как exit, новый как active (чтобы переход был виден при переключении фильтра)
+	useEffect(() => {
+		if (url === undefined) {
+			prevUrlRef.current = undefined
+			setExitUrl(undefined)
+			setActiveUrl(undefined)
+			return
+		}
+		if (prevUrlRef.current !== url) {
+			const previous = prevUrlRef.current
+			prevUrlRef.current = url
+			if (previous) {
+				setExitUrl(previous)
+			}
+			setActiveUrl(url)
+		}
+	}, [url])
+
+	useEffect(() => {
+		if (!exitUrl) return
+		const t = setTimeout(() => setExitUrl(undefined), 2600)
+		return () => clearTimeout(t)
+	}, [exitUrl])
+
+	if (!activeUrl && !exitUrl) return null
+
+	const baseClass = `${styles.overlayImage} ${className}`.trim()
+	return (
+		<>
+			{exitUrl && (
+				<img key={`exit-${exitUrl}`} src={exitUrl} alt="" className={`${baseClass} ${styles.overlayImageExit}`} loading={loading} decoding={decoding} aria-hidden />
+			)}
+			{activeUrl && (
+				<img key={`active-${activeUrl}`} src={activeUrl} alt="" className={`${baseClass} ${styles.overlayImageActive}`} loading={loading} decoding={decoding} aria-hidden />
+			)}
+		</>
+	)
+}
 
 interface StrapDesignPreviewProps {
 	className?: string
@@ -257,33 +308,13 @@ export const StrapDesignPreview = observer(function StrapDesignPreview({ classNa
 					loading="eager"
 					decoding="async"
 				/>
-				{/* Overlay images for different parts — key для сглаживания при смене цвета */}
-				{selectedLeatherColor && (() => {
-					const url = getImageUrl('leather', 1)
-					return url ? <img key={`leather-1-${selectedLeatherColor.color_title}`} src={url} alt="" className={styles.overlayImage} loading="eager" decoding="async" /> : null
-				})()}
-				{selectedStitchingColor && (() => {
-					const url = getImageUrl('stitching', 1)
-					return url ? <img key={`stitching-1-${selectedStitchingColor.color_title}`} src={url} alt="" className={styles.overlayImage} loading="eager" decoding="async" /> : null
-				})()}
-				{selectedEdgeColor && (() => {
-					const url = getImageUrl('edge', 1)
-					return url ? <img key={`edge-1-${selectedEdgeColor.color_title}`} src={url} alt="" className={styles.overlayImage} loading="eager" decoding="async" /> : null
-				})()}
-				{selectedBuckleColor && (() => {
-					const url = getImageUrl('buckle', 1)
-					return url ? <img key={`buckle-1-${selectedBuckleColor.color_title}`} src={url} alt="" className={styles.overlayImage} loading="eager" decoding="async" /> : null
-				})()}
-				{selectedAdapterColor && (() => {
-					const url = getImageUrl('adapter', 1)
-					return url ? <img key={`adapter-1-${selectedAdapterColor.color_title}`} src={url} alt="" className={styles.overlayImage} loading="eager" decoding="async" /> : null
-				})()}
-				{/* Frame color overlay - поверх всех (приоритетнее универсальных) */}
-				{(() => {
-					const url = getFrameColorImage(1)
-					const frameKey = configuratorStore.selectedFrameColor?.color_name
-					return url ? <img key={`frame-1-${frameKey ?? 'default'}`} src={url} alt="" className={`${styles.overlayImage} ${styles.frameOverlay}`} loading="eager" decoding="async" /> : null
-				})()}
+				{/* Overlay images — плавный переход при смене цвета (как на custom Vue) */}
+				{selectedLeatherColor && <FadingOverlayImage url={getImageUrl('leather', 1)} loading="eager" />}
+				{selectedStitchingColor && <FadingOverlayImage url={getImageUrl('stitching', 1)} loading="eager" />}
+				{selectedEdgeColor && <FadingOverlayImage url={getImageUrl('edge', 1)} loading="eager" />}
+				{selectedBuckleColor && <FadingOverlayImage url={getImageUrl('buckle', 1)} loading="eager" />}
+				{selectedAdapterColor && <FadingOverlayImage url={getImageUrl('adapter', 1)} loading="eager" />}
+				<FadingOverlayImage url={getFrameColorImage(1)} loading="eager" className={styles.frameOverlay} />
 			</div>
 
 			{/* View 2 */}
@@ -295,32 +326,12 @@ export const StrapDesignPreview = observer(function StrapDesignPreview({ classNa
 					loading="lazy"
 					decoding="async"
 				/>
-				{selectedLeatherColor && (() => {
-					const url = getImageUrl('leather', 2)
-					return url ? <img key={`leather-2-${selectedLeatherColor.color_title}`} src={url} alt="" className={styles.overlayImage} loading="lazy" decoding="async" /> : null
-				})()}
-				{selectedStitchingColor && (() => {
-					const url = getImageUrl('stitching', 2)
-					return url ? <img key={`stitching-2-${selectedStitchingColor.color_title}`} src={url} alt="" className={styles.overlayImage} loading="lazy" decoding="async" /> : null
-				})()}
-				{selectedEdgeColor && (() => {
-					const url = getImageUrl('edge', 2)
-					return url ? <img key={`edge-2-${selectedEdgeColor.color_title}`} src={url} alt="" className={styles.overlayImage} loading="lazy" decoding="async" /> : null
-				})()}
-				{selectedBuckleColor && (() => {
-					const url = getImageUrl('buckle', 2)
-					return url ? <img key={`buckle-2-${selectedBuckleColor.color_title}`} src={url} alt="" className={styles.overlayImage} loading="lazy" decoding="async" /> : null
-				})()}
-				{selectedAdapterColor && (() => {
-					const url = getImageUrl('adapter', 2)
-					return url ? <img key={`adapter-2-${selectedAdapterColor.color_title}`} src={url} alt="" className={styles.overlayImage} loading="lazy" decoding="async" /> : null
-				})()}
-				{/* Frame color overlay - поверх всех (приоритетнее универсальных) */}
-				{(() => {
-					const url = getFrameColorImage(2)
-					const frameKey = configuratorStore.selectedFrameColor?.color_name
-					return url ? <img key={`frame-2-${frameKey ?? 'default'}`} src={url} alt="" className={`${styles.overlayImage} ${styles.frameOverlay}`} loading="lazy" decoding="async" /> : null
-				})()}
+				{selectedLeatherColor && <FadingOverlayImage url={getImageUrl('leather', 2)} loading="lazy" />}
+				{selectedStitchingColor && <FadingOverlayImage url={getImageUrl('stitching', 2)} loading="lazy" />}
+				{selectedEdgeColor && <FadingOverlayImage url={getImageUrl('edge', 2)} loading="lazy" />}
+				{selectedBuckleColor && <FadingOverlayImage url={getImageUrl('buckle', 2)} loading="lazy" />}
+				{selectedAdapterColor && <FadingOverlayImage url={getImageUrl('adapter', 2)} loading="lazy" />}
+				<FadingOverlayImage url={getFrameColorImage(2)} loading="lazy" className={styles.frameOverlay} />
 			</div>
 
 			{/* View 3 */}
@@ -332,32 +343,12 @@ export const StrapDesignPreview = observer(function StrapDesignPreview({ classNa
 					loading="lazy"
 					decoding="async"
 				/>
-				{selectedLeatherColor && (() => {
-					const url = getImageUrl('leather', 3)
-					return url ? <img key={`leather-3-${selectedLeatherColor.color_title}`} src={url} alt="" className={styles.overlayImage} loading="lazy" decoding="async" /> : null
-				})()}
-				{selectedStitchingColor && (() => {
-					const url = getImageUrl('stitching', 3)
-					return url ? <img key={`stitching-3-${selectedStitchingColor.color_title}`} src={url} alt="" className={styles.overlayImage} loading="lazy" decoding="async" /> : null
-				})()}
-				{selectedEdgeColor && (() => {
-					const url = getImageUrl('edge', 3)
-					return url ? <img key={`edge-3-${selectedEdgeColor.color_title}`} src={url} alt="" className={styles.overlayImage} loading="lazy" decoding="async" /> : null
-				})()}
-				{selectedBuckleColor && (() => {
-					const url = getImageUrl('buckle', 3)
-					return url ? <img key={`buckle-3-${selectedBuckleColor.color_title}`} src={url} alt="" className={styles.overlayImage} loading="lazy" decoding="async" /> : null
-				})()}
-				{selectedAdapterColor && (() => {
-					const url = getImageUrl('adapter', 3)
-					return url ? <img key={`adapter-3-${selectedAdapterColor.color_title}`} src={url} alt="" className={styles.overlayImage} loading="lazy" decoding="async" /> : null
-				})()}
-				{/* Frame color overlay - поверх всех (приоритетнее универсальных) */}
-				{(() => {
-					const url = getFrameColorImage(3)
-					const frameKey = configuratorStore.selectedFrameColor?.color_name
-					return url ? <img key={`frame-3-${frameKey ?? 'default'}`} src={url} alt="" className={`${styles.overlayImage} ${styles.frameOverlay}`} loading="lazy" decoding="async" /> : null
-				})()}
+				{selectedLeatherColor && <FadingOverlayImage url={getImageUrl('leather', 3)} loading="lazy" />}
+				{selectedStitchingColor && <FadingOverlayImage url={getImageUrl('stitching', 3)} loading="lazy" />}
+				{selectedEdgeColor && <FadingOverlayImage url={getImageUrl('edge', 3)} loading="lazy" />}
+				{selectedBuckleColor && <FadingOverlayImage url={getImageUrl('buckle', 3)} loading="lazy" />}
+				{selectedAdapterColor && <FadingOverlayImage url={getImageUrl('adapter', 3)} loading="lazy" />}
+				<FadingOverlayImage url={getFrameColorImage(3)} loading="lazy" className={styles.frameOverlay} />
 			</div>
 			</div>
 		</div>
