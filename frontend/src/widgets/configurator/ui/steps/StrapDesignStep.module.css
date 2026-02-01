@@ -1,10 +1,11 @@
+/* Десктоп: две колонки — картинки слева, текст справа */
 .step {
 	width: 100%;
 	margin-top: 50px;
 	max-width: 1400px;
 	margin-left: auto;
 	margin-right: auto;
-	padding: 0 20px;
+	padding: 0;
 }
 
 .stepContent {
@@ -16,28 +17,17 @@
 .stepColumn {
 	flex: 1 1 auto;
 	width: 50%;
-	/* Липкий блок с фото; высота 900px на десктопе, адаптивно для всех размеров */
 	position: sticky;
-	top: 20px;
+	top: 0;
 	align-self: flex-start;
-	min-height: 900px;
-}
-
-@media (max-width: 1400px) {
-	.stepColumn {
-		min-height: clamp(600px, 85vh, 900px);
-	}
-}
-
-@media (max-width: 1200px) {
-	.stepColumn {
-		min-height: clamp(500px, 80vh, 800px);
-	}
+	min-height: 560px;
+	max-height: calc(100vh - 60px);
+	z-index: 10;
 }
 
 .stepLeftColumn {
-	max-width: 800px;
-	width: 60%;
+	max-width: 920px;
+	width: 65%;
 	margin-right: 40px;
 }
 
@@ -106,19 +96,46 @@
 	cursor: not-allowed;
 }
 
+/* Адаптив: 1500px */
 @media (max-width: 1500px) {
-	.stepTitle {
-		font-size: 32px;
-	}
-	.stepPrice {
-		font-size: 22px;
+	.stepTitle { font-size: 32px; }
+	.stepPrice { font-size: 22px; }
+}
+
+/* Адаптив: 1400px */
+@media (max-width: 1400px) {
+	.stepColumn {
+		min-height: 560px;
+		max-height: calc(100vh - 60px);
 	}
 }
 
+/* Адаптив: 1200px */
+@media (max-width: 1200px) {
+	.stepContent {
+		gap: 40px;
+	}
+	.stepColumn {
+		min-height: 560px;
+		max-height: calc(100vh - 60px);
+	}
+}
+
+/* Адаптив: 1100px — картинки блоком сверху, как на custom */
 @media (max-width: 1100px) {
 	.step {
-		padding: 0 16px;
+		padding: 0;
 		max-width: none;
+		margin-top: 24px;
+	}
+	
+	.stepContent {
+		flex-direction: column;
+		flex-wrap: nowrap;
+		gap: 12px;
+		max-width: none;
+		width: 100%;
+		margin: 0;
 	}
 	
 	.stepColumn,
@@ -127,48 +144,95 @@
 		width: 100%;
 		max-width: none;
 		flex: none;
-		align-self: flex-start;
+		align-self: stretch;
 	}
 	
-	/* На мобильной картинки закреплены — едут вместе при скролле */
 	.stepColumn {
-		position: sticky;
-		top: 12px;
-		min-height: min(50vh, 360px);
-		z-index: 1;
+		order: 1;
+		position: sticky !important;
+		top: 0;
+		min-height: 540px;
+		max-height: calc(100vh - 60px);
+		display: flex;
+		flex-direction: column;
+		width: calc(100% + 40px);
+		max-width: none;
+		margin-left: -20px;
+		margin-right: -20px;
+		margin-bottom: 0;
+		padding: 20px;
+		z-index: 10;
+		background: #fff;
+		box-sizing: border-box;
+	}
+	
+	.stepRightColumn {
+		order: 2;
+		position: relative;
 	}
 	
 	.stepLeftColumn {
 		margin-right: 0;
-		margin-bottom: 48px;
+		margin-bottom: 0;
 	}
 	
-	.stepTitle {
-		font-size: 28px;
-	}
-	.stepPrice {
-		font-size: 18px;
+	.stepTitle { font-size: 28px; }
+	.stepPrice { font-size: 18px; }
+}
+
+/* Адаптив: 750px — планшет */
+@media (max-width: 750px) {
+	.step {
+		margin-top: 20px;
+		padding: 0;
 	}
 	.stepContent {
-		flex-wrap: wrap;
-		max-width: none;
-		width: 100%;
-		margin: 0;
+		gap: 12px;
 	}
+	.stepColumn {
+		min-height: 540px;
+		max-height: calc(100vh - 55px);
+		margin-bottom: 0;
+	}
+	.stepTitle { font-size: 26px; }
+	.stepPrice { font-size: 17px; }
 }
 
+/* Адаптив: 550px — мобильный: блок картинок sticky, как на старом сайте */
 @media (max-width: 550px) {
 	.step {
-		margin-top: 30px;
+		margin-top: 16px;
+		padding: 0;
 	}
-	.stepTitle {
-		font-size: 24px;
+	.stepContent {
+		gap: 12px;
 	}
-	.stepPrice {
-		font-size: 16px;
+	.stepColumn {
+		position: sticky !important;
+		top: 0;
+		min-height: 500px;
+		max-height: calc(100vh - 50px);
+		width: calc(100% + 40px);
+		margin-left: -20px;
+		margin-right: -20px;
+		margin-bottom: 0;
+		padding: 16px;
+		z-index: 10;
+		background: #fff;
+		box-sizing: border-box;
 	}
-	.stepDescription {
-		margin-top: 20px;
-	}
+	.stepTitle { font-size: 24px; }
+	.stepPrice { font-size: 16px; }
+	.stepDescription { margin-top: 20px; }
 }
 
+/* Адаптив: 400px — очень узкий */
+@media (max-width: 400px) {
+	.step {
+		padding: 0;
+	}
+	.stepColumn {
+		min-height: 460px;
+		max-height: calc(100vh - 40px);
+	}
+}

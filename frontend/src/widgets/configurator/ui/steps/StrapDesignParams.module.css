@@ -1,10 +1,10 @@
 .params {
 	width: 100%;
-	margin-top: 75px;
+	margin-top: 48px;
 }
 
 .param {
-	margin-top: 70px;
+	margin-top: 48px;
 }
 
 .param:first-child {
@@ -14,6 +14,7 @@
 .paramHead {
 	display: flex;
 	align-items: center;
+	padding: 0;
 }
 
 .paramTitle {
@@ -35,20 +36,21 @@
 }
 
 .paramContent {
-	margin-top: 36px;
-	padding: 2px 0;
+	margin-top: 16px;
+	padding: 0;
 	display: flex;
 	flex-wrap: wrap;
 	gap: 16px;
+	align-items: center;
 }
 
 .paramOption {
-	flex: 1 1 auto;
+	flex: 0 0 auto;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	padding: 16px 26px 16px 16px;
-	min-height: 62px;
+	padding: 12px 20px 12px 12px;
+	min-height: 56px;
 	border-radius: 50px;
 	max-width: fit-content;
 	background: #f5f5f5;
@@ -72,14 +74,14 @@
 }
 
 .paramOptionColorPreview {
-	min-width: 30px;
-	min-height: 30px;
+	min-width: 32px;
+	min-height: 32px;
 	border-radius: 50%;
-	margin-right: 16px;
+	margin-right: 14px;
 }
 
 .paramOptionTitle {
-	font-size: 14px;
+	font-size: 15px;
 	white-space: nowrap;
 }
 
@@ -143,10 +145,11 @@
 }
 
 .adapterParamContent {
-	margin-top: 36px;
+	margin-top: 16px;
 	display: flex;
 	flex-wrap: wrap;
 	gap: 16px;
+	align-items: flex-start;
 }
 
 .adapterParamOption {
@@ -161,7 +164,7 @@
 
 .adapterParamOption .paramOptionTitle {
 	display: block;
-	margin-top: 13px;
+	margin-top: 8px;
 }
 
 .paramOptionPreviewImgInner {
@@ -172,7 +175,7 @@
 	background: #f4f4f4;
 	width: 100px;
 	height: 100px;
-	padding: 21px;
+	padding: 16px;
 	border: 1px solid transparent;
 	transition: all 0.2s ease;
 }
@@ -193,7 +196,7 @@
 	}
 	
 	.paramHead {
-		padding-right: 16px;
+		padding: 0;
 	}
 	
 	.paramTitle {
@@ -202,16 +205,16 @@
 	}
 	
 	.paramContent {
-		gap: 12px;
+		gap: 16px;
 		flex-wrap: nowrap;
 		overflow-x: auto;
 		overflow-y: hidden;
 		-webkit-overflow-scrolling: touch;
-		padding: 0 16px 8px;
-		margin-left: -16px;
-		margin-right: -16px;
-		width: calc(100% + 32px);
-		box-sizing: content-box;
+		padding: 0;
+		margin-left: 0;
+		margin-right: 0;
+		width: 100%;
+		box-sizing: border-box;
 	}
 	
 	.paramContent::-webkit-scrollbar {
@@ -220,30 +223,40 @@
 	
 	.paramOption {
 		flex: 0 0 auto;
+		flex-direction: row;
 		padding: 10px;
-		min-width: 44px;
-		min-height: 44px;
+		min-width: 48px;
+		min-height: 48px;
 		justify-content: center;
 	}
 	
 	.paramOption.choosen {
-		padding: 10px;
+		padding: 10px 16px 10px 10px;
+		min-width: auto;
+		justify-content: flex-start;
 	}
 	
 	.paramOptionColorPreview {
-		min-width: 28px;
-		width: 28px;
-		height: 28px;
+		min-width: 32px;
+		width: 32px;
+		height: 32px;
 		margin-right: 0;
+		flex-shrink: 0;
 	}
 	
-	/* На мобильной только кружок цвета, без названия */
+	.paramOption.choosen .paramOptionColorPreview {
+		margin-right: 12px;
+	}
+	
+	/* На мобильной невыбранные — только кружок, выбранный — шире с названием */
 	.paramOptionTitle {
 		display: none;
 	}
 	
 	.paramOption.choosen .paramOptionTitle {
-		display: none;
+		display: block;
+		font-size: 15px;
+		white-space: nowrap;
 	}
 	
 	.adapterParamContent {
@@ -252,11 +265,12 @@
 		overflow-x: auto;
 		overflow-y: hidden;
 		-webkit-overflow-scrolling: touch;
-		padding: 0 16px 8px;
-		margin-left: -16px;
-		margin-right: -16px;
-		width: calc(100% + 32px);
-		box-sizing: content-box;
+		padding: 0;
+		margin-left: 0;
+		margin-right: 0;
+		width: 100%;
+		box-sizing: border-box;
+		gap: 16px;
 	}
 	
 	.adapterParamContent::-webkit-scrollbar {
@@ -271,9 +285,19 @@
 		padding: 0;
 	}
 	
-	/* Адаптеры на мобильной — только картинка, подпись скрыта */
+	/* Адаптеры на мобильной: выбранный — шире с названием */
 	.adapterParamOption .paramOptionTitle {
 		display: none;
+	}
+	
+	.adapterParamOption.choosen {
+		flex-direction: column;
+	}
+	
+	.adapterParamOption.choosen .paramOptionTitle {
+		display: block;
+		margin-top: 8px;
+		font-size: 14px;
 	}
 }
 

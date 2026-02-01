@@ -17,11 +17,19 @@ export const SectionConfigurator = observer(function SectionConfigurator() {
 	return (
 		<section className={styles.configuratorSection}>
 			<div className={["container", styles.container, styles.configuratorSectionContainer].join(' ')}>
+				<div className={styles.configuratorControlsWrap}>
+					<ConfiguratorControls navOnly />
+				</div>
 				<h2 className={styles.configuratorTitle}>Создай уникальный ремешок для своих Apple Watch</h2>
 				<div className={styles.configuratorContent}>
 					<StepsProgress />
 					<div className={styles.configuratorFixedViewLayer}></div>
-					<ConfiguratorControls />
+					<div className={styles.configuratorControlsDesktop}>
+						<ConfiguratorControls />
+					</div>
+					<div className={styles.configuratorControlsMobile}>
+						<ConfiguratorControls selectsOnly />
+					</div>
 					<ConfiguratorSteps />
 				</div>
 			</div>

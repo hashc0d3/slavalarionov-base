@@ -6,7 +6,12 @@ import { useRouter } from 'next/navigation'
 import { configuratorStore } from '@/shared/store/configurator.store'
 import { StrapDesignSelectors } from '../steps/StrapDesignSelectors'
 
-export const ConfiguratorControls = observer(function ConfiguratorControls() {
+interface ConfiguratorControlsProps {
+	navOnly?: boolean
+	selectsOnly?: boolean
+}
+
+export const ConfiguratorControls = observer(function ConfiguratorControls({ navOnly = false, selectsOnly = false }: ConfiguratorControlsProps) {
 	const router = useRouter()
 	const isFinal = configuratorStore.currentStepNum === configuratorStore.stepsAmount
 	const currentStep = configuratorStore.currentStepNum
@@ -27,6 +32,7 @@ export const ConfiguratorControls = observer(function ConfiguratorControls() {
 	
 	return (
 		<div className={styles.configuratorControls}>
+			{!navOnly && (
 			<div>
 				{currentStep > 1 && (
 					<div className={styles.selectsContainer}>
@@ -118,14 +124,25 @@ export const ConfiguratorControls = observer(function ConfiguratorControls() {
 					</div>
 				)}
 			</div>
+			)}
+			{!selectsOnly && (
 			<nav className={styles.configuratorControlsNav}>
-				<button 
-					className={[styles.btn, styles.btnGhost].join(' ')} 
-					onClick={handlePrevStep} 
-					disabled={configuratorStore.currentStepNum === 1}
-				>
-					Назад
-				</button>
+				{currentStep === 1 ? (
+					<a 
+						href="https://slavalarionov.com/" 
+						className={[styles.btn, styles.btnGhost].join(' ')}
+						rel="noopener noreferrer"
+					>
+						На главную
+					</a>
+				) : (
+					<button 
+						className={[styles.btn, styles.btnGhost].join(' ')} 
+						onClick={handlePrevStep}
+					>
+						Назад
+					</button>
+				)}
 				{!isFinal ? (
 					<button 
 						className={[styles.btn, styles.btnPrimary].join(' ')} 
@@ -143,6 +160,7 @@ export const ConfiguratorControls = observer(function ConfiguratorControls() {
 					</button>
 				)}
 			</nav>
+			)}
 		</div>
 	)
 })

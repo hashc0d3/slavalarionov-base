@@ -8,56 +8,114 @@
 	flex-direction: column;
 }
 
+.configuratorControlsWrap {
+	display: none;
+	order: 2;
+}
+
 .configuratorTitle {
-	max-width: 630px;
-	font-weight: 200;
+	order: 1;
+	width: 100%;
+	max-width: 720px;
+	font-weight: 300;
 	font-size: 48px;
 	color: #333;
 	margin: 0 auto;
 	text-align: center;
+	box-sizing: border-box;
 	font-family: var(--font-manrope), 'Helvetica Neue', Helvetica, Arial, sans-serif;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
 }
 
 .configuratorContent {
+	order: 3;
 	margin-top: 24px;
 	background: #ffffff;
+	min-width: 0;
+	overflow-x: clip;
+}
+
+.configuratorControlsDesktop {
+	display: block;
+}
+
+.configuratorControlsMobile {
+	display: none;
 }
 
 /* vertical rhythm */
 .configuratorContent > * + * { margin-top: 24px; }
 
+@media (max-width: 1100px) {
+	.configuratorControlsDesktop,
+	.configuratorControlsMobile {
+		margin-bottom: 50px;
+	}
+}
+
 @media (max-width: 1500px) {
 	.configuratorTitle { 
 		font-size: 40px; 
-		max-width: 550px; 
+		max-width: 640px; 
 	}
 }
 @media (max-width: 1200px) {
 	.configuratorTitle { 
 		font-size: 32px; 
-		max-width: 450px; 
+		max-width: 540px; 
 	}
 }
 @media (max-width: 750px) {
+	.configuratorSection {
+		position: relative;
+		padding-top: 105px;
+	}
 	.configuratorTitle { 
 		font-size: 28px; 
-		max-width: 400px; 
+		max-width: 460px; 
+	}
+}
+
+@media (max-width: 749px) {
+	.configuratorSection {
+		padding-top: 0;
+	}
+	.configuratorControlsWrap {
+		display: block;
+		order: 1;
+		margin-top: 0;
+	}
+	.configuratorControlsDesktop {
+		display: none;
+	}
+	.configuratorControlsMobile {
+		display: block;
+	}
+	.configuratorControlsMobile > div {
+		justify-content: flex-start;
+	}
+	.configuratorTitle {
+		order: 2;
+		width: 100%;
+		margin-top: 24px;
+		text-align: center;
+	}
+	.configuratorContent {
+		order: 3;
 	}
 }
 @media (max-width: 700px) {
 	.configuratorTitle { 
 		font-size: 24px; 
-		max-width: 350px; 
+		max-width: 400px; 
 	}
 }
 @media (max-width: 550px) {
 	.configuratorSection { padding: 20px 0; }
 	.configuratorTitle { 
 		font-size: 24px; 
-		max-width: 100%; 
-		padding: 0 20px;
+		max-width: 400px; 
 	}
 }
 @media (max-width: 550px) {

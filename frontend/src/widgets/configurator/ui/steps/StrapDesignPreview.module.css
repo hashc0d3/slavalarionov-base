@@ -1,50 +1,32 @@
+/* Десктоп: картинки sticky, следуют скроллу до кнопки Далее */
 .preview {
 	width: 100%;
 	position: sticky;
-	top: 20px;
-	/* Высота 900px на десктопе, адаптивно под все размеры — картинки видны целиком */
-	min-height: 900px;
+	top: 0;
+	min-height: 560px;
+	max-height: calc(100vh - 60px);
 	background: transparent;
 	padding: 0;
 	border-radius: 0;
 	box-shadow: none;
-}
-
-@media (max-width: 1400px) {
-	.preview {
-		min-height: clamp(600px, 85vh, 900px);
-	}
-}
-
-@media (max-width: 1200px) {
-	.preview {
-		min-height: clamp(500px, 80vh, 800px);
-	}
-}
-
-.previewFinal {
-	width: 100%;
-	height: fit-content;
-	background: transparent;
-	padding: 0;
-	border-radius: 0;
-	box-shadow: none;
+	z-index: 10;
 }
 
 .previewContainer {
 	display: flex;
 	gap: 40px;
-	height: 25vw;
-	max-height: 282px;
 	align-items: stretch;
 }
 
 .previewContainer.previewContainerGrid {
 	display: grid;
-	grid-template-columns: 1.5fr 1fr;
-	grid-template-rows: 375px 375px;
+	grid-template-columns: 2fr 1fr;
+	grid-template-rows: minmax(300px, 1fr) minmax(300px, 1fr);
 	gap: 16px;
-	background: #fff;
+	max-height: calc(100vh - 60px);
+	background: transparent;
+	border-radius: 0;
+	padding: 0;
 }
 
 .previewContainer.previewContainerFlex {
@@ -59,10 +41,13 @@
 	position: relative;
 	flex: 1;
 	height: 100%;
-	border-radius: 20px;
+	min-width: 0;
+	border-radius: 0;
 	overflow: hidden;
-	background: #efefef;
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+	background: #f2f2f2;
+	box-shadow: none;
+	padding: 24px;
+	box-sizing: border-box;
 }
 
 .previewContainer.previewContainerGrid .previewView:first-child {
@@ -85,8 +70,8 @@
 	left: 50%;
 	top: 50%;
 	transform: translate(-50%, -50%);
-	width: 85%;
-	height: 85%;
+	width: 88%;
+	height: 88%;
 	margin: auto;
 	object-fit: contain;
 	display: block;
@@ -96,8 +81,8 @@
 	position: absolute;
 	top: 50%;
 	left: 50%;
-	width: 85%;
-	height: 85%;
+	width: 88%;
+	height: 88%;
 	object-fit: contain;
 	pointer-events: none;
 	transform: translate(-50%, -50%);
@@ -108,46 +93,157 @@
 	z-index: 1;
 }
 
+.previewFinal {
+	width: 100%;
+	height: fit-content;
+	background: transparent;
+	padding: 0;
+	border-radius: 0;
+	box-shadow: none;
+}
+
+/* Адаптив: 1400px */
+@media (max-width: 1400px) {
+	.preview {
+		min-height: 560px;
+		max-height: calc(100vh - 60px);
+	}
+	.previewContainer.previewContainerGrid {
+		grid-template-rows: minmax(300px, 1fr) minmax(300px, 1fr);
+		max-height: calc(100vh - 60px);
+	}
+}
+
+/* Адаптив: 1200px */
 @media (max-width: 1200px) {
+	.preview {
+		min-height: 560px;
+		max-height: calc(100vh - 60px);
+	}
+	.previewContainer.previewContainerGrid {
+		grid-template-columns: 1.8fr 1fr;
+		grid-template-rows: minmax(300px, 1fr) minmax(300px, 1fr);
+		max-height: calc(100vh - 60px);
+		gap: 16px;
+	}
 	.previewContainer.previewContainerFlex {
 		gap: 20px;
 		height: 40vw;
 	}
 }
 
+/* Адаптив: 1100px–550px — блок сверху, закреплён при скролле */
 @media (max-width: 1100px) {
 	.preview {
-		position: sticky;
-		top: 12px;
+		position: sticky !important;
+		top: 0;
 		width: 100%;
-		display: block;
-		min-height: min(50vh, 360px);
+		max-width: 100%;
+		max-height: calc(100vh - 60px);
+		display: flex;
+		flex-direction: column;
+		min-height: 540px;
+		z-index: 10;
+		background: #fff;
+		box-sizing: border-box;
+	}
+	
+	.previewContainer {
+		width: 100%;
+		max-width: 100%;
+		max-height: 100%;
+	}
+	
+	.previewContainer.previewContainerGrid {
+		grid-template-columns: 1.6fr 1fr;
+		grid-template-rows: minmax(270px, 1fr) minmax(270px, 1fr);
+		gap: 14px;
+		width: 100%;
+		max-width: 920px;
+		max-height: calc(100vh - 60px);
+		margin: 0;
+		padding: 0;
+		position: static;
+		background: transparent;
+		border-radius: 0;
 	}
 	
 	.previewContainer.previewContainerFlex {
 		gap: 16px;
 		height: auto;
-		position: static;
+		max-height: none;
 	}
 	
 	.previewContainer.previewContainerFlex .previewView {
-		height: 280px;
-		flex-shrink: 0;
+		height: clamp(420px, 60vw, 560px);
 	}
 	
-	.previewContainer.previewContainerGrid {
-		grid-template-columns: 1.2fr 1fr;
-		grid-template-rows: minmax(200px, 35vw) minmax(200px, 35vw);
-		gap: 12px;
-		max-width: 600px;
-		margin: 0 auto;
-		position: static;
+	.previewContainer.previewContainerGrid .previewView {
+		min-width: 0;
+		min-height: 0;
+		padding: 20px;
+	}
+	
+	.baseImage,
+	.overlayImage {
+		width: 88%;
+		height: 88%;
+		max-width: 100%;
+		max-height: 100%;
+		object-fit: contain;
 	}
 }
 
-@media (max-width: 550px) {
+/* Адаптив: 750px — планшет */
+@media (max-width: 750px) {
 	.previewContainer.previewContainerGrid {
-		grid-template-rows: minmax(180px, 50vw) minmax(180px, 50vw);
 		max-width: 100%;
+		max-height: calc(100vh - 55px);
+		padding: 0;
+		grid-template-rows: minmax(270px, 1fr) minmax(270px, 1fr);
+		gap: 12px;
+	}
+}
+
+/* Адаптив: 550px — мобильный: блок картинок sticky, как на старом сайте */
+@media (max-width: 550px) {
+	.preview {
+		position: sticky !important;
+		top: 0;
+		max-height: calc(100vh - 50px);
+		min-height: 500px;
+		z-index: 10;
+		background: #fff;
+		box-sizing: border-box;
+	}
+	.previewContainer.previewContainerGrid {
+		grid-template-columns: 1.4fr 1fr;
+		grid-template-rows: minmax(240px, 1fr) minmax(240px, 1fr);
+		max-height: calc(100vh - 50px);
+		gap: 10px;
+		padding: 0;
+		border-radius: 0;
+		background: transparent;
+	}
+	.previewView {
+		border-radius: 0;
+		background: #f2f2f2;
+		padding: 16px;
+	}
+}
+
+/* Адаптив: 400px — очень узкий экран */
+@media (max-width: 400px) {
+	.previewView {
+		padding: 12px;
+	}
+	.preview,
+	.previewContainer.previewContainerGrid {
+		max-height: calc(100vh - 40px);
+	}
+	.previewContainer.previewContainerGrid {
+		grid-template-rows: minmax(220px, 1fr) minmax(220px, 1fr);
+		gap: 8px;
+		padding: 0;
 	}
 }
