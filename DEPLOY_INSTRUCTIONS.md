@@ -220,6 +220,28 @@ docker compose -f docker-compose.prod.yml up -d --build
 
 ---
 
+## 👤 Добавить администратора в запущенный прод
+
+**Способ 1 — скрипт (после деплоя с этим скриптом в образе):**
+```bash
+docker exec slavalarionov-backend-prod node scripts/add-admin.js larionov38@gmail.com
+```
+
+**Способ 2 — без пересборки (одной командой):**
+```bash
+docker exec slavalarionov-backend-prod node -e "
+const { PrismaClient } = require('@prisma/client');
+const p = new PrismaClient();
+p.user.upsert({ where: { email: 'larionov38@gmail.com' }, create: { email: 'larionov38@gmail.com', role: 'ADMIN' }, update: { role: 'ADMIN' } })
+  .then(() => { console.log('OK'); return p.\$disconnect(); })
+  .catch(e => { console.error(e); p.\$disconnect(); process.exit(1); });
+"
+```
+
+Имя контейнера может отличаться — проверьте: `docker ps` (ищите backend-prod).
+
+---
+
 ## 🎯 Рекомендуемый workflow
 
 1. **Разработка** → коммит в git

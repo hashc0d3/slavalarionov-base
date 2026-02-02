@@ -39,8 +39,9 @@ RUN --mount=type=cache,target=/root/.npm \
     cd backend && \
     # Отключаем postinstall для Prisma (будет сгенерирован позже)
     # Убеждаемся что devDependencies установлены (нужны для сборки)
+    # --legacy-peer-deps: @nestjs/jwt/@nestjs/passport peer deps под Nest 10, проект на Nest 11
     export PRISMA_SKIP_POSTINSTALL_GENERATE=1 && \
-    npm ci --prefer-offline --no-audit --include=dev
+    npm ci --prefer-offline --no-audit --include=dev --legacy-peer-deps
 
 # ============================================
 # ШАГ 3: Копирование исходного кода
