@@ -3,10 +3,10 @@
 import styles from './ConfiguratorSteps.module.css'
 import { observer } from 'mobx-react-lite'
 import { configuratorStore } from '@/shared/store/configurator.store'
-import { StepsFrameColors } from './StepsFrameColors'
 import { StrapModelStep } from './strap-model-step/StrapModelStep'
 import { StrapDesignStep } from './StrapDesignStep'
 import { FinalStep } from './FinalStep'
+import { StepsFrameColors } from './StepsFrameColors'
 import { useEffect, useRef, useState } from 'react'
 import gsap from 'gsap'
 
@@ -110,10 +110,21 @@ export const ConfiguratorSteps = observer(function ConfiguratorSteps() {
 										))}
 									</div>
 								)}
+								{model.choosen && (
+									<button
+										type="button"
+										className={styles.stepItemNextBtn}
+										onClick={(e) => { e.stopPropagation(); configuratorStore.nextStep() }}
+										disabled={!configuratorStore.nextStepReady}
+									>
+										Далее {configuratorStore.currentStepNum + 1}/{configuratorStore.stepsAmount}
+									</button>
+								)}
 							</div>
 							))}
 						</div>
 					)}
+					{/* Десктоп: цвета снизу отдельным блоком (как на старом сайте). На ≤1100px блок скрыт, цвета показываются в карточке */}
 					{configuratorStore.watchModels.length > 0 && <StepsFrameColors />}
 				</section>
 			)}

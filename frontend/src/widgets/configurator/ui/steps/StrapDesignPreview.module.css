@@ -275,3 +275,111 @@
 		padding: 0;
 	}
 }
+
+/* ========== Шаг 4 (финальный) — отдельные стили, не пересекаются с шагом 3 ========== */
+/* Вид как на референсе: отступы между блоками, на всю ширину, закруглённые края */
+.step4Root {
+	width: 100%;
+	height: fit-content;
+	background: transparent;
+	padding: 0;
+	border-radius: 0;
+	box-shadow: none;
+}
+
+.step4Container {
+	display: flex;
+	gap: 24px;
+	align-items: stretch;
+	width: 100%;
+	min-height: 200px;
+	height: 28vw;
+	max-height: 320px;
+}
+
+.step4View {
+	position: relative;
+	flex: 1;
+	width: 0;
+	min-width: 0;
+	height: 100%;
+	border-radius: 20px;
+	overflow: hidden;
+	background: #efefef;
+	box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+	padding: 24px;
+	box-sizing: border-box;
+}
+
+.step4BaseImage {
+	position: absolute;
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%, -50%);
+	width: 88%;
+	height: 88%;
+	margin: auto;
+	object-fit: contain;
+	display: block;
+}
+
+.step4OverlayImage {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	width: 88%;
+	height: 88%;
+	object-fit: contain;
+	pointer-events: none;
+	transform: translate(-50%, -50%);
+	z-index: 2;
+}
+
+.step4OverlayImageActive {
+	animation: overlayFadeIn 0.8s ease-in-out forwards;
+}
+
+.step4OverlayImageExit {
+	animation: overlayFadeOut 0.8s ease-in-out 0.3s forwards;
+}
+
+.step4FrameOverlay {
+	z-index: 1;
+}
+
+/* Адаптив шага 4 */
+@media (max-width: 1200px) {
+	.step4Container {
+		gap: 20px;
+		height: 36vw;
+		max-height: 280px;
+	}
+	.step4View {
+		border-radius: 16px;
+		padding: 20px;
+	}
+}
+
+@media (max-width: 750px) {
+	.step4Container {
+		gap: 16px;
+		height: 42vw;
+		max-height: 240px;
+	}
+	.step4View {
+		border-radius: 14px;
+		padding: 16px;
+	}
+}
+
+@media (max-width: 550px) {
+	.step4Container {
+		gap: 12px;
+		height: 50vw;
+		max-height: 220px;
+	}
+	.step4View {
+		border-radius: 12px;
+		padding: 12px;
+	}
+}

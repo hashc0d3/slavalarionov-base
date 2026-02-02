@@ -42,7 +42,7 @@ export const StrapDesignStep = observer(function StrapDesignStep() {
 		<div className={styles.step}>
 			<div className={styles.stepContent}>
 				<div className={styles.stepColumn}>
-					<StrapDesignPreview layout="grid" />
+					<StrapDesignPreview key="step3-preview" layout="grid" />
 				</div>
 				<div className={styles.stepRightColumn}>
 					<h3 className={styles.stepTitle}>

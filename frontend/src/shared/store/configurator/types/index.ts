@@ -107,6 +107,17 @@ export type Strap = {
 	}
 }
 
+/** Снимок превью ремешка для финального шага — картинки на шаге 4 не связаны с шагом 3 */
+export type FinalStepPreviewSnapshot = {
+	strapModel: Strap | null
+	leatherColor: StrapColor | null
+	stitchingColor: StrapColor | null
+	edgeColor: StrapColor | null
+	buckleColor: StrapColor | null
+	adapterColor: StrapColor | null
+	frameColorId: number | null
+}
+
 export type Promo = {
 	promoFound: boolean
 	type: 'percent' | 'ruble'

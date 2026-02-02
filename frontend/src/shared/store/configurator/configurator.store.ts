@@ -13,7 +13,8 @@ import type {
 	FrameColor,
 	StrapColor,
 	Promo,
-	AdditionalOptionPayload
+	AdditionalOptionPayload,
+	FinalStepPreviewSnapshot
 } from './types'
 
 export class ConfiguratorStore {
@@ -26,6 +27,9 @@ export class ConfiguratorStore {
 	isLoading: boolean = false
 	watchModels: WatchModel[] = []
 	watchStraps: Strap[] = []
+
+	/** Снимок превью для шага 4 — картинки на шаге 4 не связаны с шагом 3 */
+	finalStepPreviewSnapshot: FinalStepPreviewSnapshot | null = null
 
 	constructor() {
 		this.stepsStore = new StepsStore()
@@ -43,6 +47,17 @@ export class ConfiguratorStore {
 	}
 
 	set currentStepNum(value: number) {
+		if (value === 4) {
+			this.finalStepPreviewSnapshot = {
+				strapModel: this.selectedStrapModel,
+				leatherColor: this.selectedLeatherColor,
+				stitchingColor: this.selectedStitchingColor,
+				edgeColor: this.selectedEdgeColor,
+				buckleColor: this.selectedBuckleColor,
+				adapterColor: this.selectedAdapterColor,
+				frameColorId: this.selectedFrameColorId
+			}
+		}
 		this.stepsStore.currentStepNum = value
 	}
 

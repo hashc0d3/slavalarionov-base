@@ -1,7 +1,9 @@
+/* Отступы по краям как на старом сайте (custom) */
 .step {
 	width: 100%;
-	padding-top: 48px;
-	padding-bottom: 60px;
+	max-width: 100%;
+	box-sizing: border-box;
+	padding: 48px 20px 60px;
 	background: #ffffff;
 }
 
@@ -21,17 +23,25 @@
 	/* Total section styles */
 }
 
+/* От 1200px — выравнивание по центру с ограничением ширины, как на старом сайте */
 @media (max-width: 1200px) {
 	.step {
-		padding-top: 40px;
-		padding-bottom: 48px;
+		padding: 40px 20px 48px;
+		max-width: 700px;
+		margin-left: auto;
+		margin-right: auto;
 	}
 }
 
 @media (max-width: 750px) {
 	.step {
-		padding-top: 24px;
-		padding-bottom: 40px;
+		padding: 24px 16px 40px;
+	}
+}
+
+@media (max-width: 550px) {
+	.step {
+		padding: 24px 12px 40px;
 	}
 }
 

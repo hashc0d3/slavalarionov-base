@@ -11,8 +11,16 @@ function FadingOverlayImage({
 	url,
 	loading = 'lazy',
 	decoding = 'async',
-	className = ''
-}: { url: string | undefined; loading?: 'lazy' | 'eager'; decoding?: 'async' | 'sync'; className?: string }) {
+	className = '',
+	overlayClasses
+}: {
+	url: string | undefined
+	loading?: 'lazy' | 'eager'
+	decoding?: 'async' | 'sync'
+	className?: string
+	/** Отдельные классы для шага 4 — стили не пересекаются с шагом 3 */
+	overlayClasses?: { base: string; active: string; exit: string }
+}) {
 	const prevUrlRef = useRef<string | undefined>(undefined)
 	const [exitUrl, setExitUrl] = useState<string | undefined>(undefined)
 	const [activeUrl, setActiveUrl] = useState<string | undefined>(url)
@@ -43,14 +51,17 @@ function FadingOverlayImage({
 
 	if (!activeUrl && !exitUrl) return null
 
-	const baseClass = `${styles.overlayImage} ${className}`.trim()
+	const base = overlayClasses?.base ?? styles.overlayImage
+	const activeCls = overlayClasses?.active ?? styles.overlayImageActive
+	const exitCls = overlayClasses?.exit ?? styles.overlayImageExit
+	const baseClass = `${base} ${className}`.trim()
 	return (
 		<>
 			{exitUrl && (
-				<img key={`exit-${exitUrl}`} src={exitUrl} alt="" className={`${baseClass} ${styles.overlayImageExit}`} loading={loading} decoding={decoding} aria-hidden />
+				<img key={`exit-${exitUrl}`} src={exitUrl} alt="" className={`${baseClass} ${exitCls}`} loading={loading} decoding={decoding} aria-hidden />
 			)}
 			{activeUrl && (
-				<img key={`active-${activeUrl}`} src={activeUrl} alt="" className={`${baseClass} ${styles.overlayImageActive}`} loading={loading} decoding={decoding} aria-hidden />
+				<img key={`active-${activeUrl}`} src={activeUrl} alt="" className={`${baseClass} ${activeCls}`} loading={loading} decoding={decoding} aria-hidden />
 			)}
 		</>
 	)
@@ -63,12 +74,15 @@ interface StrapDesignPreviewProps {
 }
 
 export const StrapDesignPreview = observer(function StrapDesignPreview({ className, variant = 'default', layout = 'flex' }: StrapDesignPreviewProps) {
-	const selectedStrapModel = configuratorStore.selectedStrapModel
-	const selectedLeatherColor = configuratorStore.selectedLeatherColor
-	const selectedStitchingColor = configuratorStore.selectedStitchingColor
-	const selectedEdgeColor = configuratorStore.selectedEdgeColor
-	const selectedBuckleColor = configuratorStore.selectedBuckleColor
-	const selectedAdapterColor = configuratorStore.selectedAdapterColor
+	// На шаге 4 (variant=final) превью не связано с шагом 3 — читаем из снимка, сделанного при переходе на шаг 4
+	const snapshot = variant === 'final' ? configuratorStore.finalStepPreviewSnapshot : null
+	const selectedStrapModel = snapshot?.strapModel ?? configuratorStore.selectedStrapModel
+	const selectedLeatherColor = snapshot?.leatherColor ?? configuratorStore.selectedLeatherColor
+	const selectedStitchingColor = snapshot?.stitchingColor ?? configuratorStore.selectedStitchingColor
+	const selectedEdgeColor = snapshot?.edgeColor ?? configuratorStore.selectedEdgeColor
+	const selectedBuckleColor = snapshot?.buckleColor ?? configuratorStore.selectedBuckleColor
+	const selectedAdapterColor = snapshot?.adapterColor ?? configuratorStore.selectedAdapterColor
+	const frameColorIdForPreview = snapshot?.frameColorId ?? configuratorStore.selectedFrameColorId
 	const frameColorImages = configuratorStore.selectedFrameColorImages
 
 	if (!selectedStrapModel) {
@@ -272,7 +286,7 @@ export const StrapDesignPreview = observer(function StrapDesignPreview({ classNa
 
 	// Функция для получения изображения цвета корпуса (приоритетнее универсальных, отображается поверх)
 	const getFrameColorImage = (view: number): string | undefined => {
-		const frameColorId = configuratorStore.selectedFrameColorId
+		const frameColorId = frameColorIdForPreview
 		if (!frameColorId || !strapData.base_images || !Array.isArray(strapData.base_images)) {
 			return undefined
 		}
@@ -296,59 +310,69 @@ export const StrapDesignPreview = observer(function StrapDesignPreview({ classNa
 		return undefined
 	}
 
+	const isStep4 = variant === 'final'
+	const rootCls = isStep4 ? styles.step4Root : styles.preview
+	const containerCls = isStep4 ? styles.step4Container : `${styles.previewContainer} ${layout === 'grid' ? styles.previewContainerGrid : styles.previewContainerFlex}`
+	const viewCls = isStep4 ? styles.step4View : styles.previewView
+	const baseImageCls = isStep4 ? styles.step4BaseImage : styles.baseImage
+	const step4Overlay = isStep4
+		? { base: styles.step4OverlayImage, active: styles.step4OverlayImageActive, exit: styles.step4OverlayImageExit }
+		: undefined
+	const frameCls = isStep4 ? styles.step4FrameOverlay : styles.frameOverlay
+
 	return (
-		<div className={`${variant === 'final' ? styles.previewFinal : styles.preview} ${className || ''}`}>
-			<div className={`${styles.previewContainer} ${layout === 'grid' ? styles.previewContainerGrid : styles.previewContainerFlex}`}>
+		<div className={`${rootCls} ${className || ''}`}>
+			<div className={containerCls}>
 			{/* View 1 */}
-			<div className={styles.previewView}>
+			<div className={viewCls}>
 				<img 
 					src={getBaseViewImage(1)} 
 					alt="Strap view 1" 
-					className={styles.baseImage}
+					className={baseImageCls}
 					loading="eager"
 					decoding="async"
 				/>
 				{/* Overlay images — плавный переход при смене цвета (как на custom Vue) */}
-				{selectedLeatherColor && <FadingOverlayImage url={getImageUrl('leather', 1)} loading="eager" />}
-				{selectedStitchingColor && <FadingOverlayImage url={getImageUrl('stitching', 1)} loading="eager" />}
-				{selectedEdgeColor && <FadingOverlayImage url={getImageUrl('edge', 1)} loading="eager" />}
-				{selectedBuckleColor && <FadingOverlayImage url={getImageUrl('buckle', 1)} loading="eager" />}
-				{selectedAdapterColor && <FadingOverlayImage url={getImageUrl('adapter', 1)} loading="eager" />}
-				<FadingOverlayImage url={getFrameColorImage(1)} loading="eager" className={styles.frameOverlay} />
+				{selectedLeatherColor && <FadingOverlayImage url={getImageUrl('leather', 1)} loading="eager" overlayClasses={step4Overlay} />}
+				{selectedStitchingColor && <FadingOverlayImage url={getImageUrl('stitching', 1)} loading="eager" overlayClasses={step4Overlay} />}
+				{selectedEdgeColor && <FadingOverlayImage url={getImageUrl('edge', 1)} loading="eager" overlayClasses={step4Overlay} />}
+				{selectedBuckleColor && <FadingOverlayImage url={getImageUrl('buckle', 1)} loading="eager" overlayClasses={step4Overlay} />}
+				{selectedAdapterColor && <FadingOverlayImage url={getImageUrl('adapter', 1)} loading="eager" overlayClasses={step4Overlay} />}
+				<FadingOverlayImage url={getFrameColorImage(1)} loading="eager" className={frameCls} overlayClasses={step4Overlay} />
 			</div>
 
 			{/* View 2 */}
-			<div className={styles.previewView}>
+			<div className={viewCls}>
 				<img 
 					src={getBaseViewImage(2)} 
 					alt="Strap view 2" 
-					className={styles.baseImage}
+					className={baseImageCls}
 					loading="lazy"
 					decoding="async"
 				/>
-				{selectedLeatherColor && <FadingOverlayImage url={getImageUrl('leather', 2)} loading="lazy" />}
-				{selectedStitchingColor && <FadingOverlayImage url={getImageUrl('stitching', 2)} loading="lazy" />}
-				{selectedEdgeColor && <FadingOverlayImage url={getImageUrl('edge', 2)} loading="lazy" />}
-				{selectedBuckleColor && <FadingOverlayImage url={getImageUrl('buckle', 2)} loading="lazy" />}
-				{selectedAdapterColor && <FadingOverlayImage url={getImageUrl('adapter', 2)} loading="lazy" />}
-				<FadingOverlayImage url={getFrameColorImage(2)} loading="lazy" className={styles.frameOverlay} />
+				{selectedLeatherColor && <FadingOverlayImage url={getImageUrl('leather', 2)} loading="lazy" overlayClasses={step4Overlay} />}
+				{selectedStitchingColor && <FadingOverlayImage url={getImageUrl('stitching', 2)} loading="lazy" overlayClasses={step4Overlay} />}
+				{selectedEdgeColor && <FadingOverlayImage url={getImageUrl('edge', 2)} loading="lazy" overlayClasses={step4Overlay} />}
+				{selectedBuckleColor && <FadingOverlayImage url={getImageUrl('buckle', 2)} loading="lazy" overlayClasses={step4Overlay} />}
+				{selectedAdapterColor && <FadingOverlayImage url={getImageUrl('adapter', 2)} loading="lazy" overlayClasses={step4Overlay} />}
+				<FadingOverlayImage url={getFrameColorImage(2)} loading="lazy" className={frameCls} overlayClasses={step4Overlay} />
 			</div>
 
 			{/* View 3 */}
-			<div className={styles.previewView}>
+			<div className={viewCls}>
 				<img 
 					src={getBaseViewImage(3)} 
 					alt="Strap view 3" 
-					className={styles.baseImage}
+					className={baseImageCls}
 					loading="lazy"
 					decoding="async"
 				/>
-				{selectedLeatherColor && <FadingOverlayImage url={getImageUrl('leather', 3)} loading="lazy" />}
-				{selectedStitchingColor && <FadingOverlayImage url={getImageUrl('stitching', 3)} loading="lazy" />}
-				{selectedEdgeColor && <FadingOverlayImage url={getImageUrl('edge', 3)} loading="lazy" />}
-				{selectedBuckleColor && <FadingOverlayImage url={getImageUrl('buckle', 3)} loading="lazy" />}
-				{selectedAdapterColor && <FadingOverlayImage url={getImageUrl('adapter', 3)} loading="lazy" />}
-				<FadingOverlayImage url={getFrameColorImage(3)} loading="lazy" className={styles.frameOverlay} />
+				{selectedLeatherColor && <FadingOverlayImage url={getImageUrl('leather', 3)} loading="lazy" overlayClasses={step4Overlay} />}
+				{selectedStitchingColor && <FadingOverlayImage url={getImageUrl('stitching', 3)} loading="lazy" overlayClasses={step4Overlay} />}
+				{selectedEdgeColor && <FadingOverlayImage url={getImageUrl('edge', 3)} loading="lazy" overlayClasses={step4Overlay} />}
+				{selectedBuckleColor && <FadingOverlayImage url={getImageUrl('buckle', 3)} loading="lazy" overlayClasses={step4Overlay} />}
+				{selectedAdapterColor && <FadingOverlayImage url={getImageUrl('adapter', 3)} loading="lazy" overlayClasses={step4Overlay} />}
+				<FadingOverlayImage url={getFrameColorImage(3)} loading="lazy" className={frameCls} overlayClasses={step4Overlay} />
 			</div>
 			</div>
 		</div>

@@ -23,7 +23,7 @@ export const FinalStepMain = observer(function FinalStepMain({ className }: Fina
 				</p>
 			</div>
 			<div className={styles.mainDesign}>
-				<StrapDesignPreview className={styles.mainDesignPreview} variant="final" layout="flex" />
+				<StrapDesignPreview key="step4-preview" className={styles.mainDesignPreview} variant="final" layout="flex" />
 			</div>
 		</div>
 	)

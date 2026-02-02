@@ -52,6 +52,14 @@ const nextConfig = {
       ...config.resolve.alias,
       '@': path.resolve(__dirname, './src'),
     };
+    // Снижаем частоту HMR при изменении CSS — уменьшает ошибку removeChild в dev
+    if (dev) {
+      config.watchOptions = {
+        ...config.watchOptions,
+        ignored: /node_modules/,
+        aggregateTimeout: 400,
+      };
+    }
     return config;
   },
 };

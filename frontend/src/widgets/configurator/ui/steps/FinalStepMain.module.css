@@ -5,7 +5,7 @@
 	gap: 60px;
 	max-width: 1400px;
 	margin: 0 auto;
-	padding: 0 20px;
+	padding: 0;
 }
 
 .mainData {
@@ -86,7 +86,9 @@
 
 .mainDesign {
 	width: 60%;
-	max-width: 840px;
+	flex: 1;
+	min-width: 0;
+	max-width: none;
 	display: flex;
 	flex-direction: column;
 	gap: 20px;
@@ -94,6 +96,7 @@
 
 .mainDesignPreview {
 	width: 100%;
+	min-width: 0;
 }
 
 .mainDesignPreview .previewContainer {
@@ -124,7 +127,10 @@
 	.main {
 		flex-direction: column;
 		gap: 40px;
-		padding: 0 16px;
+		padding: 0;
+		max-width: 700px;
+		margin-left: auto;
+		margin-right: auto;
 	}
 	
 	.mainData {
@@ -147,6 +153,7 @@
 	.mainDesign {
 		width: 100%;
 		max-width: none;
+		min-width: 0;
 	}
 	
 	.mainDesignPreview .previewContainer {
