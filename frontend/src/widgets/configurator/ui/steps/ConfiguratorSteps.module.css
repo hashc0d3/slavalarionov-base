@@ -18,7 +18,7 @@
 .stepItem {
 	position: relative;
 	display: grid;
-	grid-template-rows: 252px 252px auto;
+	grid-template-rows: 252px 130px auto;
 	grid-template-columns: 1fr;
 	align-items: center;
 	justify-items: center;
@@ -95,7 +95,7 @@
 .totalBox { margin-top: 8px; font-weight: 600; }
 
 @media (max-width: 1400px) { .stepItem { padding: 30px; } }
-@media (max-width: 1300px) { .stepItem { padding: 30px; flex-basis: calc(25% - 20px); border-radius: 42px; grid-template-rows: 234px 234px auto; } .stepItemInfo { grid-row: 2; } .stepItemColors { grid-row: 3; } .stepItemImage { width: 120px; max-width: 120px; max-height: 234px; } .stepItemSizesItem { font-size: 14px; line-height: 18px; } }
+@media (max-width: 1300px) { .stepItem { padding: 30px; flex-basis: calc(25% - 20px); border-radius: 42px; grid-template-rows: 234px 120px auto; } .stepItemInfo { grid-row: 2; } .stepItemColors { grid-row: 3; } .stepItemImage { width: 120px; max-width: 120px; max-height: 234px; } .stepItemSizesItem { font-size: 14px; line-height: 18px; } }
 @media (max-width: 1100px) { .section { margin-top: 0; } .stepInner { flex-wrap: wrap; max-width: 800px; margin: 0 auto; align-items: stretch; } .stepItem { display: flex; flex-direction: row; flex-wrap: wrap; flex-basis: calc(50% - 20px); grid-template-rows: unset; grid-template-columns: unset; align-items: flex-start; align-self: stretch; } .stepItem:nth-child(n+3) { margin-top: 30px; } .stepItemImage { flex-basis: 30%; height: auto; min-height: 220px; max-height: none; object-position: top center; } .stepItemInfo { margin: 0 0 0 12px; flex-basis: 55%; grid-row: unset; align-items: center; justify-content: center; min-height: 220px; } .stepItemColors { display: flex; flex-wrap: wrap; flex-basis: 100%; margin-top: 10px; gap: 10px; grid-row: unset; justify-content: flex-start; padding: 0; box-sizing: border-box; } .stepItemColor { margin: 0; } .stepItemSizes { max-width: 170px; height: auto; } .stepItemSizesItem { padding: 10px 16px; max-width: 80px; flex: 1 1 auto; } }
 @media (max-width: 1040px) { .stepInner { max-width: 760px; width: 100%; margin: 0 auto; justify-content: center; gap: 16px; } .stepItem { flex-basis: calc(50% - 16px); padding: 24px; } .stepItemImage { max-width: 108px; } }
 @media (max-width: 850px) { 

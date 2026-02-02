@@ -10,6 +10,9 @@
 .selectArrow { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); pointer-events: none; width: 12px; height: 7px; }
 
 .btn { display: inline-flex; align-items: center; justify-content: center; padding: 12px 20px; border-radius: 50px; font-size: 14px; font-weight: 400; font-family: 'TildaSans', 'Helvetica Neue', Helvetica, Arial, sans-serif; line-height: 18px; cursor: pointer; border: 1px solid transparent; transition: .2s ease; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-decoration: none; color: inherit; }
+/* Кнопка «На главную» на шагах 2+ — показывать только на мобильных (<550px), по аналогии со старым сайтом */
+.homeBtnMobile { display: none; }
+@media (max-width: 549px) { .homeBtnMobile { display: inline-flex; } }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
 .btnGhost { background: #fff; border-color: #ddd; }
 .btnGhost:hover { border-color: #b3b3b3; }

@@ -136,12 +136,21 @@ export const ConfiguratorControls = observer(function ConfiguratorControls({ nav
 						На главную
 					</a>
 				) : (
-					<button 
-						className={[styles.btn, styles.btnGhost].join(' ')} 
-						onClick={handlePrevStep}
-					>
-						Назад
-					</button>
+					<>
+						<a 
+							href="https://slavalarionov.com/" 
+							className={[styles.btn, styles.btnGhost, styles.homeBtnMobile].join(' ')}
+							rel="noopener noreferrer"
+						>
+							На главную
+						</a>
+						<button 
+							className={[styles.btn, styles.btnGhost].join(' ')} 
+							onClick={handlePrevStep}
+						>
+							Назад
+						</button>
+					</>
 				)}
 				{!isFinal ? (
 					<button 
