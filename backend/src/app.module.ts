@@ -16,6 +16,7 @@ import { DeliveryModule } from './delivery/delivery.module';
 import { UploadsModule } from './uploads/uploads.module';
 import { ConfiguratorModule } from './configurator/configurator.module';
 import { ColorsModule } from './colors/colors.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { ColorsModule } from './colors/colors.module';
     }),
     HttpModule,
     PrismaModule,
+    AuthModule,
     WatchModelsModule,
     WatchStrapsModule,
     PaymentModule,

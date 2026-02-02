@@ -42,6 +42,9 @@
 	-moz-osx-font-smoothing: grayscale;
 }
 
+/* Safari iOS: не даём системному акценту перекрашивать текст в синий */
+.selectorSelect { color: #333; -webkit-appearance: none; appearance: none; }
+
 .selectorArrow {
 	width: 12px;
 	height: 7px;

@@ -2,9 +2,28 @@ const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
 
+const FIRST_ADMIN_EMAIL = 'ddolgosheev2@gmail.com';
+
 async function initDatabase() {
   try {
     console.log('Проверяем наличие начальных данных...');
+
+    // RBAC: первый администратор (таблица users может быть только что создана миграцией)
+    try {
+      const existingAdmin = await prisma.user.findUnique({ where: { email: FIRST_ADMIN_EMAIL } });
+      if (!existingAdmin) {
+        await prisma.user.upsert({
+          where: { email: FIRST_ADMIN_EMAIL },
+          create: { email: FIRST_ADMIN_EMAIL, role: 'ADMIN' },
+          update: {},
+        });
+        console.log('✓ Первый администратор создан:', FIRST_ADMIN_EMAIL);
+      } else {
+        console.log('✓ Администратор уже существует:', FIRST_ADMIN_EMAIL);
+      }
+    } catch (e) {
+      console.warn('Предупреждение: таблица users может отсутствовать (старая БД до миграции).', e.message);
+    }
 
     // Проверяем, есть ли настройки конфигуратора
     const settings = await prisma.configuratorSettings.findFirst();

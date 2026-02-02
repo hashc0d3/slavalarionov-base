@@ -2,10 +2,25 @@ import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
+const FIRST_ADMIN_EMAIL = 'ddolgosheev2@gmail.com'
+
 async function main() {
   console.log('Seeding database...')
 
-  // Очищаем существующие данные
+  // RBAC: первый администратор (доступ в админку). Остальных можно добавить через БД.
+  const existingAdmin = await prisma.user.findUnique({ where: { email: FIRST_ADMIN_EMAIL } })
+  if (!existingAdmin) {
+    await prisma.user.upsert({
+      where: { email: FIRST_ADMIN_EMAIL },
+      create: { email: FIRST_ADMIN_EMAIL, role: 'ADMIN' },
+      update: {},
+    })
+    console.log(`✓ First admin created: ${FIRST_ADMIN_EMAIL}`)
+  } else {
+    console.log(`✓ Admin already exists: ${FIRST_ADMIN_EMAIL}`)
+  }
+
+  // Очищаем существующие данные (кроме users)
   await prisma.configuratorAdditionalOption.deleteMany()
   await prisma.configuratorSettings.deleteMany()
   await prisma.watchModelStrap.deleteMany()

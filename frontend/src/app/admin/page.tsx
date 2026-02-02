@@ -1,31 +1,26 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useAuth } from '@/shared/context/auth.context'
+import { isAdminUser } from '@/shared/lib/auth'
 import { AdminPanelMantine } from '@/widgets/admin/ui/AdminPanelMantine'
-import { isAdmin } from '@/shared/lib/auth'
-import { Container, Center, Title, Text, Anchor, Loader, Stack, Code } from '@mantine/core'
+import { GoogleLogin } from '@react-oauth/google'
+import Link from 'next/link'
+import {
+  Container,
+  Center,
+  Title,
+  Text,
+  Anchor,
+  Loader,
+  Stack,
+  Button,
+  Group,
+} from '@mantine/core'
 
 export default function AdminPage() {
-  const [hasAccess, setHasAccess] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
+  const { user, isChecked, isLoading, loginWithGoogle, logout } = useAuth()
 
-  useEffect(() => {
-    const checkAccess = () => {
-      try {
-        const access = isAdmin()
-        setHasAccess(access)
-      } catch (error) {
-        console.error('Error checking admin access:', error)
-        setHasAccess(false)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    
-    checkAccess()
-  }, [])
-
-  if (isLoading) {
+  if (!isChecked || isLoading) {
     return (
       <Container size="xl" py="xl">
         <Center h={400}>
@@ -35,17 +30,24 @@ export default function AdminPage() {
     )
   }
 
-  if (!hasAccess) {
+  // Не авторизован — показываем вход через Google
+  if (!user) {
     return (
       <Container size="sm" py="xl">
         <Center>
           <Stack align="center" gap="md">
-            <Title order={1}>Доступ запрещен</Title>
-            <Text c="dimmed">У вас нет прав для просмотра этой страницы.</Text>
-            <Stack gap="xs">
-              <Text size="sm">Для доступа в консоли браузера выполните:</Text>
-              <Code block>localStorage.setItem('ROLE', 'ADMIN')</Code>
-            </Stack>
+            <Title order={1}>Вход в админ-панель</Title>
+            <GoogleLogin
+              onSuccess={({ credential }) => {
+                if (credential) loginWithGoogle(credential)
+              }}
+              onError={() => {}}
+              useOneTap={false}
+              theme="filled"
+              size="large"
+              text="signin_with"
+              shape="rectangular"
+            />
             <Anchor href="/" size="sm">
               Вернуться на главную
             </Anchor>
@@ -55,6 +57,51 @@ export default function AdminPage() {
     )
   }
 
-  return <AdminPanelMantine />
-}
+  // Авторизован, но не администратор
+  if (!isAdminUser(user)) {
+    return (
+      <Container size="sm" py="xl">
+        <Center>
+          <Stack align="center" gap="md">
+            <Title order={1}>Доступ запрещен</Title>
+            <Text c="dimmed">
+              У вас нет прав для просмотра этой страницы. Роль: {user.role}.
+            </Text>
+            <Group>
+              <Button variant="light" onClick={() => logout()}>
+                Выйти
+              </Button>
+              <Anchor href="/" size="sm">
+                На главную
+              </Anchor>
+            </Group>
+          </Stack>
+        </Center>
+      </Container>
+    )
+  }
 
+  // Администратор — шапка с теми же отступами, что и панель ниже + кнопка «Перейти на сайт»
+  return (
+    <Container size="xl" py="xl">
+      <Stack gap="md" w="100%">
+        <Container size="xl" py={0}>
+          <Group justify="space-between" w="100%" wrap="nowrap" gap="md">
+            <Text size="sm" c="dimmed" style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {user.email}
+            </Text>
+            <Group gap="sm" wrap="nowrap" style={{ flexShrink: 0 }}>
+              <Button variant="light" size="xs" component={Link} href="/">
+                Перейти на сайт
+              </Button>
+              <Button variant="subtle" size="xs" onClick={() => logout()}>
+                Выйти
+              </Button>
+            </Group>
+          </Group>
+        </Container>
+        <AdminPanelMantine />
+      </Stack>
+    </Container>
+  )
+}
