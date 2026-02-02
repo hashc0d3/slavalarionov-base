@@ -21,6 +21,14 @@ if sudo lsof -ti:8082 >/dev/null 2>&1; then
     sleep 2
 fi
 
+# Подгрузить backend/.env, чтобы GOOGLE_CLIENT_ID попал в build-arg для фронта (NEXT_PUBLIC_GOOGLE_CLIENT_ID)
+if [ -f backend/.env ]; then
+    set -a
+    # shellcheck source=/dev/null
+    source backend/.env
+    set +a
+fi
+
 # Обновить код (если используется git)
 if [ -d .git ]; then
     echo "📥 Обновление кода из репозитория..."
@@ -32,9 +40,17 @@ if [ -d .git ]; then
     git pull || echo "⚠️  Не удалось обновить код (возможно, не используется git)"
 fi
 
-# Собрать и запустить
-echo "🔨 Сборка и запуск PROD контейнера..."
-docker compose -f docker-compose.prod.yml up -d --build
+# Собрать и запустить (при --no-cache очищаем кэш и собираем без кэша — помогает при ошибке "parent snapshot does not exist")
+if [ "$1" = "--no-cache" ]; then
+    echo "🧹 Очистка кэша сборки Docker..."
+    docker builder prune -af 2>/dev/null || true
+    echo "🔨 Сборка без кэша и запуск PROD контейнера..."
+    docker compose -f docker-compose.prod.yml build --no-cache
+    docker compose -f docker-compose.prod.yml up -d
+else
+    echo "🔨 Сборка и запуск PROD контейнера..."
+    docker compose -f docker-compose.prod.yml up -d --build
+fi
 
 # Показать статус
 echo ""

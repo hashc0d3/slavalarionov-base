@@ -3,6 +3,9 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
+      args:
+        # Берётся из backend/.env (GOOGLE_CLIENT_ID) при деплое — нужен для кнопки «Войти через Google» на проде
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
     container_name: slavalarionov-backend-prod
     environment:
       NODE_ENV: production

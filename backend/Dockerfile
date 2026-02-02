@@ -58,6 +58,9 @@ RUN cd backend && \
 # ============================================
 # ШАГ 5: Сборка frontend (Next.js)
 # ============================================
+# Client ID для Google OAuth — подставляется при сборке (docker compose build --build-arg или из .env в deploy-prod.sh)
+ARG NEXT_PUBLIC_GOOGLE_CLIENT_ID
+ENV NEXT_PUBLIC_GOOGLE_CLIENT_ID=$NEXT_PUBLIC_GOOGLE_CLIENT_ID
 RUN --mount=type=cache,target=/app/frontend/.next/cache \
     cd frontend && \
     npm run build
