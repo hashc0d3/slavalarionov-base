@@ -74,15 +74,14 @@ interface StrapDesignPreviewProps {
 }
 
 export const StrapDesignPreview = observer(function StrapDesignPreview({ className, variant = 'default', layout = 'flex' }: StrapDesignPreviewProps) {
-	// На шаге 4 (variant=final) превью не связано с шагом 3 — читаем из снимка, сделанного при переходе на шаг 4
-	const snapshot = variant === 'final' ? configuratorStore.finalStepPreviewSnapshot : null
-	const selectedStrapModel = snapshot?.strapModel ?? configuratorStore.selectedStrapModel
-	const selectedLeatherColor = snapshot?.leatherColor ?? configuratorStore.selectedLeatherColor
-	const selectedStitchingColor = snapshot?.stitchingColor ?? configuratorStore.selectedStitchingColor
-	const selectedEdgeColor = snapshot?.edgeColor ?? configuratorStore.selectedEdgeColor
-	const selectedBuckleColor = snapshot?.buckleColor ?? configuratorStore.selectedBuckleColor
-	const selectedAdapterColor = snapshot?.adapterColor ?? configuratorStore.selectedAdapterColor
-	const frameColorIdForPreview = snapshot?.frameColorId ?? configuratorStore.selectedFrameColorId
+	// На шагах 3 и 4 — всегда читаем из стора, чтобы при изменении фильтров картинки обновлялись
+	const selectedStrapModel = configuratorStore.selectedStrapModel
+	const selectedLeatherColor = configuratorStore.selectedLeatherColor
+	const selectedStitchingColor = configuratorStore.selectedStitchingColor
+	const selectedEdgeColor = configuratorStore.selectedEdgeColor
+	const selectedBuckleColor = configuratorStore.selectedBuckleColor
+	const selectedAdapterColor = configuratorStore.selectedAdapterColor
+	const frameColorIdForPreview = configuratorStore.selectedFrameColorId
 	const frameColorImages = configuratorStore.selectedFrameColorImages
 
 	if (!selectedStrapModel) {
