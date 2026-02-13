@@ -44,7 +44,7 @@
 	min-width: 0;
 	border-radius: 0;
 	overflow: hidden;
-	background: #f2f2f2;
+	background: #EEEEEE;
 	box-shadow: none;
 	padding: 24px;
 	box-sizing: border-box;
@@ -255,7 +255,7 @@
 	}
 	.previewView {
 		border-radius: 0;
-		background: #f2f2f2;
+		background: #EEEEEE;
 		padding: 16px;
 	}
 }

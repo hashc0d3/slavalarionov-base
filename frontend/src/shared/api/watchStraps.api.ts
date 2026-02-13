@@ -110,9 +110,6 @@ export const watchStrapsApi = {
 
   async update(id: number, strap: Strap): Promise<Strap> {
     const payload = mapStoreToAPI(strap)
-    if (process.env.NODE_ENV !== 'production') {
-      // eslint-disable-next-line no-console
-    }
     const response = await fetch(`${API_URL}/${id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },

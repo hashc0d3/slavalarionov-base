@@ -7,6 +7,7 @@ import styles from './ConfiguratorCart.module.css'
 
 export const ConfiguratorCart = observer(function ConfiguratorCart() {
 	const [isOpen, setIsOpen] = useState(false)
+	const [isSaved, setIsSaved] = useState(false)
 
 	const selectedWatchModel = configuratorStore.selectedWatchModel
 	const selectedFrameColor = configuratorStore.selectedFrameColor
@@ -294,16 +295,26 @@ export const ConfiguratorCart = observer(function ConfiguratorCart() {
 							<div className={styles.cartButtons}>
 								{configuratorStore.editingCartItemId ? (
 									<>
-										<button 
-											className={styles.cartSaveButton}
+										<button
+											className={`${styles.cartSaveButton} ${isSaved ? styles.cartSaveButtonSuccess : ''}`}
 											onClick={() => {
-												configuratorStore.updateCartItem(configuratorStore.editingCartItemId!)
-												setIsOpen(false)
+												if (!isSaved) {
+													configuratorStore.updateCartItem(configuratorStore.editingCartItemId!)
+													setIsSaved(true)
+
+													// Закрываем модальное окно и сбрасываем состояние через 1 секунду
+													setTimeout(() => {
+														setIsSaved(false)
+														configuratorStore.editingCartItemId = null
+														setIsOpen(false)
+													}, 1000)
+												}
 											}}
+											disabled={isSaved}
 										>
-											Сохранить изменения
+											{isSaved ? '✓ Изменения сохранены' : 'Сохранить изменения'}
 										</button>
-										<button 
+										<button
 											className={styles.cartCancelButton}
 											onClick={() => {
 												configuratorStore.cancelEditCartItem()

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Put, Delete, Body, Param, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Post, Put, Delete, Body, Param, HttpCode, HttpStatus, HttpException } from '@nestjs/common';
 import { ColorsService, CreateColorDto, UpdateColorDto } from './colors.service';
 
 @Controller('api/colors')
@@ -26,9 +26,17 @@ export class ColorsController {
   }
 
   @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
+  @HttpCode(HttpStatus.OK)
   async remove(@Param('id') id: string) {
-    await this.colorsService.remove(+id);
+    try {
+      await this.colorsService.remove(+id);
+      return { success: true, message: 'Color deleted successfully' };
+    } catch (error) {
+      throw new HttpException(
+        error.message || 'Failed to delete color',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }
 

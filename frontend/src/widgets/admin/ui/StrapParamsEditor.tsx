@@ -39,9 +39,10 @@ interface StrapParamsEditorProps {
     frame_color_configs?: FrameColorConfig[]
   }
   onUpdate: (updatedParams: any) => void
+  onMarkDirty?: () => void  // Колбэк для индикации несохраненных изменений
 }
 
-const StrapParamsEditor = ({ strapParams, onUpdate }: StrapParamsEditorProps) => {
+const StrapParamsEditor = ({ strapParams, onUpdate, onMarkDirty }: StrapParamsEditorProps) => {
   const colorPickerInputRef = useRef<HTMLInputElement>(null)
   const [editingColor, setEditingColor] = useState<{ type: string; index: number } | null>(null)
   const [isAddingColor, setIsAddingColor] = useState<{ type: string } | null>(null)
@@ -279,6 +280,7 @@ const StrapParamsEditor = ({ strapParams, onUpdate }: StrapParamsEditorProps) =>
       ...strapParams,
       [type]: updatedColors
     })
+    onMarkDirty?.()  // Отмечаем, что есть несохраненные изменения
 
     setEditingColor(null)
     setIsAddingColor(null)
@@ -292,25 +294,30 @@ const StrapParamsEditor = ({ strapParams, onUpdate }: StrapParamsEditorProps) =>
 
     notifications.show({
       title: 'Успешно',
-      message: editingColor ? 'Цвет обновлён' : 'Цвет добавлен',
-      color: 'green'
+      message: `${editingColor ? 'Цвет обновлён' : 'Цвет добавлен'}. Не забудьте нажать кнопку "Сохранить" внизу страницы!`,
+      color: 'orange',
+      autoClose: 8000
     })
   }
 
-  const deleteColor = (type: string, index: number) => {
+  const deleteColor = async (type: string, index: number) => {
     if (confirm('Вы уверены, что хотите удалить этот цвет?')) {
       const currentColors = strapParams[type as keyof typeof strapParams] as StrapColor[]
       const updatedColors = currentColors.filter((_, i) => i !== index)
 
-      onUpdate({
+      const updatedParams = {
         ...strapParams,
         [type]: updatedColors
-      })
+      }
+
+      onUpdate(updatedParams)
+      onMarkDirty?.()
 
       notifications.show({
         title: 'Успешно',
-        message: 'Цвет удалён',
-        color: 'green'
+        message: 'Цвет удалён. Не забудьте нажать кнопку "Сохранить" внизу страницы!',
+        color: 'orange',
+        autoClose: 8000
       })
     }
   }

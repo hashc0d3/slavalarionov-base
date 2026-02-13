@@ -58,7 +58,10 @@ export const colorsApi = {
     const response = await fetch(`${API_URL}/${id}`, {
       method: 'DELETE'
     })
-    if (!response.ok) throw new Error('Failed to delete color')
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.message || 'Failed to delete color')
+    }
   },
 }
 

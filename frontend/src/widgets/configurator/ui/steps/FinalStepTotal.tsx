@@ -3,6 +3,7 @@
 import { observer } from 'mobx-react-lite'
 import { configuratorStore } from '@/shared/store/configurator.store'
 import styles from './FinalStepTotal.module.css'
+import { useState } from 'react'
 
 interface FinalStepTotalProps {
 	className?: string
@@ -11,12 +12,14 @@ interface FinalStepTotalProps {
 	onPay: () => void
 }
 
-export const FinalStepTotal = observer(function FinalStepTotal({ 
-	className, 
-	totalPrice, 
-	readyDate, 
-	onPay 
+export const FinalStepTotal = observer(function FinalStepTotal({
+	className,
+	totalPrice,
+	readyDate,
+	onPay
 }: FinalStepTotalProps) {
+	const [isSaved, setIsSaved] = useState(false)
+
 	const handlePromoCodeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		configuratorStore.updatePromoCodeValue(e.target.value)
 	}
@@ -24,6 +27,20 @@ export const FinalStepTotal = observer(function FinalStepTotal({
 	const handleApplyPromo = () => {
 		if (configuratorStore.promoCode) {
 			configuratorStore.applyPromo(configuratorStore.promoCode)
+		}
+	}
+
+	const handleSaveChanges = () => {
+		const id = configuratorStore.editingCartItemId
+		if (id) {
+			configuratorStore.updateCartItem(id)
+			setIsSaved(true)
+
+			// Сбрасываем анимацию через 2 секунды
+			setTimeout(() => {
+				setIsSaved(false)
+				configuratorStore.editingCartItemId = null
+			}, 2000)
 		}
 	}
 
@@ -52,20 +69,16 @@ export const FinalStepTotal = observer(function FinalStepTotal({
 			
 			<div className={styles.totalButtons}>
 				{configuratorStore.editingCartItemId ? (
-					<button 
-						className={styles.totalSaveBtn} 
-						onClick={() => {
-							const id = configuratorStore.editingCartItemId
-							if (id) {
-								configuratorStore.updateCartItem(id)
-							}
-						}}
+					<button
+						className={`${styles.totalSaveBtn} ${isSaved ? styles.totalSaveBtnSuccess : ''}`}
+						onClick={handleSaveChanges}
+						disabled={isSaved}
 					>
-						Сохранить изменения
+						{isSaved ? '✓ Изменения сохранены' : 'Сохранить изменения'}
 					</button>
 				) : (
-					<button 
-						className={styles.totalAddToCartBtn} 
+					<button
+						className={styles.totalAddToCartBtn}
 						onClick={() => configuratorStore.addCurrentToCart()}
 					>
 						Добавить в корзину

@@ -9,7 +9,10 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   app.use(cookieParser());
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true }));
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: false,  // Изменили на false, чтобы не отбрасывать дополнительные поля
+    forbidNonWhitelisted: false
+  }));
 
   // Увеличиваем лимит размера тела запроса до 10MB для поддержки base64 изображений
   app.use(express.json({ limit: '10mb' }));

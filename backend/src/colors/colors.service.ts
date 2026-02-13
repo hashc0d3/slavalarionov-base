@@ -43,9 +43,28 @@ export class ColorsService {
   }
 
   async remove(id: number) {
-    return this.prisma.color.delete({
-      where: { id },
-    });
+    try {
+      // Сначала проверяем существование цвета
+      const color = await this.prisma.color.findUnique({
+        where: { id },
+        include: {
+          frame_colors: true,
+          strap_base_images: true,
+        },
+      });
+
+      if (!color) {
+        throw new Error('Color not found');
+      }
+
+      // Удаляем цвет (каскадное удаление связанных данных происходит автоматически)
+      return await this.prisma.color.delete({
+        where: { id },
+      });
+    } catch (error) {
+      console.error('Error deleting color:', error);
+      throw error;
+    }
   }
 }
 

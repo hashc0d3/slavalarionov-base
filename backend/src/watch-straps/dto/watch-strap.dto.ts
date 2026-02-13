@@ -8,6 +8,7 @@ export interface StrapColorDto {
   color_title: string;
   color_code?: string;
   price?: number;
+  choosen?: boolean;
   images?: StrapColorImagesDto;
   view1?: string | null;
   view2?: string | null;
@@ -23,6 +24,15 @@ export interface StrapViewImagesDto {
   ultraView3?: string | null;
 }
 
+export interface FrameColorConfigDto {
+  color_name?: string;
+  color_display?: string;
+  color_code?: string;
+  view1?: string;
+  view2?: string;
+  view3?: string;
+}
+
 export interface StrapParamsDto {
   leather_colors?: StrapColorDto[];
   stitching_colors?: StrapColorDto[];
@@ -31,6 +41,7 @@ export interface StrapParamsDto {
   adapter_colors?: StrapColorDto[];
   has_buckle_butterfly?: boolean;
   view_images?: StrapViewImagesDto;
+  frame_color_configs?: FrameColorConfigDto[];
 }
 
 export class CreateWatchStrapDto {

@@ -667,10 +667,47 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 		(key: keyof FormState) =>
 		(event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
 			const target = event.target
-			const value =
+			let value: any =
 				target instanceof HTMLInputElement && target.type === 'checkbox'
 					? target.checked
 					: target.value
+
+			// Валидация для ФИО: только буквы (кириллица, латиница), пробелы и дефисы
+			if (key === 'name' && typeof value === 'string') {
+				value = value.replace(/[^А-Яа-яЁёA-Za-z\s-]/g, '')
+			}
+
+			// Валидация для телефона: только цифры и форматирование
+			if (key === 'phone' && typeof value === 'string') {
+				// Оставляем только цифры (кроме первой семерки)
+				let digits = value.replace(/\D/g, '')
+
+				// Если пустое поле, подставляем 7
+				if (digits.length === 0) {
+					value = '+7 '
+				} else {
+					// Убираем первую 7 если она есть, чтобы работать только с введенными цифрами
+					if (digits.startsWith('7')) {
+						digits = digits.substring(1)
+					}
+
+					// Ограничиваем максимум 10 цифрами (после семерки)
+					digits = digits.substring(0, 10)
+
+					// Форматируем телефон
+					if (digits.length === 0) {
+						value = '+7 '
+					} else if (digits.length <= 3) {
+						value = `+7 (${digits}`
+					} else if (digits.length <= 6) {
+						value = `+7 (${digits.substring(0, 3)}) ${digits.substring(3)}`
+					} else if (digits.length <= 8) {
+						value = `+7 (${digits.substring(0, 3)}) ${digits.substring(3, 6)}-${digits.substring(6)}`
+					} else {
+						value = `+7 (${digits.substring(0, 3)}) ${digits.substring(3, 6)}-${digits.substring(6, 8)}-${digits.substring(8, 10)}`
+					}
+				}
+			}
 
 			updateForm({ [key]: value } as Partial<FormState>, [key])
 		}
@@ -1789,7 +1826,11 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 							type="email"
 							placeholder="example@site.com"
 							value={form.email}
-							onChange={(e) => updateForm({ email: e.target.value }, ['email'])}
+							onChange={(e) => {
+								// Разрешаем только релевантные символы для email
+								const value = e.target.value.replace(/[^a-zA-Z0-9@._-]/g, '')
+								updateForm({ email: value }, ['email'])
+							}}
 							disabled={isLoading}
 							error={!!errors.email}
 							helperText={errors.email}
@@ -1802,7 +1843,7 @@ export const OrderPopup = observer(function OrderPopup({ visible, onClose }: Pro
 							type="tel"
 							placeholder="+7 (999) 999-99-99"
 							value={form.phone}
-							onChange={(e) => updateForm({ phone: e.target.value }, ['phone'])}
+							onChange={handleFieldChange('phone')}
 							disabled={isLoading}
 							error={!!errors.phone}
 							helperText={errors.phone}
